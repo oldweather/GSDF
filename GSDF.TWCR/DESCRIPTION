@@ -1,0 +1,15 @@
+Package: GSDF.TWCR
+Type: Package
+Title: Get data (hourly, monthly, ond obs.) from the Twentieth Century
+    Reanalysis
+Version: 0.2
+Date: 2014-01-19
+Author: Philip Brohan
+Maintainer: Philip Brohan <philip@brohan.org>
+Description: pp.field<-TWCR.get.slice.at.hour('air.2m','mean',1969,3,12)
+Depends:
+    R (>= 1.7.0),
+    GSDF
+License: Apache.
+Collate:
+    'GSDF.TWCR.R'

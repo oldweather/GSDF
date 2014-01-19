@@ -1,0 +1,1 @@
+This package provides methods for accessing data from the Twentieth Century Reanalysis (20CR). 20CR provides 6-hourly and monthly averages, means and spreads across its analyis ensemble, for each of dozens of variables.

@@ -1,0 +1,16 @@
+\name{TWCR.show.variables}
+\alias{TWCR.show.variables}
+\title{TWCR show variables}
+\usage{
+  TWCR.show.variables()
+}
+\description{
+  List the variables available from 20CR
+}
+\details{
+  3 Different grids: 'Monolevel' and 'Gaussian' are both
+  Lat x Lon x Time but with different grids, 'Pressure
+  level' is Lat x Lon x Height x Time. No parameters or
+  return value prints out a list of available variables.
+}
+
