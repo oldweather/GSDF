@@ -1,0 +1,14 @@
+Package: GSDF.MERRA
+Type: Package
+Title: Get GSDF fields from the MERRA Reanalysis
+Version: 0.2
+Date: 2014-01-19
+Author: Philip Brohan
+Maintainer: Philip Brohan <philip@brohan.org>
+Description: field<-GSDF.MERRA.get.var.at.hour('t2m','mean',1989,3,12)
+Depends:
+    R (>= 1.7.0),
+    GSDF
+License: Apache
+Collate:
+    'GSDF.MERRA.R'
