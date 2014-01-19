@@ -1,0 +1,31 @@
+\name{GSDF.regrid.2d.boundary.conditions}
+\alias{GSDF.regrid.2d.boundary.conditions}
+\title{Apply boundary conditions to a field for interpolation}
+\usage{
+  GSDF.regrid.2d.boundary.conditions(old, new, type)
+}
+\arguments{
+  \item{old}{- 'from' points in 1-dimension}
+
+  \item{new}{- 'to' points}
+
+  \item{type}{- 'lat', 'lon' or other, apply periodic bc if
+  'lon'}
+}
+\value{
+  revised 'new' points
+}
+\description{
+  Makes regrid.2d work correctly for globaly complete
+  fields
+}
+\details{
+  When the 'to' grid has higher resolution than the 'from'
+  grid, some 'from' points will be outside the span of the
+  'to' points. Tweak the 'to' points to put them inside -
+  effectively this does constant extrapolation outside the
+  bounds. Also fixes the -180-180 or 0-360 inconsistency in
+  longitude if 'old' and 'new' are different in this
+  respect.
+}
+

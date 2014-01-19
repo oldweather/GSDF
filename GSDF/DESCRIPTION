@@ -1,0 +1,21 @@
+Package: GSDF
+Type: Package
+Title: Geo-Spatial Data Field
+Version: 0.2
+Date: 2014-01-19
+Author: Philip Brohan
+Maintainer: Philip Brohan <philip@brohan.org>
+Description: A data structure to hold geospatial fields.
+Depends:
+    R (>= 1.7.0),
+    chron,
+    fields,
+    ncdf4,
+    maps,
+    lattice,
+    grid
+License: Apache
+Collate:
+    'GSDF.R'
+    'GSDF.ncdf.R'
+    'GSDF.plot.R'

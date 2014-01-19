@@ -1,0 +1,23 @@
+\name{GSDF.pplot.2d}
+\alias{GSDF.pplot.2d}
+\title{Pair of 2d maps, one above the other}
+\usage{
+  GSDF.pplot.2d(g1, g2, ...)
+}
+\arguments{
+  \item{g1}{GSDF (with 2 extended dimensions)}
+
+  \item{g2}{GSDF (with 2 extended dimensions)}
+
+  \item{...}{see GSDF.plot.2d}
+}
+\description{
+  Two maps from plot.2d, one above the other
+}
+\details{
+  Exactly the same as GSDF.plot.2d, except that it takes 2
+  fields and plots them both. Same arguments as the simgle
+  plotter, except that 'draw' is ignored - only plots,
+  can't return a grob.
+}
+
