@@ -8,27 +8,52 @@ GFS.lonname<-'lon'
 GFS.hgtname<-'lev'
 GFS.tname<-'time'
 GFS.ensname<-'ens'
-# Hourly monolevel
+# Everything is 6-Hourly
+
+# Monolevel
 GFS.monolevel<-c('no4lftxsfc','no5wava500mb','no5wavh500mb','acpcpsfc','albdosfc','apcpsfc',
                  'capesfc','cape180_0mb','cfrzrsfc','cicepsfc','cinsfc','cin180_0mb','cpratsfc',
                  'crainsfc','csnowsfc','cwatclm','cworkclm','dlwrfsfc','dpt2m','dswrfsfc',
-                 'gfluxsfc','gpa1000mb','gpa500mb','hgtsfc',
+                 'gfluxsfc','gpa1000mb','gpa500mb','hgtsfc','hgt2pv','hgtneg2pv','hgttop0c',
+                 'hgttop0c','hgt0c','hgtmwl','hgttrop','hpblsfc','icecsfc','landsfc','lftxsfc',
+                 'lhtflsfc','pevprsfc','potsig995','pratesfc','preslclb','preslclt','presmclb',
+                 'presmclt','preshclb','preshclt','pressfc','pres2pv','presneg2pv','prescclb',
+                 'prescclt','presmwl','prestrop','prmslmsl','pvort320k','pwatclm','rh2m',
+                 'rhsg330_1000','rhsg440_1000','rhsg720_940','rhsg440_720','rhsig995','rh30_0mb',
+                 'rhclm','rhtop0c','rh0c','shtflsfc','snodsfc','soilw0_10cm','soilw10_40cm',
+                 'soilw40_100cm','soilw100_200cm','spfh2m','spfh30_0mb','sunsdsfc','tcdcclm',
+                 'tcdcblcll','tcdclcll','tcdcmcll','tcdchcll','tcdcccll','tmax2m','tmin2m',
+                 'tmplclt','tmpmclt','tmphclt','tmpsfc','tmp_1829m','tmp_2743m','tmp_3658m',
+                 'tmp2m','tmpsig995','tmp0_10cm','tmp10_40cm','tmp40_100cm','tmp100_200cm',
+                 'tmp30_0mb','tmp2pv','tmpneg2pv','tmpmwl','tmptrop','tozneclm','ugwdsfc',
+                 'uflxsfc','ugrd_1829m','ugrd_2743m','ugrd_3658m','ugrd10m','ugrdsig995',
+                 'ugrd30_0mb','ugrd2pv','ugrdneg2pv','ugrdmwl','ugrdtrop','ulwrfsfc','ulwrftoa',
+                 'uswrfsfc','uswrftoa','vgwdsfc','vflxsfc','vgrd_1829m','vgrd_2743m',
+                 'vgrd_3658m','vgrd10m','vgrdsig995','vgrd30_0mb','vgrd2pv','vgrdneg2pv',
+                 'vgrdmwl','vgrdtrop','vvelsig995','vwsh2pv','vwshneg2pv','vwshtrop',
+                 'watrsfc','weasdsfc')
+
+# 4 different sets of heights
+GFH.heights<-list()
+                 
+GFH.heights[['all']]<-c(1000,975,950,925,900,850,800,750,700,650,600,550,500,450, 
+                         400,350,300,250,200,150,100,70,50,30,20,10)
+GFS.h.all<-c('absvprs','hgtprs','tmpprs','ugrdprs','vgrdprs'
+
+GFH.heights[['trop']]<-c(1000,975,950,925,900,850,800,750,700,650,600,550,500,450, 
+                         400,350,300,250,200,150,100)
+GFS.h.trop<-c('clwmrprs','rhprs','vvelprs')
+
+GFH.heights[['trop2']]<-c(1000,925,850,700,500,300,250,200)
+GFS.h.trop2<-c('spfhprs')
+
+GFH.heights[['strat']]<-c(100,70,50,30,20,10)
+GFS.h.strat<-c('o3mrprs')
 
 
-GFS.h.all<-c('absvprs',
-
-GFS.h.trop<-c('clwmrprs',
-
-GFS.h.strat<-c('o3mrprs',
-
-
-# Height of each pressure level in hPa
-MERRA.heights<-c(1000,970,950,925,900,875,850,825,800,775,750,725,700,650,600,550,500,450,
-                 400,350,300,250,200,150,100,70,50,40,30,20,10,7,5,4,3,2,1,0.7,0.5,0.4,0.3,0.1)
-
-#' Merra show variables
+#' GFS show variables
 #' 
-#' List all the variables available in the MERRA reanalyis.
+#' List all the variables available in the GFS ensemble.
 #'
 #' Two sorts of variables:
 #' \describe{
@@ -38,160 +63,66 @@ MERRA.heights<-c(1000,970,950,925,900,875,850,825,800,775,750,725,700,650,600,55
 #' This function has no parmeters and returns no value
 #' it prints a list of available variables.
 #' @export
-MERRA.show.variables<-function() {
+GFS.show.variables<-function() {
   print('Monolevel')
-  print(MERRA.MAT1NXSLV)
-  print(MERRA.MAI1NXINT)
-  print(MERRA.MAT1NXFLX)
-  print(MERRA.MAT1NXINT)
-  print(MERRA.MAT1NXLND)
-  print(MERRA.MAT1NXRAD)
+  print(GFS.monolevel)
   print('Pressure level')
-  print(MERRA.MAI3CPASM)
-  print(MERRA.MAT3CPCLD)
-  print(MERRA.MAT3CPMST)
-  print(MERRA.MAT3CPODT)
-  print(MERRA.MAT3CPQDT)
-  print(MERRA.MAT3CPRAD)
-  print(MERRA.MAT3CPTDT)
-  print(MERRA.MAT3CPTRB)
-  print(MERRA.MAT3CPUDT)
+  print(GFS.h.all)
+  print(GFS.h.trop)
+  print(GFS.h.trop2)
+  print(GFS.h.strat)
 }
 
 # Get group of variable.
-#  They have different locations on the openDAP server.
-MERRA.get.variable.group<-function(variable) {
-  variable<-toupper(variable)
-  if(length(which(MERRA.MAT1NXSLV==variable))>0) return('MAT1NXSLV')
-  if(length(which(MERRA.MAI1NXINT==variable))>0) return('MAI1NXINT')
-  if(length(which(MERRA.MAT1NXFLX==variable))>0) return('MAT1NXFLX')
-  if(length(which(MERRA.MAT1NXINT==variable))>0) return('MAT1NXINT')
-  if(length(which(MERRA.MAT1NXLND==variable))>0) return('MAT1NXLND')
-  if(length(which(MERRA.MAT1NXRAD==variable))>0) return('MAT1NXRAD')
-  if(length(which(MERRA.MAI3CPASM==variable))>0) return('MAI3CPASM')
-  if(length(which(MERRA.MAT3CPCLD==variable))>0) return('MAT3CPCLD')
-  if(length(which(MERRA.MAT3CPMST==variable))>0) return('MAT3CPMST')
-  if(length(which(MERRA.MAT3CPODT==variable))>0) return('MAT3CPODT')
-  if(length(which(MERRA.MAT3CPQDT==variable))>0) return('MAT3CPQDT')
-  if(length(which(MERRA.MAT3CPRAD==variable))>0) return('MAT3CPRAD')
-  if(length(which(MERRA.MAT3CPTDT==variable))>0) return('MAT3CPTDT')
-  if(length(which(MERRA.MAT3CPTRB==variable))>0) return('MAT3CPTRB')
-  if(length(which(MERRA.MAT3CPUDT==variable))>0) return('MAT3CPUDT')
-  stop(sprintf("Unrecognised variable: %s",variable))
+#  Distinguish between diferent sets of vertical heights 
+GFS.get.variable.group<-function(variable) {
+  variable<-tolower(variable)
+  if(length(which(GFS.monolevel==variable))>0) return('monolevel')
+  if(length(which(GFS.h.all==variable))>0) return('all')
+  if(length(which(GFS.h.trop==variable))>0) return('trop')
+  if(length(which(GFS.h.trop2==variable))>0) return('trop2')
+  if(length(which(GFS.h.strat==variable))>0) return('strat')
+ stop(sprintf("Unrecognised variable: %s",variable))
 }
 
-#' MERRA hourly get file name
+#' GFS hourly get file name
 #'
-#' Get file name (URI) for MERRA variable
+#' Get file name (URI) for GFS variable
 #' 
-#' MERRA URIs depend on the variable group and the day, this function
-#'  calculates them from the variable name and the date.
+#' GFS URIs depend on the time of the run, this function
+#'  calculates them from the variable name and the run date.
 #'
 #' @export
-#' @param variable 'T2M', 'SLP', 'U10M', 'H500' - or any MERRA variable
-#' @param type must be 'mean', (no spreads, normals etc available from MERRA)
+#' @param variable 'tmp2m', 'prmslmsl', 'ugrd10m', 'tmpprs' - or any GFS variable
+#' @param type must be 'member' (everthing else derived from members).
+#' @param member The member to use' - integer in the range 0-20.
 #' @param opendap Must be TRUE - no local option currently supported.
-#' @return A file or URI containing the requested MERRA data
-MERRA.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=TRUE,type='mean') {
+#' @return A URI containing the requested GFS data
+GFS.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=TRUE,type='member',member=0) {
     if(opendap) {
-        runId<-100
-        if(year>=1993 && year<2001) runId<-200
-        if(year>=2001) runId<-300
-        if(type=='mean') {
-            base.dir<-'http://nomads.ncep.noaa.gov:9090/dods/gens/gens20140118/gec00_00z'
-            if(MERRA.get.variable.group(variable)=='MAT1NXSLV') {
-              return(sprintf("%s/MAT1NXSLV.5.2.0/%04d/%02d/MERRA%03d.prod.assim.tavg1_2d_slv_Nx.%04d%02d%02d.hdf",
-                                base.dir,year,month,runId,year,month,day))
-            }
-            if(MERRA.get.variable.group(variable)=='MAI1NXINT') {
-              return(sprintf("%s/MAI1NXINT.5.2.0/%04d/%02d/MERRA%03d.prod.assim.inst1_2d_int_Nx.%04d%02d%02d.hdf",
-                                base.dir,year,month,runId,year,month,day))
-            }
-            if(MERRA.get.variable.group(variable)=='MAT1NXFLX') {
-              return(sprintf("%s/MAT1NXFLX.5.2.0/%04d/%02d/MERRA%03d.prod.assim.tavg1_2d_flx_Nx.%04d%02d%02d.hdf",
-                                base.dir,year,month,runId,year,month,day))
-            }
-            if(MERRA.get.variable.group(variable)=='MAT1NXINT') {
-              return(sprintf("%s/MAT1NXINT.5.2.0/%04d/%02d/MERRA%03d.prod.assim.tavg1_2d_int_Nx.%04d%02d%02d.hdf",
-                                base.dir,year,month,runId,year,month,day))
-            }
-            if(MERRA.get.variable.group(variable)=='MAT1NXLND') {
-              return(sprintf("%s/MAT1NXLND.5.2.0/%04d/%02d/MERRA%03d.prod.assim.tavg1_2d_lnd_Nx.%04d%02d%02d.hdf",
-                                base.dir,year,month,runId,year,month,day))
-            }
-            if(MERRA.get.variable.group(variable)=='MAT1NXRAD') {
-              runId<-runId+1
-              return(sprintf("%s/MAT1NXRAD.5.2.0/%04d/%02d/MERRA%03d.prod.assim.tavg1_2d_rad_Nx.%04d%02d%02d.hdf",
-                                base.dir,year,month,runId,year,month,day))
-            }
-            base.dir<-'http://goldsmr3.sci.gsfc.nasa.gov:80/opendap/MERRA'
-            if(MERRA.get.variable.group(variable)=='MAI3CPASM') {
-              return(sprintf("%s/MAI3CPASM.5.2.0/%04d/%02d/MERRA%03d.prod.assim.inst3_3d_asm_Cp.%04d%02d%02d.hdf",
-                                base.dir,year,month,runId,year,month,day))
-            }
-            if(MERRA.get.variable.group(variable)=='MAT3CPCLD') {
-              return(sprintf("%s/MAT3CPCLD.5.2.0/%04d/%02d/MERRA%03d.prod.assim.tavg3_3d_cld_Cp.%04d%02d%02d.hdf",
-                                base.dir,year,month,runId,year,month,day))
-            }
-            if(MERRA.get.variable.group(variable)=='MAT3CPMST') {
-              return(sprintf("%s/MAT3CPMST.5.2.0/%04d/%02d/MERRA%03d.prod.assim.tavg3_3d_mst_Cp.%04d%02d%02d.hdf",
-                                base.dir,year,month,runId,year,month,day))
-            }
-            if(MERRA.get.variable.group(variable)=='MAT3CPODT') {
-              return(sprintf("%s/MAT3CPODT.5.2.0/%04d/%02d/MERRA%03d.prod.assim.tavg3_3d_odt_Cp.%04d%02d%02d.hdf",
-                                base.dir,year,month,runId,year,month,day))
-            }
-            if(MERRA.get.variable.group(variable)=='MAT3CPQDT') {
-              return(sprintf("%s/MAT3CPQDT.5.2.0/%04d/%02d/MERRA%03d.prod.assim.tavg3_3d_qdt_Cp.%04d%02d%02d.hdf",
-                                base.dir,year,month,runId,year,month,day))
-            }
-            if(MERRA.get.variable.group(variable)=='MAT3CPRAD') {
-              return(sprintf("%s/MAT3CPRAD.5.2.0/%04d/%02d/MERRA%03d.prod.assim.tavg3_3d_rad_Cp.%04d%02d%02d.hdf",
-                                base.dir,year,month,runId,year,month,day))
-            }
-            if(MERRA.get.variable.group(variable)=='MAT3CPTDT') {
-              return(sprintf("%s/MAT3CPTDT.5.2.0/%04d/%02d/MERRA%03d.prod.assim.tavg3_3d_tdt_Cp.%04d%02d%02d.hdf",
-                                base.dir,year,month,runId,year,month,day))
-            }
-            if(MERRA.get.variable.group(variable)=='MAT3CPTRB') {
-              return(sprintf("%s/MAT3CPTRB.5.2.0/%04d/%02d/MERRA%03d.prod.assim.tavg3_3d_trb_Cp.%04d%02d%02d.hdf",
-                                base.dir,year,month,runId,year,month,day))
-            }
-            if(MERRA.get.variable.group(variable)=='MAT3CPUDT') {
-              return(sprintf("%s/MAT3CPUDT.5.2.0/%04d/%02d/MERRA%03d.prod.assim.tavg3_3d_udt_Cp.%04d%02d%02d.hdf",
-                                base.dir,year,month,runId,year,month,day))
-            }
-          }
-        stop(sprintf("Only mean values available from MERRA"))      
+        if(type!='member') stop("Type must be 'member' for a file name")
+        base.dir<-'http://nomads.ncep.noaa.gov:9090/dods/gens/gens20140118/gec00_00z'
+        if(member==0) return(sprintf("%s%04d%02d%02d/gec00_%02dz",year,month,day,hour))
+        if(member<=20) return(sprintf("%s%04d%02d%02d/gep%02d_%02dz",year,month,day,member,hour))
+        stop("member must be in 1..20")
     }     
     else {
-        stop(sprintf("MERRA only available via openDAP"))
+        stop(sprintf("GFS only available via openDAP"))
    }
 }
 
 
-MERRA.is.in.file<-function(variable,year,month,day,hour,type='mean') {
-   group<-MERRA.get.variable.group(variable)
-   if(group=='MAT1NXSLV' || group=='MAI1NXINT' || group=='MAT1NXFLX' ||
-      group=='MAT1NXINT' || group=='MAT1NXLND' || group=='MAT1NXRAD') {
-      if(hour%%1==0) return(TRUE)
+GFS.is.in.file<-function(variable,year,month,day,hour,type='member',member=0) {
+      if(hour%%6==0) return(TRUE)
       return(FALSE)
-   }
-   if(group=='MAI3CPASM' || group=='MAT3CPCLD' || group=='MAT3CPMST' ||
-      group=='MAT3CPODT' || group=='MAT3CPQDT' || group=='MAT3CPRAD' ||
-      group=='MAT3CPTDT' || group=='MAT3CPTRB' || group=='MAT3CPUDT') {
-      if(hour%%3==0) return(TRUE)
-      return(FALSE)
-   }
-   stop("Internal error - unknown variable group")
 }
 
 # Go backward and forward in hours to find previous and subsequent
 #  hours at an analysis time.
 # Could do this directly, but it's vital to keep get.interpolation.times
 # and is.in.file consistent.
-MERRA.get.interpolation.times<-function(variable,year,month,day,hour,type='mean') {
-	if(MERRA.is.in.file(variable,year,month,day,hour,type=type)) {
+GFS.get.interpolation.times<-function(variable,year,month,day,hour,type='member',member=0) {
+	if(GFS.is.in.file(variable,year,month,day,hour,type=type,member=member)) {
 		stop("Internal interpolation failure")
 	}
 	ct<-chron(dates=sprintf("%04d/%02d/%02d",year,month,day),
@@ -210,7 +141,7 @@ MERRA.get.interpolation.times<-function(variable,year,month,day,hour,type='mean'
                   p.day<-days(ct-1)
                   p.hour<-p.hour+24
                 }
-		if(MERRA.is.in.file(variable,p.year,p.month,p.day,p.hour,type=type)) {
+		if(GFS.is.in.file(variable,p.year,p.month,p.day,p.hour,type=type,member=member)) {
 			t.previous$year<-p.year
 			t.previous$month<-p.month
 			t.previous$day<-p.day
@@ -235,7 +166,7 @@ MERRA.get.interpolation.times<-function(variable,year,month,day,hour,type='mean'
                   n.day<-days(ct+1)
                   n.hour<-n.hour-24
                 }
-		if(MERRA.is.in.file(variable,n.year,n.month,n.day,n.hour,type=type)) {
+		if(GFS.is.in.file(variable,n.year,n.month,n.day,n.hour,type=type,member=member)) {
 			t.next$year<-n.year
 			t.next$month<-n.month
 			t.next$day<-n.day
@@ -255,16 +186,20 @@ MERRA.get.interpolation.times<-function(variable,year,month,day,hour,type='mean'
 #'
 #' Get a 2D horizontal slice of a selected variable (as a GSDF field) for a given hour.
 #'
-#' Interpolates to the selected hour when the data available are less than hourly.
-#' Interpolates to the selected height when the selected height is not that of a MERRA level.
+#' Interpolates to the selected hour when the data available are less than 6-hourly.
+#' Interpolates to the selected height when the selected height is not that of a GFS level.
 #'
 #' @export
-#' @param variable 'T2M', 'SLP', 'U10M', 'H500' - or any MERRA variable
-#' @param type must be 'mean', (no spreads, normals etc available from MERRA)
+#' @param variable 'tmp2m', 'prmslmsl', 'ugrd10m', 'tmpprs' - or any GFS variable
+#' @param (year,month,day,hour) Time at which the forecast was made.
+#' @param lead number of hours ahead of forecast time (0-259, default=0)
+#' @param type must be 'member', 'mean', or 'spread' (no normals or sds from GFS)
+#' @param member The member to use' - integer in the range 0-20 (default=0, mean and sd use all members)
 #' @param height Height in hPa - leave NULL for monolevel
 #' @param opendap Must be TRUE - no local option currently supported.
 #' @return A GSDF field with lat and long as extended dimensions
-MERRA.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,opendap=TRUE,type='mean') {
+GFS.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,opendap=TRUE,
+                                  type='member',member=0,lead=0) {
    group<-MERRA.get.variable.group(variable)
    if(group=='MAT1NXSLV' || group=='MAI1NXINT' || group=='MAT1NXFLX' ||
       group=='MAT1NXINT' || group=='MAT1NXLND' || group=='MAT1NXRAD') {
