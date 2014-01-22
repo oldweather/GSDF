@@ -590,64 +590,42 @@ TWCR.relative.entropy<-function(old.mean,old.sd,new.mean,
 #'
 #' We only estimate the relative entropy, because we only have
 #' estimates of the means and standard deviations. This
-#' function estimates RE+-n*sigma.
+#' function estimates the spread of the relative entropy.
 #'
 #' Calculating a standard error for RE is hard, and it's an asymetric
 #'  distribution so an exact sigma is of limited use anyway. This function
 #'  estimates the value by perturbing the input means and standard
-#'  deviations by n*sigma.
+#'  deviations and combining the results in quadrature.
 #'
 #' @export
 #' @param old.mean Field of best estimates from climatology
 #' @param old.sd Field of climatological standard deviations
 #' @param new.mean Field of best estimates from TWCR
 #' @param new.sd Field of standard deviations from TWCR
-#' @param old.n number of years observation climatological mean
-#'  and sigma are based on (default=30).
 #' @param new.n number of ensembles making up TWCR (default=56).
 #' @param n.sigma number of standard deviations to perturb
 #'  by (default=1).
 #' @return list with components upper (field of RE+n*sigma) and
 #'   lower (field of RE-n*sigma).
 TWCR.relative.entropy.spread<-function(old.mean,old.sd,new.mean,
-                                       new.sd,old.n=30,new.n=56,
+                                       new.sd,new.n=56,
                                        n.sigma=1) {
-  upper<-TWCR.relative.entropy.perturb(old.mean,old.sd,
-                                       new.mean,new.sd,
-                                       old.n=old.n,
-                                       new.n=new.n,
-                                       perturbation<-rep(0,4))
-  lower<-upper
-  for(om in c(-1,1)) {
-    for(os in c(-1,1)) {
-      for(nm in c(-1,1)) {
-        for(ns in c(-1,1)) {
-           perturbed<-TWCR.relative.entropy.perturb(
-                                                   old.mean,old.sd,
-                                                   new.mean,new.sd,
-                                                   old.n=old.n,
-                                                   new.n=new.n,
-                                   perturbation<-c(om,os,nm,ns)*n.sigma)
-           upper$data<-pmax(upper$data,perturbed$data)
-           lower$data<-pmin(lower$data,perturbed$data)
-         }
-      }
-    }
-  }
-  return(list(upper=upper,lower=lower))  
+  base<-TWCR.relative.entropy(old.mean,old.sd,new.mean,new.sd)
+  perturbed.mean<-new.mean
+  mean.perturbation<-(new.sd$data/sqrt(new.n))*n.sigma
+  perturbed.mean$data[]<-perturbed.mean$data+mean.perturbation
+  perturbed.mean<-TWCR.relative.entropy(old.mean,old.sd,perturbed.mean,new.sd)
+  perturbed.mean$data[]<-perturbed.mean$data-base$data
+  perturbed.sd<-new.sd
+  sd.perturbation<-TWCR.sds(new.sd$data,new.n)*n.sigma
+  perturbed.sd$data[]<-perturbed.sd$data+sd.perturbation
+  perturbed.sd<-TWCR.relative.entropy(old.mean,old.sd,new.mean,perturbed.sd)
+  perturbed.sd$data[]<-perturbed.sd$data-base$data
+  spread<-new.mean
+  spread$data[]<-sqrt((perturbed.mean$data/mean.perturbation)**2+
+                      (perturbed.sd$data/sd.perturbation)**2)
+  return(spread)
 }
-
-# Calculate relative entropy with perturbed means and spreads
-TWCR.relative.entropy.perturb<-function(old.mean,old.sd,new.mean,
-                                       new.sd,old.n=30,new.n=56,
-                                       perturbation=c(0,0,0,0)) {
- 
-   old.mean$data<-old.mean$data+(old.sd$data/sqrt(old.n))*perturbation[1]
-   old.sd$data<-old.sd$data+TWCR.sds(old.sd$data,old.n)*perturbation[4]
-   new.mean$data<-new.mean$data+(new.sd$data/sqrt(new.n))*perturbation[3]
-   new.sd$data<-new.sd$data+TWCR.sds(new.sd$data,new.n)*perturbation[4]
-   return(TWCR.relative.entropy(old.mean,old.sd,new.mean,new.sd))
-}   
 
 # Estimate the standard deviation of the standard deviation
 #  of a sample of n observations (assuming the distribution is normal).
