@@ -603,27 +603,32 @@ TWCR.relative.entropy<-function(old.mean,old.sd,new.mean,
 #' @param new.mean Field of best estimates from TWCR
 #' @param new.sd Field of standard deviations from TWCR
 #' @param new.n number of ensembles making up TWCR (default=56).
-#' @param n.sigma number of standard deviations to perturb
-#'  by (default=1).
 #' @return list with components upper (field of RE+n*sigma) and
 #'   lower (field of RE-n*sigma).
 TWCR.relative.entropy.spread<-function(old.mean,old.sd,new.mean,
                                        new.sd,new.n=56,
-                                       n.sigma=1) {
-  base<-TWCR.relative.entropy(old.mean,old.sd,new.mean,new.sd)
-  perturbed.mean<-new.mean
-  mean.perturbation<-(new.sd$data/sqrt(new.n))*n.sigma
-  perturbed.mean$data[]<-perturbed.mean$data+mean.perturbation
-  perturbed.mean<-TWCR.relative.entropy(old.mean,old.sd,perturbed.mean,new.sd)
-  perturbed.mean$data[]<-perturbed.mean$data-base$data
-  perturbed.sd<-new.sd
-  sd.perturbation<-TWCR.sds(new.sd$data,new.n)*n.sigma
-  perturbed.sd$data[]<-perturbed.sd$data+sd.perturbation
-  perturbed.sd<-TWCR.relative.entropy(old.mean,old.sd,new.mean,perturbed.sd)
-  perturbed.sd$data[]<-perturbed.sd$data-base$data
+                                       perturbed.mean=NULL,
+                                       perturbed.sd=NULL) {
+  base.re<-TWCR.relative.entropy(old.mean,old.sd,new.mean,new.sd)
+  if(is.null(perturbed.mean)) {
+     perturbed.mean<-new.mean
+     perturbed.mean$data[]<-new.mean$data*1.05
+   }
+  perturbed.mean.re<-TWCR.relative.entropy(old.mean,old.sd,perturbed.mean,new.sd)
+  perturbed.mean$data[]<-perturbed.mean$data-new.mean$data
+  perturbed.mean.re$data[]<-perturbed.mean.re$data-base.re$data
+  if(is.null(perturbed.sd)) {
+     perturbed.sd<-new.sd
+     perturbed.sd$data[]<-new.sd$data*1.05
+   }
+  perturbed.sd.re<-TWCR.relative.entropy(old.mean,old.sd,new.mean,perturbed.sd)
+  perturbed.sd$data[]<-perturbed.sd$data-new.sd$data
+  perturbed.sd.re$data[]<-perturbed.sd.re$data-base.re$data
+  mean.sd<-new.sd$data/sqrt(new.n)
+  sd.sd<-TWCR.sds(new.sd$data,new.n)
   spread<-new.mean
-  spread$data[]<-sqrt((perturbed.mean$data/mean.perturbation)**2+
-                      (perturbed.sd$data/sd.perturbation)**2)
+  spread$data[]<-sqrt(((perturbed.mean.re$data/perturbed.mean$data)**2)*mean.sd**2+
+                      ((perturbed.sd.re$data/perturbed.sd$data)**2)*sd.sd**2)
   return(spread)
 }
 
@@ -634,3 +639,4 @@ TWCR.sds<-function(s,n){
   v2<-sqrt((n-1)/2 - v1**2)
   return(s*v2/v1)
 }
+
