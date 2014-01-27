@@ -93,7 +93,9 @@ TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=NULL,ve
                 name<-sprintf("%s/hourly/normals/%s.nc",base.dir,variable)
         }
         if(type=='standard.deviation') {
-                name<-sprintf("%s/hourly/standard.deviations/%s.nc",base.dir,variable)
+                if(month==2 && day==29) day=28
+                name<-sprintf("%s/hourly/standard.deviations/%s/sd.%02d.%02d.%02d.rdata",
+                               base.dir,variable,month,day,hour)
         }
         if(type=='mean') {
            name<-sprintf("%s/hourly/%s/%s.%04d.nc",base.dir,
@@ -145,6 +147,12 @@ TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=NULL,ve
         if(TWCR.get.variable.group(variable)=='pressure') {
           return(sprintf("%s/Derived/4Xdailies/pressure/%s.4Xday.1981-2010.ltm.nc",base.dir,variable))
         } 
+    }
+    if(type=='standard.deviation') {
+      if(version==2) version<-'3.2.1'
+      if(month==2 && day==29) day<-28
+      return(sprintf("http://s3.amazonaws.com/philip.brohan.org.20CR/version_%s/hourly/standard.deviations/%s/sd.%02d.%02d.%02d.rdata",
+                    version,variable,month,day,hour))
     }
     stop(sprintf("Unsupported opendap data type %s",type))      
 }
@@ -456,6 +464,10 @@ TWCR.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
 	# Is it from an analysis time (no need to interpolate)?
 	if(TWCR.is.in.file(variable,year,month,day,hour,type=type)) {
         file.name<-TWCR.hourly.get.file.name(variable,year,month,day,hour,opendap=opendap,version=version,type=type)
+           if(type=='standard.deviation') { # sd's are a special case
+              load(file.name)
+              return(twcr.sd)
+           }   
            t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                     format=c(dates='y/m/d',times='h:m:s'))
            if(type=='normal') { # Normals are for year 1, which chron can't handle, and have no Feb 29
@@ -464,10 +476,6 @@ TWCR.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
               t<-chron(as.numeric(t)+729)
               if(leap.year(year) && (month>2 || (month==2 && day==29))) t<-t-24
            }
-           if(type=='standard.deviation') { # Local sd files are for 1964
-              t<-chron(sprintf("%04d/%02d/%02d",1964,month,day),sprintf("%02d:00:00",hour),
-                       format=c(dates='y/m/d',times='h:m:s'))
-           }   
            v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(0,360),
                              height.range=rep(height,2),time.range=c(t,t))
 	   return(v)
