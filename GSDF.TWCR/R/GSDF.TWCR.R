@@ -465,7 +465,13 @@ TWCR.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
 	if(TWCR.is.in.file(variable,year,month,day,hour,type=type)) {
         file.name<-TWCR.hourly.get.file.name(variable,year,month,day,hour,opendap=opendap,version=version,type=type)
            if(type=='standard.deviation') { # sd's are a special case
-              load(file.name)
+              if(grepl('://',file.name)) { # Is it a URL?
+                u<-url(file.name)
+                load(u)
+                close(u)
+              } else {
+                 load(file.name)
+              }
               return(twcr.sd)
            }   
            t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
