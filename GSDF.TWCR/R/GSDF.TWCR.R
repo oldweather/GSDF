@@ -48,7 +48,7 @@ TWCR.show.variables<-function() {
 #'  the right base directory for the system (if there is one).
 #'
 #' @export
-#' @return Base directory name
+#' @return Base directory name (or NULL is no local files)
 TWCR.get.data.dir<-function(version=2) {
     if(file.exists(sprintf("/Volumes/DataDir/20CR/version_%s/",version))) {
             return(sprintf("/Volumes/DataDir/20CR/version_%s/",version))
@@ -59,7 +59,7 @@ TWCR.get.data.dir<-function(version=2) {
     if(file.exists(sprintf("/project/projectdirs/incite11/brohan/netCDF.data/20CR_v%s/",version))) {
             return(sprintf("/project/projectdirs/incite11/brohan/netCDF.data/20CR_v%s/",version))
     }	
-    stop(paste("Unsupported system - no base directory for version",version))
+    return(NULL)
 }
 
 # Get class of variable: monolevel, pressure-level, gaussian
@@ -88,26 +88,28 @@ TWCR.get.variable.group<-function(variable) {
 TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=NULL,version=2,type='mean') {
    if(is.null(opendap) || opendap==FALSE) {
         base.dir<-TWCR.get.data.dir(version)
-        name<-NULL
-        if(type=='normal') {
-                name<-sprintf("%s/hourly/normals/%s.nc",base.dir,variable)
-        }
-        if(type=='standard.deviation') {
-                if(month==2 && day==29) day=28
-                name<-sprintf("%s/hourly/standard.deviations/%s/sd.%02d.%02d.%02d.rdata",
-                               base.dir,variable,month,day,hour)
-        }
-        if(type=='mean') {
-           name<-sprintf("%s/hourly/%s/%s.%04d.nc",base.dir,
-                       variable,variable,year)
-        }
-        if(type=='spread') {
-           name<-sprintf("%s/hourly/%s/%s.%04d.spread.nc",base.dir,
-                       variable,variable,year)
-        }
-        if(is.null(name)) stop(sprintf("Unsupported data type %s",type))
-        if(file.exists(name)) return(name)
-        if(!is.null(opendap) && opendap==FALSE) stop(sprintf("No local file %s",name))
+        if(!is.null(base.dir)) {
+            name<-NULL
+            if(type=='normal') {
+                    name<-sprintf("%s/hourly/normals/%s.nc",base.dir,variable)
+            }
+            if(type=='standard.deviation') {
+                    if(month==2 && day==29) day=28
+                    name<-sprintf("%s/hourly/standard.deviations/%s/sd.%02d.%02d.%02d.rdata",
+                                   base.dir,variable,month,day,hour)
+            }
+            if(type=='mean') {
+               name<-sprintf("%s/hourly/%s/%s.%04d.nc",base.dir,
+                           variable,variable,year)
+            }
+            if(type=='spread') {
+               name<-sprintf("%s/hourly/%s/%s.%04d.spread.nc",base.dir,
+                           variable,variable,year)
+            }
+            if(is.null(name)) stop(sprintf("Unsupported data type %s",type))
+            if(file.exists(name)) return(name)
+            if(!is.null(opendap) && opendap==FALSE) stop(sprintf("No local file %s",name))
+          }
       }
     if(version!=2 && version!='3.2.1') stop('Opendap only available for version 2')
     base.dir<-'http://www.esrl.noaa.gov/psd/thredds/dodsC/Datasets/20thC_ReanV2/'
@@ -174,24 +176,26 @@ TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=NULL,ve
 TWCR.monthly.get.file.name<-function(variable,year,month,opendap=NULL,version=2,type='mean') {
    if(is.null(opendap) || opendap==FALSE) {
         base.dir<-TWCR.get.data.dir(version)
-        name<-NULL
-        if(type=='normal') {
-                name<-sprintf("%s/monthly/normals/%s.pp",base.dir,variable)
-        }
-        if(type=='standard.deviation') {
-                name<-sprintf("%s/monthly/standard.deviations/%s.pp",base.dir,variable)
-        }
-        if(type=='mean') {
-           name<-sprintf("%s/monthly/variables/%s.mean.nc",base.dir,
-                       variable)
-        }
-        if(type=='spread') {
-           name<-sprintf("%s/monthly/variables/%s.spread.nc",base.dir,
-                       variable)
-         }
-        if(is.null(name)) stop(sprintf("Unsupported data type %s",type))
-        if(file.exists(name)) return(name)
-        if(!is.null(opendap) && opendap==FALSE) stop(sprintf("No local file %s",name))
+        if(!is.null(base.dir)) {
+            name<-NULL
+            if(type=='normal') {
+                    name<-sprintf("%s/monthly/normals/%s.pp",base.dir,variable)
+            }
+            if(type=='standard.deviation') {
+                    name<-sprintf("%s/monthly/standard.deviations/%s.pp",base.dir,variable)
+            }
+            if(type=='mean') {
+               name<-sprintf("%s/monthly/variables/%s.mean.nc",base.dir,
+                           variable)
+            }
+            if(type=='spread') {
+               name<-sprintf("%s/monthly/variables/%s.spread.nc",base.dir,
+                           variable)
+             }
+            if(is.null(name)) stop(sprintf("Unsupported data type %s",type))
+            if(file.exists(name)) return(name)
+            if(!is.null(opendap) && opendap==FALSE) stop(sprintf("No local file %s",name))
+          }
       }
     if(version!=2 && version!='3.2.1') stop('Opendap only available for version 2')
     base.dir<-'http://www.esrl.noaa.gov/psd/thredds/dodsC/Datasets/20thC_ReanV2/'
@@ -248,6 +252,7 @@ TWCR.monthly.get.file.name<-function(variable,year,month,opendap=NULL,version=2,
 #' @return A data frame - one row for each observation.
 TWCR.get.obs.1file<-function(year,month,day,hour,version=2) {
     base.dir<-TWCR.get.data.dir(version)
+    if(is.null(base.dir)) stop("No local TWCR files on this system")
     of.name<-sprintf(
                 "%s/observations/%04d/prepbufrobs_assim_%04d%02d%02d%02d.txt",base.dir,
                 year,year,month,day,hour)
@@ -324,6 +329,7 @@ TWCR.get.obs.1file<-function(year,month,day,hour,version=2) {
 #' @return A data frame - one row for each observation.
 TWCR.get.obs<-function(year,month,day,hour,version=2,range=0.5) {
     base.dir<-TWCR.get.data.dir(version)
+    if(is.null(base.dir)) stop("No local TWCR files on this system")
     today<-chron(dates=sprintf("%04d/%02d/%02d",year,month,day),
           times=sprintf("%02d:00:00",hour),
           format=c(dates='y/m/d',times='h:m:s'))
