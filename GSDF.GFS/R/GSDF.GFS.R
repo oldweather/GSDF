@@ -198,40 +198,43 @@ GFS.get.interpolation.times<-function(variable,year,month,day,hour,type='member'
 #' @param height Height in hPa - leave NULL for monolevel
 #' @param opendap Must be TRUE - no local option currently supported.
 #' @return A GSDF field with lat and long as extended dimensions
-GFS.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,opendap=TRUE,
+GFS.get.member.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,opendap=TRUE,
                                   type='member',member=0,lead=0) {
-   group<-MERRA.get.variable.group(variable)
-   if(group=='MAT1NXSLV' || group=='MAI1NXINT' || group=='MAT1NXFLX' ||
-      group=='MAT1NXINT' || group=='MAT1NXLND' || group=='MAT1NXRAD') {
+   group<-GFS.get.variable.group(variable)
+   if(group=='monolevel') {
     if(!is.null(height)) warning("Ignoring height specification for monolevel variable")
-    return(MERRA.get.slice.at.level.at.hour(variable,year,month,day,hour,opendap=opendap,type=type))
+    return(GFS.get.slice.at.level.at.hour(variable,year,month,day,hour,opendap=opendap,type=type,
+                                          member=member,lead=lead))
   }
   # Find levels above and below selected height, and interpolate between them
   if(is.null(height)) stop(sprintf("No height specified for pressure variable %s",variable))
-  if(height>1000 || height<0.1) stop("Height must be between 0.1 and 1000 hPa")
-  level.below<-max(which(MERRA.heights>=height))
-  if(height==MERRA.heights[level.below]) {
-    return(MERRA.get.slice.at.level.at.hour(variable,year,month,day,hour,height=MERRA.heights[level.below],
-                                          opendap=opendap,type=type))
+  if(height>max(GFS.heights[[group]]) || height<min(GFS.heights[[group]])) {
+    stop("Height outside range for %s: %f to %f",variable,max(GFS.heights[[group]]),
+                                                          min(GFS.heights[[group]]))
   }
-  below<-MERRA.get.slice.at.level.at.hour(variable,year,month,day,hour,height=MERRA.heights[level.below],
-                                         opendap=opendap,type=type)
-  above<-MERRA.get.slice.at.level.at.hour(variable,year,month,day,hour,height=MERRA.heights[level.below+1],
-                                         opendap=opendap,type=type)
-  above.weight<-(MERRA.heights[level.below]-height)/(MERRA.heights[level.below]-
-                             MERRA.heights[level.below+1])
+  level.below<-max(which(GFS.heights[[group]]>=height))
+  if(height==GFS.heights[[group]][level.below]) {
+    return(GFS.get.slice.at.level.at.hour(variable,year,month,day,hour,height=GFS.heights[[group]][level.below],
+                                          opendap=opendap,type=type,member=member,lead=lead))
+  }
+  below<-GFS.get.slice.at.level.at.hour(variable,year,month,day,hour,height=GFS.heights[[group]][level.below],
+                                         opendap=opendap,type=type,member=member,lead=lead)
+  above<-GFS.get.slice.at.level.at.hour(variable,year,month,day,hour,height=GFS.heights[[group]][level.below+1],
+                                         opendap=opendap,type=type,member=member,lead=lead)
+  above.weight<-(GFS.heights[[group]][level.below]-height)/(GFS.heights[[group]][level.below]-
+                             GFS.heights[[group]][level.below+1])
   below$data<-below$data*(1-above.weight)+above$data*above.weight
   idx.h<-GSDF.find.dimension(below,'height')
   below$dimensions[[idx.h]]$value<-height
   return(below)
 }
 
-MERRA.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,
-                                                   height=NULL,opendap=TRUE,type='mean') {
+GFS.get.member.slice.at.level.at.hour<-function(variable,year,month,day,hour,
+                                                   height=NULL,opendap=TRUE,type='member',member=0,lead=0) {
 	dstring<-sprintf("%04d-%02d-%02d:%02d",year,month,day,hour)
 	# Is it from an analysis time (no need to interpolate)?
-	if(MERRA.is.in.file(variable,year,month,day,hour,type=type)) {
-        file.name<-MERRA.hourly.get.file.name(variable,year,month,day,hour,opendap=opendap,type=type)
+	if(GFS.is.in.file(variable,year,month,day,hour,type=type,member=member,lead=lead)) {
+        file.name<-GFS.hourly.get.file.name(variable,year,month,day,hour,opendap=opendap,type=type)
            t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                     format=c(dates='y/m/d',times='h:m:s'))
            v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(-180,180),
