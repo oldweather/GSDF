@@ -34,20 +34,20 @@ GFS.monolevel<-c('no4lftxsfc','no5wava500mb','no5wavh500mb','acpcpsfc','albdosfc
                  'watrsfc','weasdsfc')
 
 # 4 different sets of heights
-GFH.heights<-list()
+GFS.heights<-list()
                  
-GFH.heights[['all']]<-c(1000,975,950,925,900,850,800,750,700,650,600,550,500,450, 
+GFS.heights[['all']]<-c(1000,975,950,925,900,850,800,750,700,650,600,550,500,450, 
                          400,350,300,250,200,150,100,70,50,30,20,10)
-GFS.h.all<-c('absvprs','hgtprs','tmpprs','ugrdprs','vgrdprs'
+GFS.h.all<-c('absvprs','hgtprs','tmpprs','ugrdprs','vgrdprs')
 
-GFH.heights[['trop']]<-c(1000,975,950,925,900,850,800,750,700,650,600,550,500,450, 
+GFS.heights[['trop']]<-c(1000,975,950,925,900,850,800,750,700,650,600,550,500,450, 
                          400,350,300,250,200,150,100)
 GFS.h.trop<-c('clwmrprs','rhprs','vvelprs')
 
-GFH.heights[['trop2']]<-c(1000,925,850,700,500,300,250,200)
+GFS.heights[['trop2']]<-c(1000,925,850,700,500,300,250,200)
 GFS.h.trop2<-c('spfhprs')
 
-GFH.heights[['strat']]<-c(100,70,50,30,20,10)
+GFS.heights[['strat']]<-c(100,70,50,30,20,10)
 GFS.h.strat<-c('o3mrprs')
 
 
@@ -101,9 +101,9 @@ GFS.get.variable.group<-function(variable) {
 GFS.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=TRUE,type='member',member=0) {
     if(opendap) {
         if(type!='member') stop("Type must be 'member' for a file name")
-        base.dir<-'http://nomads.ncep.noaa.gov:9090/dods/gens/gens20140118/gec00_00z'
-        if(member==0) return(sprintf("%s%04d%02d%02d/gec00_%02dz",year,month,day,hour))
-        if(member<=20) return(sprintf("%s%04d%02d%02d/gep%02d_%02dz",year,month,day,member,hour))
+        base.dir<-'http://nomads.ncep.noaa.gov:9090/dods/gens/gens'
+        if(member==0) return(sprintf("%s%04d%02d%02d/gec00_%02dz",base.dir,year,month,day,hour))
+        if(member<=20) return(sprintf("%s%04d%02d%02d/gep%02d_%02dz",base.dir,year,month,day,member,hour))
         stop("member must be in 1..20")
     }     
     else {
@@ -112,7 +112,7 @@ GFS.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=TRUE,typ
 }
 
 
-GFS.is.in.file<-function(variable,year,month,day,hour,type='member',member=0) {
+GFS.is.in.file<-function(variable,year,month,day,hour,type='member',member=0,lead=0) {
       if(hour%%6==0) return(TRUE)
       return(FALSE)
 }
@@ -199,11 +199,11 @@ GFS.get.interpolation.times<-function(variable,year,month,day,hour,type='member'
 #' @param opendap Must be TRUE - no local option currently supported.
 #' @return A GSDF field with lat and long as extended dimensions
 GFS.get.member.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,opendap=TRUE,
-                                  type='member',member=0,lead=0) {
+                                       member=1,lead=0) {
    group<-GFS.get.variable.group(variable)
    if(group=='monolevel') {
     if(!is.null(height)) warning("Ignoring height specification for monolevel variable")
-    return(GFS.get.slice.at.level.at.hour(variable,year,month,day,hour,opendap=opendap,type=type,
+    return(GFS.get.member.slice.at.level.at.hour(variable,year,month,day,hour,opendap=opendap,
                                           member=member,lead=lead))
   }
   # Find levels above and below selected height, and interpolate between them
@@ -214,13 +214,13 @@ GFS.get.member.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,
   }
   level.below<-max(which(GFS.heights[[group]]>=height))
   if(height==GFS.heights[[group]][level.below]) {
-    return(GFS.get.slice.at.level.at.hour(variable,year,month,day,hour,height=GFS.heights[[group]][level.below],
-                                          opendap=opendap,type=type,member=member,lead=lead))
+    return(GFS.get.member.slice.at.level.at.hour(variable,year,month,day,hour,height=GFS.heights[[group]][level.below],
+                                          opendap=opendap,member=member,lead=lead))
   }
-  below<-GFS.get.slice.at.level.at.hour(variable,year,month,day,hour,height=GFS.heights[[group]][level.below],
-                                         opendap=opendap,type=type,member=member,lead=lead)
-  above<-GFS.get.slice.at.level.at.hour(variable,year,month,day,hour,height=GFS.heights[[group]][level.below+1],
-                                         opendap=opendap,type=type,member=member,lead=lead)
+  below<-GFS.get.member.slice.at.level.at.hour(variable,year,month,day,hour,height=GFS.heights[[group]][level.below],
+                                         opendap=opendap,member=member,lead=lead)
+  above<-GFS.get.member.slice.at.level.at.hour(variable,year,month,day,hour,height=GFS.heights[[group]][level.below+1],
+                                         opendap=opendap,member=member,lead=lead)
   above.weight<-(GFS.heights[[group]][level.below]-height)/(GFS.heights[[group]][level.below]-
                              GFS.heights[[group]][level.below+1])
   below$data<-below$data*(1-above.weight)+above$data*above.weight
@@ -230,29 +230,33 @@ GFS.get.member.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,
 }
 
 GFS.get.member.slice.at.level.at.hour<-function(variable,year,month,day,hour,
-                                                   height=NULL,opendap=TRUE,type='member',member=0,lead=0) {
+                                                   height=NULL,opendap=TRUE,member=1,lead=0) {
 	dstring<-sprintf("%04d-%02d-%02d:%02d",year,month,day,hour)
 	# Is it from an analysis time (no need to interpolate)?
-	if(GFS.is.in.file(variable,year,month,day,hour,type=type,member=member,lead=lead)) {
-        file.name<-GFS.hourly.get.file.name(variable,year,month,day,hour,opendap=opendap,type=type)
+	if(GFS.is.in.file(variable,year,month,day,hour,type='member',member=member,lead=lead)) {
+        file.name<-GFS.hourly.get.file.name(variable,year,month,day,hour,opendap=opendap,type='member')
            t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                     format=c(dates='y/m/d',times='h:m:s'))
-           v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(-180,180),
-                             height.range=rep(height,2),time.range=c(t,t+1/24-0.001))
+           t<-t+2 # GFS timestamps seem to be two days out - why?
+           v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(0,360),
+                             height.range=rep(height,2),time.range=c(t+lead/24,t+lead/24+1/24-0.001),
+                             ens.range=rep(member,2))
 	   return(v)
 	}
 	# Interpolate from the previous and subsequent analysis times
-	interpolation.times<-MERRA.get.interpolation.times(variable,year,month,day,hour,type=type)
-	v1<-MERRA.get.slice.at.level.at.hour(variable,interpolation.times[[1]]$year,
+	interpolation.times<-GSDF.get.interpolation.times(variable,year,month,day,hour,type=type)
+	v1<-GFS.get.member.slice.at.level.at.hour(variable,interpolation.times[[1]]$year,
                                                   interpolation.times[[1]]$month,
 		                                  interpolation.times[[1]]$day,
                                                   interpolation.times[[1]]$hour,
-                                                  opendap=opendap,type=type,height=height)
-	v2<-MERRA.get.slice.at.level.at.hour(variable,interpolation.times[[2]]$year,
+                                                  opendap=opendap,type=type,height=height,
+                                                  member=member,lead=lead)
+	v2<-GFS.get.member.slice.at.level.at.hour(variable,interpolation.times[[2]]$year,
                                                   interpolation.times[[2]]$month,
 		                                  interpolation.times[[2]]$day,
                                                   interpolation.times[[2]]$hour,
-                                                  opendap=opendap,type=type,height=height)
+                                                  opendap=opendap,type=type,height=height,
+                                                  member=member,lead=lead)
 	c1<-chron(dates=sprintf("%04d/%02d/%02d",interpolation.times[[1]]$year,
 	                                         interpolation.times[[1]]$month,
 	                                         interpolation.times[[1]]$day),

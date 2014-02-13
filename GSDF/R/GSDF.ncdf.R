@@ -16,6 +16,8 @@
 #'  Leave NULL only if variable has no longitude dimension.
 #' @param height.range Two-element vector with max and min heights to retrieve.
 #'  Leave NULL only if variable has no height dimension.
+#' @param ens.range Two-element vector with max and min ensemble members to retrieve.
+#'  Leave NULL only if variable has no ensemble dimension.
 #' @param time.range Two-element vector of chron with max and min times to retrieve.
 #'  Leave NULL only if variable has no time dimension.
 #' @param default.calendar What calendar does file use (if not specified in file)? 
@@ -26,15 +28,18 @@
 #'  try to guess it.
 #' @param height.name Text name used by file as label of height variable. If NULL, will
 #'  try to guess it.
+#' @param ens.name Text name used by file as label of ensemble number variable. If NULL, will
+#'  try to guess it.
 #' @param time.name Text name used by file as label of time variable. If NULL, will
 #'  try to guess it.
 #' @return GSDF field with selected subset of file data.
 GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
                          height.range=NULL,time.range=NULL,
-                         custom.range=NULL,
+                         ens.range=NULL,custom.range=NULL,
                          default.calendar='gregorian',
                          lat.name=NULL,lon.name=NULL,
-                         height.name=NULL,time.name=NULL) {
+                         height.name=NULL,time.name=NULL,
+                         ens.name=NULL) {
    f<-nc_open(file)
    v<-f$var[[variable]]
    if(is.null(v)) v<-f$var[[1]] # Fixes TWCR cases where var has different name from file
@@ -50,6 +55,10 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
    height.i<-GSDF.ncdf.get.height(v,height.name)
    if(is.null(height.range) && !is.null(height.i)) {
       stop('Height range required (height.range=c(850,850)')
+   } 
+   ens.i<-GSDF.ncdf.get.ens(v,ens.name)
+   if(is.null(ens.range) && !is.null(ens.i)) {
+      stop('Ensemble range required (ensemble.range=c(1,1)')
    } 
    time.i<-GSDF.ncdf.get.time(v,time.name)
    if(is.null(time.range) && !is.null(time.i)) {
@@ -75,6 +84,24 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
          count[d]<-max(which(v$dim[[d]]$vals>=min(lon.range) &
                              v$dim[[d]]$vals<=max(lon.range)))-start[d]+1
          result$dimensions[[d]]<-list('type'='lon',
+                    'values'=v$dim[[d]]$vals[seq(start[d],start[d]+count[d]-1)])
+         next
+      }
+      if(!is.null(height.i) && height.i==d) {
+         start[d]<-min(which(v$dim[[d]]$vals>=min(height.range) &
+                             v$dim[[d]]$vals<=max(height.range)))
+         count[d]<-max(which(v$dim[[d]]$vals>=min(height.range) &
+                             v$dim[[d]]$vals<=max(height.range)))-start[d]+1
+         result$dimensions[[d]]<-list('type'='height',
+                    'values'=v$dim[[d]]$vals[seq(start[d],start[d]+count[d]-1)])
+         next
+      }
+      if(!is.null(ens.i) && ens.i==d) {
+         start[d]<-min(which(v$dim[[d]]$vals>=min(ens.range) &
+                             v$dim[[d]]$vals<=max(ens.range)))
+         count[d]<-max(which(v$dim[[d]]$vals>=min(ens.range) &
+                             v$dim[[d]]$vals<=max(ens.range)))-start[d]+1
+         result$dimensions[[d]]<-list('type'='ensemble',
                     'values'=v$dim[[d]]$vals[seq(start[d],start[d]+count[d]-1)])
          next
       }
@@ -143,6 +170,14 @@ GSDF.ncdf.is.time <- function(dimension,time.name) {
     if(regexpr('time',dimension$name,ignore.case = T)>0) return(T)
     return(F)
 }
+GSDF.ncdf.is.ens <- function(dimension,ens.name) {
+    if(!is.null(ens.name)) {
+      if(regexpr(ens.name,dimension$name,ignore.case = T)>0) return(TRUE)
+      return(FALSE)
+    }
+    if(regexpr('ens',dimension$name,ignore.case = T)>0) return(T)
+    return(F)
+}
 
 # Given a variable, get the latitude values
 # Pass an instance of class 'var.ncdf' (?var.def.ncdf)
@@ -163,6 +198,13 @@ GSDF.ncdf.get.lon <- function(variable,lon.name) {
 GSDF.ncdf.get.height <- function(variable,height.name) {
    for(i in seq(1,variable$ndims)) {
       if(GSDF.ncdf.is.height(variable$dim[[i]],height.name)) return(i)
+   }
+   return(NULL)
+}
+# Same for ensemble number
+GSDF.ncdf.get.ens <- function(variable,ens.name) {
+   for(i in seq(1,variable$ndims)) {
+      if(GSDF.ncdf.is.ens(variable$dim[[i]],ens.name)) return(i)
    }
    return(NULL)
 }
@@ -245,7 +287,7 @@ GSDF.ncdf.offset.to.date<-function(offset,start,calendar) {
   }
   if(calendar=='gregorian' || calendar=='standard' || calendar=='julian') { # GFDL claims to be Julian - surely lying.
     offset<-offset+start.hour+start.minute/60
-    base<-chron(sprintf("%02d/%02d/%04d",start.month,start.day,start.year),
+    base<-chron(as.numeric(as.Date(sprintf("%02d-%02d-%04d",start.day,start.month,start.year), format = "%d-%m-%Y")),
                 sprintf("%02d:%02d:%02d",0,0,0),format = c(dates = "m/d/y", times = "h:m:s"))
     offset<-chron(as.numeric(base)+offset/24)
     return(offset)
