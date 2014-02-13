@@ -1,0 +1,16 @@
+\name{GFS.show.variables}
+\alias{GFS.show.variables}
+\title{GFS show variables}
+\usage{
+  GFS.show.variables()
+}
+\description{
+  List all the variables available in the GFS ensemble.
+}
+\details{
+  Two sorts of variables: \describe{ \item{Monolevel} {Lat
+  x Lon x Time} \item{Pressure level} {Lat x Lon x Height x
+  Time} } This function has no parmeters and returns no
+  value it prints a list of available variables.
+}
+
