@@ -104,83 +104,78 @@ GFS.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=TRUE,typ
         base.dir<-'http://nomads.ncep.noaa.gov:9090/dods/gens/gens'
         if(member==0) return(sprintf("%s%04d%02d%02d/gec00_%02dz",base.dir,year,month,day,hour))
         if(member<=20) return(sprintf("%s%04d%02d%02d/gep%02d_%02dz",base.dir,year,month,day,member,hour))
-        stop("member must be in 1..20")
+        stop("member must be in 0..20")
     }     
     else {
         stop(sprintf("GFS only available via openDAP"))
    }
 }
 
-
-GFS.is.in.file<-function(variable,year,month,day,hour,type='member',member=0,lead=0) {
-      if(hour%%6==0) return(TRUE)
+GFS.is.in.file<-function(hour,lead) {
+      if(hour%%6==0 && lead%%6==0) return(TRUE)
       return(FALSE)
 }
 
-# Go backward and forward in hours to find previous and subsequent
-#  hours at an analysis time.
-# Could do this directly, but it's vital to keep get.interpolation.times
-# and is.in.file consistent.
-GFS.get.interpolation.times<-function(variable,year,month,day,hour,type='member',member=0) {
-	if(GFS.is.in.file(variable,year,month,day,hour,type=type,member=member)) {
-		stop("Internal interpolation failure")
-	}
+# GFS has an analysis every 6 hours, and each analysis has 64 forecast steps at 6-hour intervals
+#  so in general need to interpolate between forecast steps and between analysis times
+GFS.get.interpolation.times<-function(variable,year,month,day,hour,lead=0) {
+   interpolation.points<-list()
+   if(hour%%6==0) { # At an analysis time - no need to interpolate that
+       interpolation.points[[1]]<-list(
+          year=year,
+          month=month,
+          day=day,
+          hour=hour)     
+     if(lead%%6==0) { # Also at a forecast step - no need to interpolate at all
+       interpolation.points[[1]]$lead=lead
+       interpolation.points[[1]]$weight=1
+       return(interpolation.points)
+     } else {
+        interpolation.points[[2]]<-interpolation.points[[1]]
+        interpolation.points[[1]]$lead<-lead-lead%%6
+        interpolation.points[[1]]$weight<-(6-lead%%6)/6
+        interpolation.points[[2]]$lead<-interpolation.points[[1]]$lead+6
+        interpolation.points[[2]]$weight<-1-interpolation.points[[1]]$weight
+        return(interpolation.points)
+      }
+   } else { # Interpolate the analysis time
 	ct<-chron(dates=sprintf("%04d/%02d/%02d",year,month,day),
 	          times=sprintf("%02d:00:00",hour),
 	          format=c(dates='y/m/d',times='h:m:s'))
-	t.previous<-list()
-        back.hours=1
-	while(back.hours<24) {
-		p.hour<-hour-back.hours
-                p.year<-year
-                p.month<-month
-                p.day<-day
-                if(p.hour<0) {
-                  p.year<-as.numeric(as.character(years(ct-1)))
-                  p.month<-months(ct-1)
-                  p.day<-days(ct-1)
-                  p.hour<-p.hour+24
-                }
-		if(GFS.is.in.file(variable,p.year,p.month,p.day,p.hour,type=type,member=member)) {
-			t.previous$year<-p.year
-			t.previous$month<-p.month
-			t.previous$day<-p.day
-			t.previous$hour<-p.hour
-			break
-		}
-                back.hours<-back.hours+1
-	}
-	if(length(t.previous)<4) {
-		stop("Interpolation failure, too far back")
-	}
-	t.next<-list()
-	forward.hours<-1
-	while(forward.hours<24) {
-		n.hour<-hour+forward.hours
-                n.year<-year
-                n.month<-month
-                n.day<-day
-                if(n.hour>23) {
-                  n.year<-as.numeric(as.character(years(ct+1)))
-                  n.month<-months(ct+1)
-                  n.day<-days(ct+1)
-                  n.hour<-n.hour-24
-                }
-		if(GFS.is.in.file(variable,n.year,n.month,n.day,n.hour,type=type,member=member)) {
-			t.next$year<-n.year
-			t.next$month<-n.month
-			t.next$day<-n.day
-			t.next$hour<-n.hour
-			break
-		}
-                forward.hours<-forward.hours+1
-	}
-	if(length(t.next)<4) {
-		stop("Interpolation failure, too far forward")
-	}
-	return(list(t.previous,t.next))
-}
-
+        cp<-ct-(hour%%6)/24
+        cn<-cp+0.25
+        interpolation.points[[1]]<-list(
+             year=as.numeric(as.character(years(cp))),
+             month=months(cp),
+             day=days(cp),
+             hour=hours(cp))
+        interpolation.points[[2]]<-list(
+             year=as.numeric(as.character(years(cn))),
+             month=months(cn),
+             day=days(cn),
+             hour=hours(cn))
+        if(lead%%6==0) { # At a forecast step
+           interpolation.points[[1]]$lead<-lead
+           interpolation.points[[1]]$weight<-(6-hour%%6)/6
+           interpolation.points[[2]]$lead<-lead
+           interpolation.points[[2]]$weight<-1-interpolation.points[[1]]$weight
+           return(interpolation.points)
+        } else { # Interpolate the forecast step as well
+           interpolation.points[[3]]<-interpolation.points[[1]]
+           interpolation.points[[4]]<-interpolation.points[[2]]
+           interpolation.points[[1]]$lead<-lead-lead%%6
+           interpolation.points[[2]]$lead<-lead-lead%%6
+           interpolation.points[[1]]$weight<-((6-hour%%6)/6)*((6-lead%%6)/6)
+           interpolation.points[[2]]$weight<-(1-(6-hour%%6)/6)*((6-lead%%6)/6)
+           interpolation.points[[3]]$lead<-interpolation.points[[1]]$lead+6
+           interpolation.points[[4]]$lead<-interpolation.points[[2]]$lead+6
+           interpolation.points[[3]]$weight<-((6-hour%%6)/6)*(1-(6-lead%%6)/6)
+           interpolation.points[[4]]$weight<-(1-(6-hour%%6)/6)*(1-(6-lead%%6)/6)
+           return(interpolation.points)
+        }
+     }
+ }
+        
 # This is the function users will call.
 #' Get slice at hour.
 #'
@@ -214,13 +209,16 @@ GFS.get.member.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,
   }
   level.below<-max(which(GFS.heights[[group]]>=height))
   if(height==GFS.heights[[group]][level.below]) {
-    return(GFS.get.member.slice.at.level.at.hour(variable,year,month,day,hour,height=GFS.heights[[group]][level.below],
-                                          opendap=opendap,member=member,lead=lead))
+    return(GFS.get.member.slice.at.level.at.hour(variable,year,month,day,hour,
+                                                 height=GFS.heights[[group]][level.below],
+                                                 opendap=opendap,member=member,lead=lead))
   }
-  below<-GFS.get.member.slice.at.level.at.hour(variable,year,month,day,hour,height=GFS.heights[[group]][level.below],
-                                         opendap=opendap,member=member,lead=lead)
-  above<-GFS.get.member.slice.at.level.at.hour(variable,year,month,day,hour,height=GFS.heights[[group]][level.below+1],
-                                         opendap=opendap,member=member,lead=lead)
+  below<-GFS.get.member.slice.at.level.at.hour(variable,year,month,day,hour,
+                                               height=GFS.heights[[group]][level.below],
+                                               opendap=opendap,member=member,lead=lead)
+  above<-GFS.get.member.slice.at.level.at.hour(variable,year,month,day,hour,
+                                               height=GFS.heights[[group]][level.below+1],
+                                               opendap=opendap,member=member,lead=lead)
   above.weight<-(GFS.heights[[group]][level.below]-height)/(GFS.heights[[group]][level.below]-
                              GFS.heights[[group]][level.below+1])
   below$data<-below$data*(1-above.weight)+above$data*above.weight
@@ -231,52 +229,48 @@ GFS.get.member.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,
 
 GFS.get.member.slice.at.level.at.hour<-function(variable,year,month,day,hour,
                                                    height=NULL,opendap=TRUE,member=1,lead=0) {
-	dstring<-sprintf("%04d-%02d-%02d:%02d",year,month,day,hour)
-	# Is it from an analysis time (no need to interpolate)?
-	if(GFS.is.in.file(variable,year,month,day,hour,type='member',member=member,lead=lead)) {
-        file.name<-GFS.hourly.get.file.name(variable,year,month,day,hour,opendap=opendap,type='member')
-           t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
-                    format=c(dates='y/m/d',times='h:m:s'))
-           t<-t+2 # GFS timestamps seem to be two days out - why?
-           v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(0,360),
-                             height.range=rep(height,2),time.range=c(t+lead/24,t+lead/24+1/24-0.001),
-                             ens.range=rep(member,2))
-	   return(v)
-	}
-	# Interpolate from the previous and subsequent analysis times
-	interpolation.times<-GSDF.get.interpolation.times(variable,year,month,day,hour,type=type)
-	v1<-GFS.get.member.slice.at.level.at.hour(variable,interpolation.times[[1]]$year,
-                                                  interpolation.times[[1]]$month,
-		                                  interpolation.times[[1]]$day,
-                                                  interpolation.times[[1]]$hour,
-                                                  opendap=opendap,type=type,height=height,
-                                                  member=member,lead=lead)
-	v2<-GFS.get.member.slice.at.level.at.hour(variable,interpolation.times[[2]]$year,
-                                                  interpolation.times[[2]]$month,
-		                                  interpolation.times[[2]]$day,
-                                                  interpolation.times[[2]]$hour,
-                                                  opendap=opendap,type=type,height=height,
-                                                  member=member,lead=lead)
-	c1<-chron(dates=sprintf("%04d/%02d/%02d",interpolation.times[[1]]$year,
-	                                         interpolation.times[[1]]$month,
-	                                         interpolation.times[[1]]$day),
-	          times=sprintf("%02d:00:00",interpolation.times[[1]]$hour),
-	          format=c(dates='y/m/d',times='h:m:s'))
-	c2<-chron(dates=sprintf("%04d/%02d/%02d",interpolation.times[[2]]$year,
-	                                         interpolation.times[[2]]$month,
-	                                         interpolation.times[[2]]$day),
-	          times=sprintf("%02d:00:00",interpolation.times[[2]]$hour),
-	          format=c(dates='y/m/d',times='h:m:s'))
-	c3<-chron(dates=sprintf("%04d/%02d/%02d",year,month,day),
-	          times=sprintf("%02d:00:00",hour),
-	          format=c(dates='y/m/d',times='h:m:s'))
-    if(c2==c1) stop("Zero interval in time interpolation")
-    weight<-as.numeric((c2-c3)/(c2-c1))
-    v<-v1
+    # Is it from an analysis+forecast time (no need to interpolate)?
+    if(GFS.is.in.file(hour,lead)) {
+    file.name<-GFS.hourly.get.file.name(variable,year,month,day,hour,opendap=opendap,type='member')
+       t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
+                format=c(dates='y/m/d',times='h:m:s'))
+       t<-t+2 # GFS timestamps seem to be two days out - why?
+       v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(0,360),
+                         height.range=rep(height,2),time.range=c(t+lead/24,t+lead/24+1/24-0.001),
+                         ens.range=c(1,1))
+       return(v)
+    }
+    # Interpolate from the surrounding forecast times
+    interpolation.times<-GFS.get.interpolation.times(variable,year,month,day,hour,lead=lead)
+    if(!GFS.is.in.file(interpolation.times[[1]]$hour,interpolation.times[[1]]$lead)) {
+      stop('Error in GFS.get.interpolation.times')
+    }
+    v<-GFS.get.member.slice.at.level.at.hour(variable,interpolation.times[[1]]$year,
+                                              interpolation.times[[1]]$month,
+                                              interpolation.times[[1]]$day,
+                                              interpolation.times[[1]]$hour,
+                                              opendap=opendap,height=height,
+                                              member=member,
+                                              lead=interpolation.times[[1]]$lead)
+    v$data<-v$data*interpolation.times[[1]]$weight
+    for(i in seq(2,length(interpolation.times))) {
+       if(!GFS.is.in.file(interpolation.times[[i]]$hour,interpolation.times[[i]]$lead)) {
+         stop('Error in GFS.get.interpolation.times')
+       }
+       v2<-GFS.get.member.slice.at.level.at.hour(variable,interpolation.times[[i]]$year,
+                                                 interpolation.times[[i]]$month,
+                                                 interpolation.times[[i]]$day,
+                                                 interpolation.times[[i]]$hour,
+                                                 opendap=opendap,height=height,
+                                                 member=member,
+                                                 lead=interpolation.times[[i]]$lead)
+      v$data<-v$data+v2$data*interpolation.times[[i]]$weight
+    }      
+    c1<-chron(dates=sprintf("%04d/%02d/%02d",year,month,day),
+              times=sprintf("%02d:00:00",hour),
+              format=c(dates='y/m/d',times='h:m:s'))
     idx.t<-GSDF.find.dimension(v,'time')
-    v$dimensions[[idx.t]]$value<-v1$dimensions[[idx.t]]$value+
-                                 as.numeric(v2$dimensions[[idx.t]]$value-v1$dimensions[[idx.t]]$value)*(1-weight)
-    v$data<-v1$data*weight+v2$data*(1-weight)
+    v$dimensions[[idx.t]]$value<-c1+lead
     return(v)
 }
 
