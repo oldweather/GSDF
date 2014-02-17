@@ -592,3 +592,37 @@ GSDF.grow<-function(g) {
   g$data<-array(data=gr,dim=dim(g$data))
   return(g)
 }
+
+#' Remove a dimension from a field
+#'
+#' Convert a n-dimensional field to an (n-1) dimensional field
+#' by applying a function over the selected dimension.
+#'
+#' If you have a 3-d field (say) lat*lon*ensemble member, convert it
+#'  to a two d (lat*lon) field with the ensemble mean by running this with
+#'  function 'mean' and dimension 'ensemble'. But you can use any function
+#'  (that has a vector input and scalar output) over any dimension.
+#'
+#' @export
+#' @param d GSDF field
+#' @param dimn name (e.g. 'ensemble') or number (3) of dimension to reduce
+#' @param fn function to do the reduction (often mean or sd).
+#' @param ... additional arguments to fn (e.g. na.rm=T)
+#' @return reduced field.
+GSDF.reduce.1d<-function(d,dimn,fn,...) {
+  idx.d<-NULL
+  if(is.numeric(dimn)) {
+    idx.d<-dimn
+  } else idx.d<-GSDF.find.dimension(d,dimn)
+  if(is.null(idx.d)) stop(sprintf("Field has no dimension %s",dimn))
+  result<-d
+  old.d<-seq_along(dim(d$data))
+  result$data<-apply(d$data,old.d[-idx.d],fn,...)
+  if(length(old.d)>idx.d) {
+     for(i in seq(idx.d,length(old.d)-1)) {
+       result$dimensions[[i]]<-d$dimensions[[i+1]]
+     }
+  }
+  result$dimensions[[length(old.d)]]<-NULL
+  return(result)
+}

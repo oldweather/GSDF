@@ -193,7 +193,8 @@ GFS.get.interpolation.times<-function(variable,year,month,day,hour,lead=0) {
 #' @param variable 'tmp2m', 'prmslmsl', 'ugrd10m', 'tmpprs' - or any GFS variable
 #' @param (year,month,day,hour) Time at which the forecast was made.
 #' @param lead number of hours ahead of forecast time (0-259, default=0)
-#' @param type must be 'member', 'mean', or 'spread' (no normals or sds from GFS)
+#' @param type must be 'member', 'mean', or 'spread' (no normals or sds from GFS). (Can also be
+#'  'block' which returns a 3d field with all the ensemble members).
 #' @param member The member to use' - integer in the range 0-20 (default=0, mean and sd use all members)
 #' @param height Height in hPa - leave NULL for monolevel
 #' @param opendap Must be TRUE - no local option currently supported.
@@ -207,22 +208,20 @@ GFS.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,opendap
      v<-GFS.get.block.slice.at.hour(variable,year,month,day,hour,
                                     height=height,opendap=opendap,
                                                           lead=lead)
-     idx.e<-GSDF.find.dimension(v,'ens')
-     v$data[]<-apply(v$data,idx.e,mean)
+     v<-GSDF.reduce.1d(v,'ensemble',mean,na.rm=T)
      return(v)
    }  
    if(type=='spread') {
      v<-GFS.get.block.slice.at.hour(variable,year,month,day,hour,
                                     height=height,opendap=opendap,
                                                           lead=lead)
-     idx.e<-GSDF.find.dimension(v,'ens')
-     v$data[]<-apply(v$data,idx.e,sd)
+     v<-GSDF.reduce.1d(v,'ensemble',sd,na.rm=T)
      return(v)
    }  
    if(type=='block') return(GFS.get.block.slice.at.hour(variable,year,month,day,hour,
                                                           height=height,opendap=opendap,
                                                           lead=lead))
-   stop('Type must be "member", "mean", or "spread"')
+   stop('Type must be "member", "mean", "spread", or "block"')
  }
 
 # Get slice for a single member
