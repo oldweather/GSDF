@@ -487,13 +487,12 @@ GSDF.rg.to.ll<-function(lat,lon,pole.lat,pole.lon) {
    return(list(lat=lat.rotated,lon=lon.rotated))
  }
 
-#' Rotate winds 
+#' Rotate winds - internal detail
 #'
 #' From u & v one pole to same in a different pole.
 #' 
 #' (Formulae from UMDP S1). Works for any vector field, not just winds.
 #'
-#' @export
 #' @param u vector of zonal wind speeds in source pole.
 #' @param v vector of meridional wind speeds in source pole.
 #' @param lat.orig vector of latitudes of wind vectors in source pole (degrees).
@@ -505,7 +504,7 @@ GSDF.rg.to.ll<-function(lat,lon,pole.lat,pole.lon) {
 #' @return list with components 'u' and 'v' - vectors of
 #'   rotated zonal and meridional wind speeds.
 #' @seealso \code{\link{GSDF.ll.to.rg}} and \code{\link{GSDF.rg.to.ll}}.
-GSDF.wind.to.pole <-function(u,v,lat.orig,lon.orig,
+GSDF.wind.to.pole.internal <-function(u,v,lat.orig,lon.orig,
                                lat.new,lon.new,
                                pole.lat,pole.lon=180) {
 
@@ -523,6 +522,37 @@ GSDF.wind.to.pole <-function(u,v,lat.orig,lon.orig,
    c2<-sqrt(1-c1*c1)
    return(list(u=c1*u-c2*v,v=c1*v+c2*u))
 }
+
+#' Rotate winds 
+#'
+#' From u & v one pole to same in a different pole.
+#' 
+#' (Formulae from UMDP S1). Works for any vector field, not just winds.
+#'
+#' @export
+#' @param u field of zonal wind speeds in source pole.
+#' @param v field of meridional wind speeds in source pole.
+#' @param pole.lat latitude of pole to rotate to (degrees).
+#' @param pole.lon longitude of pole to rotate to (degrees).
+#' @return list with components 'u' and 'v' - fields of
+#'   rotated zonal and meridional wind speeds.
+GSDF.wind.to.pole <-function(u,v,pole.lat,pole.lon=180) {
+      u2<-GSDF.field.to.pole(u,pole.lat,pole.lon)
+      v2<-GSDF.field.to.pole(v,pole.lat,pole.lon)
+      r.u.v<-GSDF.wind.to.pole.internal(u2$data,v2$data,
+                              GSDF.roll.dimensions(u,GSDF.find.dimension(u,'lat'),
+                                                     GSDF.find.dimension(u,'lon')),
+                              GSDF.roll.dimensions(u,GSDF.find.dimension(u,'lon'),
+                                                     GSDF.find.dimension(u,'lat')),
+                              GSDF.roll.dimensions(u2,GSDF.find.dimension(u2,'lat'),
+                                                     GSDF.find.dimension(u,'lon')),
+                              GSDF.roll.dimensions(u2,GSDF.find.dimension(u2,'lon'),
+                                                     GSDF.find.dimension(u2,'lat')),
+                              pole.lat,pole.lon)
+      u2$data[]<-r.u.v$u
+      v2$data[]<-r.u.v$v
+      return(list(u=u2,v=v2))
+}     
 
 #' Rotate a field
 #'

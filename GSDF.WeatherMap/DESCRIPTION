@@ -1,0 +1,21 @@
+Package: GSDF.WeatherMap
+Type: Package
+Title: Weather maps for hourly data
+Version: 0.1
+Date: 2013-06-11
+Author: Philip Brohan
+Maintainer: Philip Brohan <philip@brohan.org>
+Description: Make weather maps from model or analysis data
+Depends:
+    R (>= 1.7.0),
+    grid,
+    RColorBrewer,
+    maps,
+    mapdata,
+    fields,
+    KernSmooth
+License: Personal use only
+LazyLoad: yes
+LazyData: true
+Collate:
+    'WeatherMap.R'
