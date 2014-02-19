@@ -322,8 +322,8 @@ WeatherMap.decimate.streamlines<-function(s,Options) {
   kx<-cbind(na.omit(as.vector(s$x)),na.omit(as.vector(s$y)))
   bk<-bkde2D(kx,bandwidth=rep(Options$wind.vector.decimate.bandwidth,2),
                 gridsize=rep(Options$wind.vector.decimate.gridsize,2))
-  bk$fhat[]<-pmin(bk$fhat,quantile(bk$fhat)[4]) # Highlight low density areas
-  bk$fhat<-bk$fhat*Options$wind.vector.decimate/mean(bk$fhat)
+  #bk$fhat[]<-pmin(bk$fhat,quantile(bk$fhat)[4]) # Highlight low density areas
+  bk$fhat<-(bk$fhat/mean(bk$fhat))*Options$wind.vector.decimate
   bk$fhat<-bk$fhat/Options$wind.vector.points
   # Interpolate the field at every streamline location.
   dx<-(Options$lon.max-Options$lon.min)/Options$wind.vector.decimate.gridsize
@@ -335,8 +335,8 @@ WeatherMap.decimate.streamlines<-function(s,Options) {
     probs<-interp.surface(list(x=x,y=y,z=bk$fhat),
                           cbind(s[['x']][,i],s[['y']][,i]))
     d<-which(runif(length(s[['x']][,i]))<probs)
+    result<-unique(c(result,d))
   }
-  result<-unique(c(result,d))
   return(result)
 }
 
