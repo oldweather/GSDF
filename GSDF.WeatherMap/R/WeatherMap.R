@@ -322,6 +322,7 @@ WeatherMap.decimate.streamlines<-function(s,Options) {
   kx<-cbind(na.omit(as.vector(s$x)),na.omit(as.vector(s$y)))
   bk<-bkde2D(kx,bandwidth=rep(Options$wind.vector.decimate.bandwidth,2),
                 gridsize=rep(Options$wind.vector.decimate.gridsize,2))
+  bk$fhat[]<-pmin(bk$fhat,quantile(bk$fhat)[4]) # Highlight low density areas
   bk$fhat<-bk$fhat*Options$wind.vector.decimate/mean(bk$fhat)
   bk$fhat<-bk$fhat/Options$wind.vector.points
   # Interpolate the field at every streamline location.
@@ -380,6 +381,8 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
    lats<-0
    longs<-0
    status<-1
+   initial=FALSE # starting from scratch
+   if(is.null(s)) initial=TRUE
    if(!is.null(s)) {
       # Move the vectors along at the speed of the wind (*wind.vector.move.scale)
       # Assumes frames are hourly (0.033 converts m/s to degrees/hr)
@@ -444,6 +447,7 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
    new.longs<-new.longs+runif(length(new.longs))*Options$wind.vector.seed
    new.lats<-new.lats+runif(length(new.lats))*Options$wind.vector.seed
    new.status<-rep(1/Options$wind.vector.fade.steps,length(new.lats))
+   if(initial) new.status<-pmax(new.status,1)
    if(length(new.status)>1) {
       s2<-WeatherMap.propagate.streamlines(new.lats,new.longs,new.status,u,v,t,t.c,Options)
       # Merge the new and old streamlines
