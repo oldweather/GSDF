@@ -1,0 +1,20 @@
+\name{WeatherMap.draw.label}
+\alias{WeatherMap.draw.label}
+\title{Draw label}
+\usage{
+  WeatherMap.draw.label(Options)
+}
+\arguments{
+  \item{Options}{list of options - see
+  \code{WeatherMap.set.option}}
+}
+\value{
+  nothing - side effect only.
+}
+\description{
+  Add a label - usually the date
+}
+\details{
+  Position and content set in options.
+}
+

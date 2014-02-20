@@ -1,0 +1,28 @@
+\name{WeatherMap.draw.streamlines}
+\alias{WeatherMap.draw.streamlines}
+\title{Draw streamlines}
+\usage{
+  WeatherMap.draw.streamlines(s, Options)
+}
+\arguments{
+  \item{s}{list of streamlines (previously made by
+  \code{make.streamlines}).}
+
+  \item{Options}{list of options - see
+  \code{WeatherMap.set.option}}
+}
+\value{
+  nothing - side effect only.
+}
+\description{
+  Draw a set of streamlines (previously made by
+  \code{make.streamlines}).
+}
+\details{
+  For each streamline, makes the appropriate graphics
+  context and draws a spline.
+}
+\seealso{
+  \code{WeatherMap.draw.streamlines}
+}
+

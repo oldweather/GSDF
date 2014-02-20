@@ -1,0 +1,28 @@
+\name{WeatherMap.draw.ice}
+\alias{WeatherMap.draw.ice}
+\title{Draw sea-ice}
+\usage{
+  WeatherMap.draw.ice(lat, lon, icec, Options)
+}
+\arguments{
+  \item{lat}{vector of latitutes}
+
+  \item{lon}{vector of longitudes}
+
+  \item{icec}{GSDF field of ice coverage (0-1)}
+
+  \item{Options}{list of options - see
+  \code{WeatherMap.set.option}}
+}
+\value{
+  nothing - side effect only.
+}
+\description{
+  Draw sea-ice at a set of points.
+}
+\details{
+  Ice is drawn as a set of polygons (details controled by
+  Options).  Deliberately de-coupled from native resolution
+  of sea-ice field.
+}
+

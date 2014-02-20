@@ -1,0 +1,31 @@
+\name{WeatherMap.streamline.getGC}
+\alias{WeatherMap.streamline.getGC}
+\title{Streamline getGC}
+\usage{
+  WeatherMap.streamline.getGC(value, transparency = NA,
+    status = 1, Options)
+}
+\arguments{
+  \item{value}{Range 0-1 - set the colour of the
+  streamline}
+
+  \item{transparency}{Range 0-1 - set the transparency of a
+  streamline}
+
+  \item{status}{Range 0-1 - set the line width of a
+  streamline}
+
+  \item{Options}{list of options - see
+  \code{WeatherMap.set.option}}
+}
+\value{
+  a graphics context for drawing
+}
+\description{
+  Generate a graphics context for a streamline
+}
+\details{
+  Set the colour, width and transparency to draw a
+  streamline
+}
+
