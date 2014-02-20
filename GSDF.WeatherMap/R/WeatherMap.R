@@ -22,6 +22,9 @@ Defaults<-list(
    precip.points=25000,                 # Bigger -> higher res precip
    precip.threshold=0.0025,             # Only show where more than this
    precip.range=0.03,                   # Precip rate for max intensity
+   precip.resolution=0.25,              # Grid resolution in degrees
+   precip.colour=c(0,0,0),              # 0-1, RGB for intense precip
+   precip.min.transparency=0.95,        # 0-1, density of intense precip
    precip.T.snow=273,                   # Show as snow where colder (K)
    precip.pch=21,                       # Graphics context for drawing precip
    precip.lty=1,
@@ -103,6 +106,7 @@ Defaults<-list(
 #'   precip.lwd=1,
 #'   precip.scale=1,                      # Scaling for precip blob size
 #'   precip.max.opacity=1,
+#'   precip.colour=c(0,0,0),              # Colour for intense precip
 #'   wind.vector.fade.steps=1,            # Increase for gradual fade in/out
 #'   wind.vector.iterate=1,               # Move streamlets n times before drawing
 #'   wind.vector.seed=2,                  # Smaller -> more wind vectors
@@ -497,7 +501,7 @@ WeatherMap.draw.streamlines<-function(s,Options) {
    }
  }
 
-#' Draw precipitation
+#' Draw precipitation - retired - image is too messy
 #'
 #' Draw precipitation at a set of points.
 #'
@@ -511,7 +515,7 @@ WeatherMap.draw.streamlines<-function(s,Options) {
 #' @param t.actual GSDF field of 2m temperature (to split rain and snow)
 #' @param Options list of options - see \code{WeatherMap.set.option}
 #' @return nothing - side effect only.
-WeatherMap.draw.precipitation<-function(lat,lon,precip,t.actual,Options) {
+WeatherMap.draw.precipitation.dots<-function(lat,lon,precip,t.actual,Options) {
   
  # Offset positions for rain-lines and snowflakes
  #  - random numbers, but constant between calls.
@@ -735,7 +739,7 @@ WeatherMap.draw.land<-function(land,Options) {
 #'
 #' Draw sea-ice at a set of points.
 #'
-#' Precipitation is drawn as a set of polygons (details controled by Options).
+#' Ice is drawn as a set of polygons (details controled by Options).
 #'  Deliberately de-coupled from native resolution of sea-ice field.
 #'
 #' @export
@@ -829,7 +833,6 @@ WeatherMap.draw.pressure<-function(mslp,Options) {
      }
   }
 }
-
 #' Fog of ignorance
 #'
 #' Draw the fog - semi-transparent grey
@@ -861,6 +864,47 @@ WeatherMap.draw.fog<-function(fog,Options) {
   full.longs<-matrix(data=rep(longs,length(lats)),ncol=length(longs),byrow=T)
   plot.colours<-GSDF.interpolate.ll(fog,as.vector(full.lats),as.vector(full.longs))
   plot.colours<-fog.colours[as.integer(plot.colours*n.colours)+1]
+  dl<-longs[2]-longs[1]
+    grid.raster(matrix(plot.colours, ncol=length(longs), byrow=F),
+                x=unit((Options$lon.min+Options$lon.max)/2,'native'),
+                y=unit((Options$lat.min+Options$lat.max)/2,'native'),
+                width=unit(Options$lon.max-Options$lon.min,'native'),
+                height=unit(Options$lat.max-Options$lat.min,'native'))
+}
+
+#' Precipitation
+#'
+#' Draw the precipitation rate - semi-transparent black
+#'
+#' As it's a semi-transparent area field we need to draw in
+#'  pixel coordinates to rule out gaps or overlaps, so
+#'   use an image.
+#'
+#' @export
+#' @param fog GSDF field of fog thickness (0-1)
+#' @param Options list of options - see \code{WeatherMap.set.option}
+#' @return nothing - side effect only.
+WeatherMap.draw.precipitation<-function(precip,Options) {
+
+  precip<-WeatherMap.rotate.pole(precip,Options)
+  # 100 colours  - fully transparent to mostly opaque
+  n.colours<-100
+  precip.colours<-rep(rgb(0,0,0,1),n.colours+1)
+  precip.colours<-rgb(Options$precip.colour[1],Options$precip.colour[2],Options$precip.colour[3],
+                  Options$precip.min.transparency*(seq(1,n.colours)-1)/(n.colours-1))
+  precip.colours[n.colours+1]<-precip.colours[n.colours]
+
+  # Remove precip below threshold
+  w<-which(sqrt(precip$data)<Options$precip.threshold)
+  precip$data[w]<-0
+  # Scale data to range 0-1 
+  precip$data[]<-pmax(0,pmin(1,(sqrt(precip$data)/Options$precip.range)))
+  lats<-rev(seq(Options$lat.min,Options$lat.max,Options$precip.resolution))
+  longs<-seq(Options$lon.min,Options$lon.max,Options$precip.resolution)
+  full.lats<-matrix(data=rep(lats,length(longs)),ncol=length(longs),byrow=F)
+  full.longs<-matrix(data=rep(longs,length(lats)),ncol=length(longs),byrow=T)
+  plot.colours<-GSDF.interpolate.ll(precip,as.vector(full.lats),as.vector(full.longs))
+  plot.colours<-precip.colours[as.integer(plot.colours*n.colours)+1]
   dl<-longs[2]-longs[1]
     grid.raster(matrix(plot.colours, ncol=length(longs), byrow=F),
                 x=unit((Options$lon.min+Options$lon.max)/2,'native'),
@@ -974,8 +1018,7 @@ WeatherMap.draw<-function(Options=NULL,t.actual=NULL,
   }
   if(Options$show.precip) {
     if(is.null(precip)) stop("No precip provided")
-    if(is.null(t.actual)) stop("No temperature provided (for precip)")
-    WeatherMap.draw.precipitation(p$lat,p$lon,precip,t.actual,Options)
+    WeatherMap.draw.precipitation(precip,Options)
   }
   if(Options$show.wind) {
      if(!Options$show.temperature) {
