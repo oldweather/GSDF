@@ -4,10 +4,9 @@
 \usage{
   GSDF.ncdf.load(file, variable, lat.range = NULL,
     lon.range = NULL, height.range = NULL,
-    time.range = NULL, ens.range = NULL,
-    custom.range = NULL, default.calendar = "gregorian",
-    lat.name = NULL, lon.name = NULL, height.name = NULL,
-    time.name = NULL, ens.name = NULL)
+    time.range = NULL, custom.range = NULL,
+    default.calendar = "gregorian", lat.name = NULL,
+    lon.name = NULL, height.name = NULL, time.name = NULL)
 }
 \arguments{
   \item{file}{Text name of file or URI.}
@@ -26,10 +25,6 @@
   heights to retrieve.  Leave NULL only if variable has no
   height dimension.}
 
-  \item{ens.range}{Two-element vector with max and min
-  ensemble members to retrieve.  Leave NULL only if
-  variable has no ensemble dimension.}
-
   \item{time.range}{Two-element vector of chron with max
   and min times to retrieve.  Leave NULL only if variable
   has no time dimension.}
@@ -47,9 +42,6 @@
 
   \item{height.name}{Text name used by file as label of
   height variable. If NULL, will try to guess it.}
-
-  \item{ens.name}{Text name used by file as label of
-  ensemble number variable. If NULL, will try to guess it.}
 
   \item{time.name}{Text name used by file as label of time
   variable. If NULL, will try to guess it.}
