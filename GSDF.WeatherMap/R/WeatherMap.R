@@ -952,7 +952,7 @@ WeatherMap.draw.obs<-function(obs,Options) {
 #' @param Options list of options - see \code{WeatherMap.set.option}
 #' @return nothing - side effect only.
 WeatherMap.draw.label<-function(Options) {
-   label.gp<-gpar(family='Helvetica',font=1,col='black',fontsize=20)
+   label.gp<-gpar(family='Helvetica',font=1,col='black')
    grid.text(Options$label,x=unit(Options$label.xp,'npc'),
                            y=unit(Options$label.yp,'npc'),
              just='right',gp=label.gp)
