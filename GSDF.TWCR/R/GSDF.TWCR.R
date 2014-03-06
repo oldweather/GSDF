@@ -459,7 +459,7 @@ TWCR.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,openda
   above<-TWCR.get.slice.at.level.at.hour(variable,year,month,day,hour,height=TWCR.heights[level.below+1],
                                          opendap=opendap,version=version,type=type)
   above.weight<-(TWCR.heights[level.below]-height)/(TWCR.heights[level.below]-TWCR.heights[level.below+1])
-  below$data<-below$data*(1-above.weight)+above$data*above.weight
+  below$data[]<-below$data*(1-above.weight)+above$data*above.weight
   idx.h<-GSDF.find.dimension(below,'height')
   below$dimensions[[idx.h]]$value<-height
   return(below)
@@ -519,7 +519,7 @@ TWCR.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
     idx.t<-GSDF.find.dimension(v,'time')
     v$dimensions[[idx.t]]$value<-v1$dimensions[[idx.t]]$value+
                                  as.numeric(v2$dimensions[[idx.t]]$value-v1$dimensions[[idx.t]]$value)*(1-weight)
-    v$data<-v1$data*weight+v2$data*(1-weight)
+    v$data[]<-v1$data*weight+v2$data*(1-weight)
         return(v)
 }
 
@@ -556,7 +556,7 @@ TWCR.get.slice.at.month<-function(variable,year,month,height=NULL,opendap=TRUE,v
   above<-TWCR.get.slice.at.level.at.month(variable,year,month,height=TWCR.heights[level.below+1],
                                          opendap=opendap,version=version,type=type)
   above.weight<-(TWCR.heights[level.below]-height)/(TWCR.heights[level.below]-TWCR.heights[level.below+1])
-  below$data<-below$data*(1-above.weight)+above$data*above.weight
+  below$data[]<-below$data*(1-above.weight)+above$data*above.weight
   idx.h<-GSDF.find.dimension(below,'height')
   below$dimensions[[idx.h]]$value<-height
   return(below)
@@ -599,10 +599,10 @@ TWCR.get.slice.at.level.at.month<-function(variable,year,month,height=NULL,opend
 TWCR.relative.entropy<-function(old.mean,old.sd,new.mean,
                                  new.sd) {
   result<-new.mean
-  result$data<-(log((new.sd$data**2)/(old.sd$data**2)) +
-                (old.sd$data**2)/(new.sd$data**2) +
-                ((new.mean$data-old.mean$data)**2)/(new.sd$data**2) 
-                -1)*0.5
+  result$data[]<-(log((new.sd$data**2)/(old.sd$data**2)) +
+                 (old.sd$data**2)/(new.sd$data**2) +
+                 ((new.mean$data-old.mean$data)**2)/(new.sd$data**2) 
+                   -1)*0.5
   return(result)
 }
 

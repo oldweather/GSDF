@@ -284,7 +284,7 @@ GFS.get.member.slice.at.level.at.hour<-function(variable,year,month,day,hour,
                                               opendap=opendap,height=height,
                                               member=member,
                                               lead=interpolation.times[[1]]$lead)
-    v$data<-v$data*interpolation.times[[1]]$weight
+    v$data[]<-v$data*interpolation.times[[1]]$weight
     for(i in seq(2,length(interpolation.times))) {
        if(!GFS.is.in.file(interpolation.times[[i]]$hour,interpolation.times[[i]]$lead)) {
          stop('Error in GFS.get.interpolation.times')
@@ -365,7 +365,7 @@ GFS.get.block.slice.at.level.at.hour<-function(variable,year,month,day,hour,
                                               interpolation.times[[1]]$hour,
                                               opendap=opendap,height=height,
                                               lead=interpolation.times[[1]]$lead)
-    v$data<-v$data*interpolation.times[[1]]$weight
+    v$data[]<-v$data*interpolation.times[[1]]$weight
     for(i in seq(2,length(interpolation.times))) {
        if(!GFS.is.in.file(interpolation.times[[i]]$hour,interpolation.times[[i]]$lead)) {
          stop('Error in GFS.get.interpolation.times')

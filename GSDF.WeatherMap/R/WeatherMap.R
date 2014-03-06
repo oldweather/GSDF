@@ -857,7 +857,7 @@ WeatherMap.draw.fog<-function(fog,Options) {
 
   plot.colours<-rep(fog.colours[[1]],length(fog$data))
   # fog$data should be on the range 0-1
-  fog$data<-pmax(0,pmin(1,fog$data))
+  fog$data[]<-pmax(0,pmin(1,fog$data))
   lats<-rev(seq(Options$lat.min,Options$lat.max,Options$fog.resolution))
   longs<-seq(Options$lon.min,Options$lon.max,Options$fog.resolution)
   full.lats<-matrix(data=rep(lats,length(longs)),ncol=length(longs),byrow=F)
