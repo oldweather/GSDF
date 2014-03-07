@@ -486,7 +486,9 @@ TWCR.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
               t<-chron(sprintf("%04d/%02d/%02d",-1,month,day),sprintf("%02d:00:00",hour),
                        format=c(dates='y/m/d',times='h:m:s'))
               t<-chron(as.numeric(t)+729)
-              if(leap.year(year) && (month>2 || (month==2 && day==29))) t<-t-24
+              month<-as.integer(month) # Sometimes still a factor, why?
+              day<-as.integer(day)
+              if(leap.year(year) && (month>2 || (month==2 && day==29))) t<-t-1
            }
            v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(0,360),
                              height.range=rep(height,2),time.range=c(t,t))
