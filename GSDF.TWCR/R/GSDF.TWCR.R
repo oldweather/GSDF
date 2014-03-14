@@ -380,8 +380,8 @@ TWCR.get.interpolation.times<-function(variable,year,month,day,hour,type='mean')
                 p.day<-day
                 if(p.hour<0) {
                   p.year<-as.numeric(as.character(years(ct-1)))
-                  p.month<-months(ct-1)
-                  p.day<-days(ct-1)
+                  p.month<-as.integer(months(ct-1))
+                  p.day<-as.integer(days(ct-1))
                   p.hour<-p.hour+24
                 }
 		if(TWCR.is.in.file(variable,p.year,p.month,p.day,p.hour,type=type)) {
@@ -405,8 +405,8 @@ TWCR.get.interpolation.times<-function(variable,year,month,day,hour,type='mean')
                 n.day<-day
                 if(n.hour>23) {
                   n.year<-as.numeric(as.character(years(ct+1)))
-                  n.month<-months(ct+1)
-                  n.day<-days(ct+1)
+                  n.month<-as.integer(months(ct+1))
+                  n.day<-as.integer(days(ct+1))
                   n.hour<-n.hour-24
                 }
 		if(TWCR.is.in.file(variable,n.year,n.month,n.day,n.hour,type=type)) {
@@ -483,7 +483,9 @@ TWCR.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
            t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                     format=c(dates='y/m/d',times='h:m:s'))
            if(type=='normal') { # Normals are for year 1, which chron can't handle, and have no Feb 29
-              if(month==2 && day==29) day<-28
+               month<-as.integer(month) # Sometimes still a factor, why?
+               day<-as.integer(day)
+               if(month==2 && day==29) day<-28
               t<-chron(sprintf("%04d/%02d/%02d",-1,month,day),sprintf("%02d:00:00",hour),
                        format=c(dates='y/m/d',times='h:m:s'))
               t<-chron(as.numeric(t)+729)
