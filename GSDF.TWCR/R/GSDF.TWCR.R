@@ -257,7 +257,10 @@ TWCR.get.obs.1file<-function(year,month,day,hour,version=2) {
                 "%s/observations/%04d/prepbufrobs_assim_%04d%02d%02d%02d.txt",base.dir,
                 year,year,month,day,hour)
     if(!file.exists(of.name)) stop("No obs file for given version and date")
-    o<-read.fwf(file=of.name,
+    o<-read.fwf(file=of.name,na.strings=c('NA','*','***','*****','*******','**********',
+                                          '-99','9999','-999','9999.99','10000.0',
+                                          '-9.99','999999999999999999999999999999',
+                                          '999999999999','9'),
                 widths=c(19,-1,3,-1,1,-1,7,-1,6,-1,5,-1,5,-1,6,-1,7,-1,7,-1,7,
                          -1,10,-1,5,-1,5,-1,1,-1,1,-1,1,-1,1,-1,1,-1,10,-1,10,
                          -1,10,-1,10,-1,30,-1,14),
@@ -286,28 +289,6 @@ TWCR.get.obs.1file<-function(year,month,day,hour,version=2) {
                                rep('integer',5),
                                rep('numeric',4),
                                rep('character',2)))
-    # Set missing values to NA rather than arbitrary constants
-    is.na(o$NCEP.Type[o$NCEP.Type==-99])<-T
-    is.na(o$Elevation[o$Elevation==9999])<-T
-    is.na(o$Model.Elevation[o$Model.Elevation==9999])<-T
-    is.na(o$Time.Offset[o$Time.Offset==-999])<-T
-    is.na(o$Pressure.after.bias.correction[o$Pressure.after.bias.correction>9000])<-T
-    is.na(o$Pressure.after.vertical.interpolation[o$Pressure.after.vertical.interpolation>9000])<-T
-    is.na(o$SLP[o$SLP>9000])<-T
-    is.na(o$Bias[o$Bias>9000])<-T
-    is.na(o$Error.in.surface.pressure[o$Error.in.surface.pressure< -9])<-T
-    is.na(o$Error.in.vertically.interpolated.pressure[o$Error.in.vertically.interpolated.pressure< -9])<-T
-    is.na(o$Assimilation.indicator[o$Assimilation.indicator==9])<-T
-    is.na(o$Usability.check[o$Usability.check==9])<-T
-    is.na(o$QC.flag[o$QC.flag==9])<-T
-    is.na(o$Background.check[o$Background.check==9])<-T
-    is.na(o$Buddy.check[o$Buddy.check==9])<-T
-    is.na(o$Mean.first.guess.pressure.difference[o$Mean.first.guess.pressure.difference>9000])<-T
-    is.na(o$First.guess.pressure.spread[o$First.guess.pressure.spread>9000])<-T
-    is.na(o$Mean.analysis.pressure.difference[o$Mean.analysis.pressure.difference>9000])<-T
-    is.na(o$Analysis.pressure.spread[o$Analysis.pressure.spread>9000])<-T
-    is.na(o$Name[grep('999999999999999999999999999999',o$Name)])<-T
-    is.na(o$ID[grep('999999999999',o$ID)])<-T
 
     return(o)
 }
