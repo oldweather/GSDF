@@ -521,9 +521,12 @@ GSDF.wind.to.pole.internal <-function(u,v,lat.orig,lon.orig,
    l0[w]<-l0[w]-360
    w<-which(!is.na(l0) && l0< -180)
    l0[w]<-l0[w]+360
+
    dtr<-pi/180
    c1<- -sin((lon.orig-l0)*dtr)*sin(lon.new*dtr)*sin(pole.lat*dtr)+
          cos((lon.orig-l0)*dtr)*cos(lon.new*dtr)
+   w<-which(lon.new>0)
+   c1[w]<-c1[w]*-1
    c2<-sqrt(1-c1*c1)
    return(list(u=c1*u-c2*v,v=c1*v+c2*u))
 }
@@ -544,16 +547,14 @@ GSDF.wind.to.pole.internal <-function(u,v,lat.orig,lon.orig,
 GSDF.wind.to.pole <-function(u,v,pole.lat,pole.lon=180) {
       u2<-GSDF.field.to.pole(u,pole.lat,pole.lon)
       v2<-GSDF.field.to.pole(v,pole.lat,pole.lon)
-      r.u.v<-GSDF.wind.to.pole.internal(u2$data,v2$data,
-                              GSDF.roll.dimensions(u,GSDF.find.dimension(u,'lat'),
-                                                     GSDF.find.dimension(u,'lon')),
-                              GSDF.roll.dimensions(u,GSDF.find.dimension(u,'lon'),
-                                                     GSDF.find.dimension(u,'lat')),
-                              GSDF.roll.dimensions(u2,GSDF.find.dimension(u2,'lat'),
-                                                     GSDF.find.dimension(u,'lon')),
-                              GSDF.roll.dimensions(u2,GSDF.find.dimension(u2,'lon'),
-                                                     GSDF.find.dimension(u2,'lat')),
-                              pole.lat,pole.lon)
+      lat.new<-GSDF.roll.dimensions(u2,GSDF.find.dimension(u2,'lat'),
+                                       GSDF.find.dimension(u2,'lon'))
+      lon.new<-GSDF.roll.dimensions(u2,GSDF.find.dimension(u2,'lon'),
+                                       GSDF.find.dimension(u2,'lat'))
+      ll.orig<-GSDF.rg.to.ll(lat.new,lon.new,pole.lat,pole.lon)
+      r.u.v<-GSDF.wind.to.pole.internal(u2$data,v2$data,ll.orig$lat,
+                                        ll.orig$lon,lat.new,lon.new,
+                                        pole.lat,pole.lon)
       u2$data[]<-r.u.v$u
       v2$data[]<-r.u.v$v
       return(list(u=u2,v=v2))
