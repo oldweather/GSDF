@@ -997,7 +997,7 @@ WeatherMap.draw<-function(Options=NULL,t.actual=NULL,
                           streamlines=NULL,fog=NULL) {
 
   if(is.null(Options)) Options<-WeatherMap.get.options()
-  base.gp<-gpar(family='Helvetica',font=1,col='black',fontsize=12)
+  base.gp<-gpar(family='Helvetica',font=1,col='black')
   pushViewport(dataViewport(c(Options$lon.min,Options$lon.max),
 		            c(Options$lat.min,Options$lat.max),
 		            extension=0,gp=base.gp))
