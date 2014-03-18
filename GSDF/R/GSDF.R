@@ -523,12 +523,13 @@ GSDF.wind.to.pole.internal <-function(u,v,lat.orig,lon.orig,
    l0[w]<-l0[w]+360
 
    dtr<-pi/180
-   c1<- -sin((lon.orig-l0)*dtr)*sin(lon.new*dtr)*sin(pole.lat*dtr)+
-         cos((lon.orig-l0)*dtr)*cos(lon.new*dtr)
-   w<-which(lon.new>0)
+   c1<- sin((lon.orig-l0)*dtr)*sin(lon.new*dtr)*sin(pole.lat*dtr)+
+           cos((lon.orig-l0)*dtr)*cos(lon.new*dtr)
+   w<-which(lon.new<0)
    c2<-sqrt(1-c1*c1)
-   #c1[w]<-c1[w]*-1
-   c2[w]<-c2[w]*-1
+   if(pole.lat>180) pole.lat<-pole.lat-360
+   if(pole.lat>=0 && pole.lat<=90) c2[w]<-c2[w]*-1
+   else c2[-w]<-c2[-w]*-1
    return(list(u=c1*u-c2*v,v=c1*v+c2*u))
 }
 
