@@ -288,7 +288,8 @@ TWCR.get.obs.1file<-function(year,month,day,hour,version=2) {
                                rep('numeric',7),
                                rep('integer',5),
                                rep('numeric',4),
-                               rep('character',2)))
+                               rep('character',2)),
+                  comment.char="")
 
     return(o)
 }
