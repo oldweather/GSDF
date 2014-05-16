@@ -85,7 +85,8 @@ TWCR.get.variable.group<-function(variable) {
 #' @param opendap TRUE for network retrieval, FALSE for local files (faster, if you have them),
 #'  NULL (default) will use local files if available, and network if not.
 #' @return File name or URL for netCDF file containing the requested data 
-TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=NULL,version=2,type='mean') {
+TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
+                                      opendap=NULL,version=2,type='mean') {
    if(is.null(opendap) || opendap==FALSE) {
         base.dir<-TWCR.get.data.dir(version)
         if(!is.null(base.dir)) {
@@ -95,8 +96,13 @@ TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=NULL,ve
             }
             if(type=='standard.deviation') {
                     if(month==2 && day==29) day=28
-                    name<-sprintf("%s/hourly/standard.deviations/%s/sd.%02d.%02d.%02d.rdata",
-                                   base.dir,variable,month,day,hour)
+                    if(is.null(height)) {
+                       name<-sprintf("%s/hourly/standard.deviations/%s/sd.%02d.%02d.%02d.rdata",
+                                      base.dir,variable,month,day,hour)
+                    } else {
+                       name<-sprintf("%s/hourly/standard.deviations/%s/sd.%04d.%02d.%02d.%02d.rdata",
+                                      base.dir,variable,height,month,day,hour)
+                    }
             }
             if(type=='mean') {
                name<-sprintf("%s/hourly/%s/%s.%04d.nc",base.dir,
@@ -153,8 +159,14 @@ TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=NULL,ve
     if(type=='standard.deviation') {
       if(version==2) version<-'3.2.1'
       if(month==2 && day==29) day<-28
-      return(sprintf("http://s3.amazonaws.com/philip.brohan.org.20CR/version_%s/hourly/standard.deviations/%s/sd.%02d.%02d.%02d.rdata",
+      if(is.null(height)) {
+         return(sprintf("http://s3.amazonaws.com/philip.brohan.org.20CR/version_%s/hourly/standard.deviations/%s/sd.%02d.%02d.%02d.rdata",
                     version,variable,month,day,hour))
+      } else {
+         return(sprintf("http://s3.amazonaws.com/philip.brohan.org.20CR/version_%s/hourly/standard.deviations/%s/sd.%04d.%02d.%02d.%02d.rdata",
+                    version,variable,height,month,day,hour))
+      }
+
     }
     stop(sprintf("Unsupported opendap data type %s",type))      
 }
@@ -451,7 +463,8 @@ TWCR.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
 	dstring<-sprintf("%04d-%02d-%02d:%02d",year,month,day,hour)
 	# Is it from an analysis time (no need to interpolate)?
 	if(TWCR.is.in.file(variable,year,month,day,hour,type=type)) {
-        file.name<-TWCR.hourly.get.file.name(variable,year,month,day,hour,opendap=opendap,version=version,type=type)
+        file.name<-TWCR.hourly.get.file.name(variable,year,month,day,hour,height=height,
+                                                opendap=opendap,version=version,type=type)
            if(type=='standard.deviation') { # sd's are a special case
               if(grepl('://',file.name)) { # Is it a URL?
                 u<-url(file.name)
