@@ -252,6 +252,7 @@ WeatherMap.propagate.streamlines<-function(lat,lon,status,u,v,t,t.c,Options) {
     streamlets[['magnitude']]<-0
     for(i in seq(1,Options$wind.vector.points)) {
 		up<-GSDF.interpolate.ll(u,lat,lon)
+                if(Options$wrap.spherical) up<-up/cos(lat*pi/180)
 		vp<-GSDF.interpolate.ll(v,lat,lon)
 		m<-sqrt(up**2+vp**2)
 		direction<-atan2(vp,up)
@@ -417,6 +418,10 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
    if(!Options$jitter) set.seed(27)
    seed.lat.offset<-(runif(1)-0.5)*Options$wind.vector.seed
    seed.long.offset<-(runif(1)-0.5)*Options$wind.vector.seed
+   if(!Options$jitter) {
+     seed.lat.offset<-0
+     seed.lon.offset<-0
+   }
    seed.lats<-seq(Options$lat.min+seed.lat.offset,Options$lat.max+seed.lat.offset-0.001,
                   Options$wind.vector.seed)
    seed.longs<-seq(Options$lon.min+seed.long.offset,Options$lon.max+seed.long.offset-0.001,
@@ -431,6 +436,16 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
                                                         Options$wind.vector.seed)))
        seed[s.lon+(s.lat-1)*length(seed[,1])]<-FALSE
      }
+   # Skip more high latitude seed points if we're applying spherical distortion to streamlines
+   #  (Otherwise we'll have too many at high latitudes).   
+   if(Options$wrap.spherical) {
+     for(lat.i in seq_along(seed.lats)) {
+       f.omit<-1-cos(seed.lats[lat.i]*pi/180)
+       s.omit<-c(0,diff(as.integer(seq_along(seed.longs)*f.omit+lat.i%%3/3)))
+       w<-which(s.omit==1)
+       seed[w,lat.i]<-FALSE
+     }
+   }
    new.longs<-matrix(data=seed.longs,
                      nrow=length(seed[,1]),ncol<-length(seed[1,]),
                      byrow<-FALSE)[which(seed)]
