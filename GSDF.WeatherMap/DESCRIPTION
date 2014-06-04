@@ -9,11 +9,11 @@ Description: Make weather maps from model or analysis data
 Depends:
     R (>= 1.7.0),
     grid,
-    RColorBrewer,
     maps,
     mapdata,
     fields,
-    KernSmooth
+    KernSmooth,
+    colorspace
 License: Personal use only
 LazyLoad: yes
 LazyData: true

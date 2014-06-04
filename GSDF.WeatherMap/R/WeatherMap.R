@@ -7,8 +7,9 @@ data(WeatherMap.ice.shelves, envir=environment())
 # Plot is controlled by this set of options
 Defaults<-list(
    cores=1,                             # Not currently used
+   wrap.spherical=FALSE,                # For plotting on a sphere?
    region='global',
-   pole.lat=90,pole.lon=180,            # Position of map centre
+   pole.lat=90,pole.lon=180,            # Position of north pole
    lon.min=-180,lon.max=180,
    lat.min=-90,lat.max=90,              # Map range (around centre)
    vp.lon.min=NULL,vp.lon.max=NULL,
@@ -45,8 +46,8 @@ Defaults<-list(
    wind.vector.decimate.gridsize=1000,  #
    wind.vector.lwd=2,                   # Line width
    jitter=TRUE,                         # Jitter vector seed points?
-   wind.palette=rev(
-                brewer.pal(11,'RdBu')), # Interpolated blue red
+   wind.palette=diverge_hcl(70, c = 50,
+                    l = 25, power = 1), # Interpolated blue red
    wind.palette.bias=1,                 # ?colorRamp
    wind.palette.opacity=1,              # 
    wind.palette.maxgrey=550,            # Smaller -> white lines darker
@@ -57,20 +58,17 @@ Defaults<-list(
    mslp.tpscale=2000,                   # Smaller -> contours less transparent
    mslp.lwd=1, 
    background.resolution='low',         # 'low' for fast, 'high' for pretty
-   sea.colour=rgb(80*1.1,95*1.1,107*1.1,255,
+   sea.colour=rgb(80*1.5,95*1.5,107*1.5,255,
                   maxColorValue=255),   # For background
-   ice.colour=rgb(150,165,177,255,
-	          maxColorValue=255),
-   merge.colour=rgb(110,110,110,255,
-	           maxColorValue=255),  # Soften Wind colours
-   merge.weight=1,                      # Amount of softening to apply
+   ice.colour=rgb(150*1.2,165*1.2,177*1.2,255,
+                maxColorValue=255),
    ice.points=10000,                    # Bigger - higher res ice
    land.colour=rgb(123,121,117,255,
                     maxColorValue=255),
-   fog.colour=c(0.65,0.65,0.65),                       # 0-1, bigger -> lighter fog
+   fog.colour=c(0.65,0.65,0.65),        # 0-1, bigger -> lighter fog
    fog.min.transparency=0.85,           # 0-1, bigger -> thicker fog
    fog.resolution=1,                    # Grid resolution in degrees
-   obs.size=0.5,                       # In degrees
+   obs.size=0.5,                        # In degrees
    obs.colour=rgb(255,215,0,100,
                    maxColorValue=255),  # For observations
    label='',                            # Label - the date is a good choice
@@ -295,16 +293,6 @@ WeatherMap.streamline.getGC<-function(value,transparency=NA,status=1,Options) {
    else {
 	 transparency<-max(0,min(1,transparency))
          alpha<-c(255,192,128,54,0)[min(as.integer(transparency*5)+1,5)]
-   }
-   # Whites are too bright - turn them to grey
-   c.scale<-sum(rgb)
-   if(c.scale>Options$wind.palette.maxgrey) {
-     rgb<-rgb*Options$wind.palette.maxgrey/c.scale
-   }
-   if(!is.null(Options$merge.colour)) {
-     m<-col2rgb(Options$merge.colour)
-     rgb<-(as.vector(rgb)+
-           as.vector(m)*Options$merge.weight)/(Options$merge.weight+1)
    }
    colour<-rgb(rgb[1],rgb[2],rgb[3],alpha,maxColorValue = 255)
    return(gpar(col=colour,fill=colour,lwd=Options$wind.vector.lwd*status))
