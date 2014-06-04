@@ -11,6 +11,8 @@ Defaults<-list(
    pole.lat=90,pole.lon=180,            # Position of map centre
    lon.min=-180,lon.max=180,
    lat.min=-90,lat.max=90,              # Map range (around centre)
+   vp.lon.min=NULL,vp.lon.max=NULL,
+   vp.lat.min=NULL,vp.lat.max=NULL,     # Range to actually draw (around centre)
    show.wind=TRUE,
    show.precipitation=TRUE,
    show.mslp=TRUE,
@@ -998,8 +1000,15 @@ WeatherMap.draw<-function(Options=NULL,t.actual=NULL,
 
   if(is.null(Options)) Options<-WeatherMap.get.options()
   base.gp<-gpar(family='Helvetica',font=1,col='black')
-  pushViewport(dataViewport(c(Options$lon.min,Options$lon.max),
-		            c(Options$lat.min,Options$lat.max),
+  lon.min<-Options$lon.min
+  if(!is.null(Options$vp.lon.min)) lon.min<-Options$vp.lon.min
+  lon.max<-Options$lon.max
+  if(!is.null(Options$vp.lon.max)) lon.max<-Options$vp.lon.max
+  lat.min<-Options$lat.min
+  if(!is.null(Options$vp.lat.min)) lat.min<-Options$vp.lat.min
+  lat.max<-Options$lat.max
+  if(!is.null(Options$vp.lat.max)) lat.max<-Options$vp.lat.max
+  pushViewport(dataViewport(c(lon.min,lon.max),c(lat.min,lat.max),
 		            extension=0,gp=base.gp))
   p<-WeatherMap.rectpoints(Options$precip.points,Options)
   ip<-WeatherMap.rectpoints(Options$ice.points,Options)
