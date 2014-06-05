@@ -455,15 +455,6 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
    if(!Options$jitter) set.seed(27)
    new.longs<-new.longs+runif(length(new.longs))*Options$wind.vector.seed
    new.lats<-new.lats+runif(length(new.lats))*Options$wind.vector.seed
-   # Need periodic boundary conditions?
-   if(Options$lon.max-Options$lon.min>360) {
-      w<-which(new.longs< Options$lon.max-360)
-      new.longs<-new.longs[-w]
-      new.lats<-new.lats[-w]
-      w<-which(new.longs> Options$lon.min+360)
-      new.longs<-c(new.longs,new.longs[w]-360)
-      new.lats<-c(new.lats,new.lats[w])
-  }
    new.status<-rep(1/Options$wind.vector.fade.steps,length(new.lats))
    if(initial) new.status<-pmax(new.status,1)
    if(length(new.status)>1) {
@@ -477,6 +468,25 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
       }
    }
    s[['status']]<-s[['status']][1:length(s[['x']][,1])]
+   # Need periodic boundary conditions?
+   if(Options$lon.max-Options$lon.min>360) {
+      w<-which(s[['x']][,1]< Options$lon.max-360)
+      for(var in c('status','t_anom','magnitude')) {
+         s[[var]]<-s[[var]][-w]
+      }
+      for(var in c('x','y','shape')) {
+         s[[var]]<-s[[var]][-w,]
+      }
+      w<-which(s[['x']][,1]> Options$lon.min+360)
+      for(var in c('status','t_anom','magnitude')) {
+        s[[var]]<-c(s[[var]],s[[var]][w])
+      }
+      for(var in c('x','y','shape')) {
+        s2<-s[[var]][w,]
+        if(var=='x') s2[]<-s2-360
+        s[[var]]<-rbind(s[[var]],s2)
+      }
+  }
    return(s)
 }
 
