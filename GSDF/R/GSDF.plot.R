@@ -19,8 +19,8 @@
 #' @param levels vector giving colour boundaries - seq(-10,10,1) will
 #'  paint everything between -10 and -9 one colour, -9 and -8 the next and so on.
 #' @param draw If true, draw the map; if false return a grob (to be 'print'ed later).
-#' @param continents Draw continent outlines if true, not if false. If NULL (default)
-#'  draw only if plot is long::lat.
+#' @param continents Draw 'high' or 'low' resolution continental outlines. If NULL (default)
+#'  draw low resolution, but only if plot is long::lat. If 'none' don't draw any.
 #' @param y.range Range to show on y axis - units of relevant dimension. If NULL 
 #' (default) use range of data.
 #' @param x.range Range to show on x axis - units of relevant dimension. If NULL 
@@ -76,8 +76,8 @@ GSDF.plot.2d<-function(g,dimensions=NULL,
    if(is.null(continents) && 
          g$dimensions[[dimensions[1]]]$type=='lon' &&
          g$dimensions[[dimensions[2]]]$type=='lat') {
-      continents=TRUE
-   } else { continents=FALSE }
+      continents='low'
+   }
    if(is.null(x.label)) {
       if(g$dimensions[[dimensions[1]]]$type=='lon') x.label='Longitude'
       if(g$dimensions[[dimensions[1]]]$type=='lat') x.label='Latitude'
@@ -114,7 +114,7 @@ GSDF.plot.2d<-function(g,dimensions=NULL,
 
 GSDF.plot.map <-function(data,x.coords,y.coords,
                   palette="diverging",ncols=17,levels=NULL,
-                  draw=TRUE,continents=TRUE,
+                  draw=TRUE,continents=NULL,
                   y.range=NULL,y.scale=NULL,y.label='',
                   x.range=NULL,x.scale=NULL,x.label='',
                   pole.lat=NULL,pole.lon=NULL,
@@ -127,11 +127,9 @@ GSDF.plot.map <-function(data,x.coords,y.coords,
     # Get continental outline data
     continent.outlines <- map('world',interior=FALSE,plot=FALSE)
     is.na(continent.outlines$x[8836])=T  # Remove Antarctic bug
-    continent.outlines$x<-c(continent.outlines$x,NA,
-                            continent.outlines$x+360)
-    continent.outlines$y<-c(continent.outlines$y,NA,
-                            continent.outlines$y)
-  
+    if(!is.null(continents) && tolower(continents)=='high') {
+       continent.outlines <- map('worldHires',interior=FALSE,plot=FALSE)
+    }  
     # If w are using a rotated pole, rotate the continent outlines to match.
     if(!is.null(pole.lat) && !is.null(pole.lon)) {
           nl<-GSDF.ll.to.rg(continent.outlines$y,
@@ -143,6 +141,10 @@ GSDF.plot.map <-function(data,x.coords,y.coords,
           w<-which(abs(diff(continent.outlines$x))>50)
           is.na(continent.outlines$x[w+1])<-T
     }
+    continent.outlines$x<-c(continent.outlines$x,NA,
+                            continent.outlines$x+360)
+    continent.outlines$y<-c(continent.outlines$y,NA,
+                            continent.outlines$y)
         
     # Set default ranges
     if(is.null(x.range)) x.range<-c(min(x.coords,na.rm=T)-0.01,
@@ -153,7 +155,8 @@ GSDF.plot.map <-function(data,x.coords,y.coords,
 
     mappanel <- function(x,y,...) {
         panel.contourplot(x,y,...)
-        if(continents) {
+        if(!is.null(continents) &&
+             (tolower(continents)=='high' || tolower(continents)=='low')) {
             llines(continent.outlines$x,
                    continent.outlines$y,col="black")
         }

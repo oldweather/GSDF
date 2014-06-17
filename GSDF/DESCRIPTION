@@ -12,6 +12,7 @@ Depends:
     fields,
     ncdf4,
     maps,
+    mapdata,
     lattice,
     grid
 License: Apache
