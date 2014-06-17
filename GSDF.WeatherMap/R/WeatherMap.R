@@ -329,7 +329,7 @@ WeatherMap.decimate.streamlines<-function(s,Options) {
   for(i in seq(1,Options$wind.vector.points)) {
     probs<-interp.surface(list(x=x,y=y,z=bk$fhat),
                           cbind(s[['x']][,i],s[['y']][,i]))
-    probs<-1/(Options$wind.vector.fade.steps)
+    #probs<-1/(Options$wind.vector.fade.steps)
     d<-which(s[['status']]==1 & runif(length(s[['x']][,i]))<probs)
     result<-unique(c(result,d))
   }

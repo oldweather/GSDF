@@ -64,7 +64,7 @@ GSDF.plot.2d<-function(g,dimensions=NULL,
      }
    } else {
      if(g$dimensions[[dims[2]]]$type=='lon') {
-        dimensions<-c(dims[2],dim2[1])
+        dimensions<-c(dims[2],dims[1])
      } else {
         dimensions<-c(dims[1],dims[2])
      }
