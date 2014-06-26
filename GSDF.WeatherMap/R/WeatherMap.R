@@ -683,11 +683,20 @@ WeatherMap.get.land<-function(Options) {
        if(lon.range>350) {
           land<-WeatherMap.land.fix.am(land)
        } else {
-         # Trim all the edge points which might wrap
-          lower<-max(-180,Options$lon.min-lon.range/2)
-          upper<-min(180,Options$lon.max+lon.range/2)
-          w<-which(land$x< lower | land$x>upper)
-          is.na(land$x[w])<-T
+         # BBreak all the polygons now wrapped across the longitude break
+         w<-which(abs(diff(land$x))>350)
+         ml<-length(land$x)
+         for(p in seq_along(w)) {
+            land$x<-c(land$x[1:(w[p]+p-1)],NA,land$x[(w[p]+p):(ml+p-1)])
+            land$y<-c(land$y[1:(w[p]+p-1)],NA,land$y[(w[p]+p):(ml+p-1)])
+         }
+         # Needs to be done twice? why?
+         w<-which(abs(diff(land$x))>350)
+         ml<-length(land$x)
+         for(p in seq_along(w)) {
+            land$x<-c(land$x[1:(w[p]+p-1)],NA,land$x[(w[p]+p):(ml+p-1)])
+            land$y<-c(land$y[1:(w[p]+p-1)],NA,land$y[(w[p]+p):(ml+p-1)])
+         }
        }
        lakes<-map('worldHires',plot=F,fill=T,exact=F,region=c('.*Lake|.*Sea'))
        if(Options$pole.lon!=0 || Options$pole.lat!=90) {
