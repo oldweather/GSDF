@@ -183,6 +183,146 @@ WeatherMap.aspect<-function(Options) {
    return(Ratio)  
 }
 
+#' Allocate points using poisson-disc coverage
+#'
+#' Uses Bridson's algorithm.
+#'
+#' Requires a characteristic length and a max attempt
+#'  number - both set in options
+#'
+#' @export
+#' @param Options list of options - see \code{WeatherMap.set.option}
+#' @param previous list with elements 'lats' and lons' - set of points to
+#'  start from. Defaults to NULL - start from scratch.
+#' @return list with elements 'lats' and lons'
+WeatherMap.bridson<-function(Options,
+                             previous=NULL) {
+
+    x.range<-c(Options$lon.min,Options$lon.max)
+    if(defined(Options$vp.lon.min)) x.range[1]<-Options$vp.lon.min
+    if(defined(Options$vp.lon.max)) x.range[2]<-Options$vp.lon.max
+    y.range<-c(Options$lat.min,Options$lat.max)
+    if(defined(Options$vp.lat.min)) y.range[1]<-Options$vp.lat.min
+    if(defined(Options$vp.lat.max)) y.range[2]<-Options$vp.lat.max
+    r.min<-Options$wind.r.min
+    max.attempt<-Options$bridson.max.attempt
+
+    # Generate n random points at a distance between r.min and 2(r.min)
+    #  of a specified point
+    annular.sample<-function(n=NULL,x=NULL,y=NULL,r=NULL) {
+      x.s<-numeric(0)
+      while(length(x.s)<n) {
+        x.s<-(runif(n*3)-0.5)*4
+        y.s<-(runif(n*3)-0.5)*4
+        d.s<-sqrt(x.s**2+y.s**2)
+        w<-which(d.s<1 | d.s>2)
+        x.s<-x.s[-w]
+        y.s<-y.s[-w]
+      }
+      return(list(x=x.s[1:n]*r.min+x,
+                  y=y.s[1:n]*r.min+y))
+    }
+
+    # Find the subset of points not too far from a selected point
+    #  using their grid indices
+    close.points<-function(index) {
+      idx.y<-as.integer((index-1)/n.x)+1
+      idx.x<-index-(idx.y-1)*n.x
+      x.range<-seq.int(max(1,idx.x-3),min(n.x,idx.x+3))
+      y.range<-seq.int(max(1,idx.y-3),min(n.y,idx.y+3))
+      result<-rep(NA,48)
+      c<-1
+      for(i in x.range) {
+        for(j in y.range) {
+          if(i==idx.x && j==idx.y) next
+          result[c]<-(j-1)*n.x+i
+          c<-c+1
+        }
+      }
+      w<-which(is.na(result))
+      if(length(w)>0) result<-result[-w]
+      return(result)
+    }
+    
+    # Choose background grid spacing close to r/sqrt(2)
+    #  and which gives an integer number of points
+    n.x<-as.integer(diff(x.range)/(r.min/sqrt(2)))
+    r.x<-diff(x.range)/n.x
+    n.y<-as.integer(diff(y.range)/(r.min/sqrt(2)))
+    r.y<-diff(y.range)/n.y
+
+    # Positions of point at each grid location
+    #  NA if nothing there
+    x<-rep(NA,n.x*n.y)
+    y<-rep(NA,n.x*n.y)
+
+    # set of active points
+    active<-integer(0)
+    
+    # Generate start point at random
+    x.c<-runif(1)*diff(x.range)+min(x.range)
+    y.c<-runif(1)*diff(y.range)+min(y.range)
+    index.c<-as.integer((y.c-min(y.range))/r.y)*n.x+
+             as.integer((x.c-min(x.range))/r.x)+1
+    active<-index.c
+    x[index.c]<-x.c
+    y[index.c]<-y.c
+
+    # If starting from a pre-existing set of points, load them
+    # in random order, culling any too close to one already loaded
+    # and set all the survivors to active
+    if(!is.null(previous)) {
+    order<-sample.int(length(previous$lon))
+    for(i in seq_along(order)) {
+        index.i<-as.integer((previous$lat[i]-min(y.range))/r.y)*n.x+
+                 as.integer((previous$lon[i]-min(x.range))/r.x)+1
+        if(!is.na(x[index.i])) next
+        cp<-close.points(index.i)
+        cp<-cp[!is.na(x[cp])]
+        if(length(cp)>0) {
+            d.s<-((previous$x[i]-x[cp])**2+(previous$lat[i]-y[cp])**2)
+            if(min(d.s,na.rm=TRUE)<r.min**2) next
+        }
+        x[index.i]<-previous$lon[i]
+        y[index.i]<-previous$lat[i]
+        active<-c(active,index.i)
+      }
+  }
+    
+    # Allocate more points to fill gaps
+    while(length(active)>0) {
+      c<-active[sample.int(length(active),1)] # Choose random active point
+      cp<-close.points(c)
+      cp<-cp[!is.na(x[cp])]
+      ns<-annular.sample(n=max.attempt,x=x[c],y=y[c],r=r.min)
+      for(i in seq(1,max.attempt)) {
+         if(ns$y[i]<min(y.range) || ns$y[i]>max(y.range) ||
+            ns$x[i]<min(x.range) || ns$x[i]>max(x.range)) next
+         index.s<-as.integer((ns$y[i]-min(y.range))/r.y)*n.x+
+                  as.integer((ns$x[i]-min(x.range))/r.x)+1
+         if(!is.na(x[index.s])) next
+         if(length(cp)>0) {
+            d.s<-((ns$x[i]-x[cp])**2+(ns$y[i]-y[cp])**2)
+            if(min(d.s,na.rm=TRUE)<r.min**2) next
+          }
+         x[index.s]<-ns$x[i]
+         y[index.s]<-ns$y[i]
+         active<-c(active,index.s)
+         break
+       }
+       if(i==max.attempt) {
+         # All failed - remove current point from active list
+         w<-which(active==c)
+         active<-active[-w]
+       }
+    }
+
+    w<-which(is.na(x))
+    x<-x[-w]
+    y<-y[-w]
+    return(list(lon=x,tal=y))
+  }
+
 #' Rectpoints
 #'
 #' Create a set of uniformly distributed points on which
