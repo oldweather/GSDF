@@ -206,7 +206,8 @@ WeatherMap.bridson<-function(Options,
     y.range<-c(Options$lat.min,Options$lat.max)
     if(!is.null(Options$vp.lat.min)) y.range[1]<-Options$vp.lat.min
     if(!is.null(Options$vp.lat.max)) y.range[2]<-Options$vp.lat.max
-    r.min<-Options$wind.vector.density*max(diff(x.range)/360,diff(y.range)/180)
+    view.scale<-max(diff(x.range)/360,diff(y.range)/180)
+    r.min<-Options$wind.vector.density*view.scale
     max.attempt<-Options$bridson.max.attempt
 
     # Generate n random points at a distance between r.min and 2(r.min)
@@ -392,6 +393,7 @@ WeatherMap.propagate.streamlines<-function(lat,lon,status,u,v,t,t.c,Options) {
 	streamlets[['t_anom']]<-tp-cp
     }
     streamlets[['magnitude']]<-0
+    view.scale<-max((Options$lon.max-Options$lon.min)/360,(Options$lat.max-Options$lat.min)/180)
     for(i in seq(1,Options$wind.vector.points)) {
 		up<-GSDF.interpolate.ll(u,lat,lon)
                 if(Options$wrap.spherical) up<-up/cos(lat*pi/180)
@@ -402,10 +404,12 @@ WeatherMap.propagate.streamlines<-function(lat,lon,status,u,v,t,t.c,Options) {
 		streamlets[['y']][,i]<-lat        
 		streamlets[['shape']][i]<-0
 		streamlets[['magnitude']]<-streamlets[['magnitude']] +
-		(m)*Options$wind.vector.scale/Options$wind.vector.points
+		(m)*view.scale*Options$wind.vector.scale/Options$wind.vector.points
 		lon<-lon+cos(direction)*(m)*
+                view.scale*
 		Options$wind.vector.scale/Options$wind.vector.points
 		lat<-lat+sin(direction)*(m)*
+                view.scale*
 		Options$wind.vector.scale/Options$wind.vector.points
     }
     streamlets[['magnitude']][is.null(streamlets[['magnitude']])]<-0
@@ -516,6 +520,7 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
 	  u<-r.u.v$u
 	  v<-r.u.v$v
     }
+   view.scale<-max((Options$lon.max-Options$lon.min)/360,(Options$lat.max-Options$lat.min)/180)
    lats<-0
    longs<-0
    status<-1
@@ -525,7 +530,7 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
       # Move the vectors along at the speed of the wind (*wind.vector.move.scale)
       # Assumes frames are hourly (0.033 converts m/s to degrees/hr)
       move.scale<-0.033*Options$wind.vector.points/Options$wind.vector.scale
-      move.scale<-move.scale*Options$wind.vector.move.scale
+      move.scale<-move.scale*Options$wind.vector.move.scale*view.scale
       lats<-s[['y']][,1]<-s[['y']][,1]+(s[['y']][,2]-s[['y']][,1])*move.scale
       longs<-s[['x']][,1]<-s[['x']][,1]+(s[['x']][,2]-s[['x']][,1])*move.scale
       status<-s[['status']]
