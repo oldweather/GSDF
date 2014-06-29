@@ -551,7 +551,7 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
   }
    # Update positions and Roll-out the streamlines
    if(!Options$jitter) set.seed(27)
-   p<-WeatherMap.bridson(Options,previous=s)
+   p<-WeatherMap.bridson(Options,previous=list(lat=lats,lon=longs))
    s<-WeatherMap.propagate.streamlines(p$lat,p$lon,rep(1,length(p$lat)),u,v,t,t.c,Options)
    # Need periodic boundary conditions?
    if(Options$lon.max-Options$lon.min>360) {
