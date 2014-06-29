@@ -34,6 +34,8 @@ Defaults<-list(
    precip.lwd=1,
    precip.scale=1,                      # Scaling for precip blob size
    precip.max.opacity=1,
+   wind.vector.density=1,               # Decrease for closer-packed streamlines
+   bridson.max.attempt=20,              # Decrease=faster but less good streamline arrangement
    wind.vector.fade.steps=1,            # Increase for gradual fade in/out
    wind.vector.iterate=1,               # Move streamlets n times before drawing
    wind.vector.seed=2,                  # Smaller -> more wind vectors
@@ -199,12 +201,12 @@ WeatherMap.bridson<-function(Options,
                              previous=NULL) {
 
     x.range<-c(Options$lon.min,Options$lon.max)
-    if(defined(Options$vp.lon.min)) x.range[1]<-Options$vp.lon.min
-    if(defined(Options$vp.lon.max)) x.range[2]<-Options$vp.lon.max
+    if(!is.null(Options$vp.lon.min)) x.range[1]<-Options$vp.lon.min
+    if(!is.null(Options$vp.lon.max)) x.range[2]<-Options$vp.lon.max
     y.range<-c(Options$lat.min,Options$lat.max)
-    if(defined(Options$vp.lat.min)) y.range[1]<-Options$vp.lat.min
-    if(defined(Options$vp.lat.max)) y.range[2]<-Options$vp.lat.max
-    r.min<-Options$wind.r.min
+    if(!is.null(Options$vp.lat.min)) y.range[1]<-Options$vp.lat.min
+    if(!is.null(Options$vp.lat.max)) y.range[2]<-Options$vp.lat.max
+    r.min<-Options$wind.vector.density*max(diff(x.range)/360,diff(y.range)/180)
     max.attempt<-Options$bridson.max.attempt
 
     # Generate n random points at a distance between r.min and 2(r.min)
@@ -320,7 +322,7 @@ WeatherMap.bridson<-function(Options,
     w<-which(is.na(x))
     x<-x[-w]
     y<-y[-w]
-    return(list(lon=x,tal=y))
+    return(list(lon=x,lat=y))
   }
 
 #' Rectpoints
@@ -533,14 +535,6 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
         longs<-longs[-w]
         status<-status[-w]
       }
-      if(Options$wind.vector.decimate>0) {
-         # decimate where streamlines are clustered
-         d<-WeatherMap.decimate.streamlines(s,Options)
-         status[d]<- -1  # flag for fade-out
-         d<-which((lats > Options$lat.max | lats < Options$lat.min |
-                  longs > Options$lon.max | longs < Options$lon.min) &
-                  status>0 )
-         status[d]<- -1     
       # Update plot status and remove expired ones or those outside the frame
          w<-which(is.na(lats) | is.na(longs) | is.na(status) |
                   (status<=0 & status>=-1/Options$wind.vector.fade.steps))
@@ -548,67 +542,12 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
            lats<-lats[-w]
            longs<-longs[-w]
            status<-status[-w]
-         }
-      }
-      status<-status+1/Options$wind.vector.fade.steps
-    }
-   # Roll-out the streamlines
-   s<-WeatherMap.propagate.streamlines(lats,longs,status,u,v,t,t.c,Options)
-      
-   # Seed new streamlets to fill any gaps
+       }
+  }
+   # Update positions and Roll-out the streamlines
    if(!Options$jitter) set.seed(27)
-   seed.lat.offset<-(runif(1)-0.5)*Options$wind.vector.seed
-   seed.long.offset<-(runif(1)-0.5)*Options$wind.vector.seed
-   if(!Options$jitter) {
-     seed.lat.offset<-0
-     seed.lon.offset<-0
-   }
-   seed.lats<-seq(Options$lat.min+seed.lat.offset,Options$lat.max+seed.lat.offset-0.001,
-                  Options$wind.vector.seed)
-   seed.longs<-seq(Options$lon.min+seed.long.offset,Options$lon.max+seed.long.offset-0.001,
-                   Options$wind.vector.seed)
-   seed<-array(data=TRUE,dim=c(length(seed.longs),length(seed.lats)))
-   if(length(na.omit(s[['y']]))>0) {
-       s.lat<-pmax(1,pmin(length(seed[1,]),
-                    as.integer((na.omit(s[['y']])-(Options$lat.min+seed.lat.offset))/
-                                                        Options$wind.vector.seed)))
-       s.lon<-pmax(1,pmin(length(seed[,1]),
-                    as.integer((na.omit(s[['x']])-(Options$lon.min+seed.long.offset))/
-                                                        Options$wind.vector.seed)))
-       seed[s.lon+(s.lat-1)*length(seed[,1])]<-FALSE
-     }
-   # Skip more high latitude seed points if we're applying spherical distortion to streamlines
-   #  (Otherwise we'll have too many at high latitudes).   
-   if(Options$wrap.spherical) {
-     for(lat.i in seq_along(seed.lats)) {
-       f.omit<-1-cos(seed.lats[lat.i]*pi/180)
-       s.omit<-c(0,diff(as.integer(seq_along(seed.longs)*f.omit+lat.i%%3/3)))
-       w<-which(s.omit==1)
-       seed[w,lat.i]<-FALSE
-     }
-   }
-   new.longs<-matrix(data=seed.longs,
-                     nrow=length(seed[,1]),ncol<-length(seed[1,]),
-                     byrow<-FALSE)[which(seed)]
-   new.lats<-matrix(data=seed.lats,
-                    nrow=length(seed[,1]),ncol<-length(seed[1,]),
-                    byrow<-TRUE)[which(seed)]
-   if(!Options$jitter) set.seed(27)
-   new.longs<-new.longs+runif(length(new.longs))*Options$wind.vector.seed
-   new.lats<-new.lats+runif(length(new.lats))*Options$wind.vector.seed
-   new.status<-rep(1/Options$wind.vector.fade.steps,length(new.lats))
-   if(initial) new.status<-pmax(new.status,1)
-   if(length(new.status)>1) {
-      s2<-WeatherMap.propagate.streamlines(new.lats,new.longs,new.status,u,v,t,t.c,Options)
-      # Merge the new and old streamlines
-      for(var in c('status','t_anom','magnitude')) {
-        s[[var]]<-c(s[[var]],s2[[var]])
-      }
-      for(var in c('x','y','shape')) {
-        s[[var]]<-rbind(s[[var]],s2[[var]])
-      }
-   }
-   s[['status']]<-s[['status']][1:length(s[['x']][,1])]
+   p<-WeatherMap.bridson(Options,previous=s)
+   s<-WeatherMap.propagate.streamlines(p$lat,p$lon,rep(1,length(p$lat)),u,v,t,t.c,Options)
    # Need periodic boundary conditions?
    if(Options$lon.max-Options$lon.min>360) {
       w<-which(s[['x']][,1]< Options$lon.max-360)
@@ -823,15 +762,15 @@ WeatherMap.get.land<-function(Options) {
        if(lon.range>350) {
           land<-WeatherMap.land.fix.am(land)
        } else {
-         # BBreak all the polygons now wrapped across the longitude break
-         w<-which(abs(diff(land$x))>350)
+         # Break all the polygons now wrapped across the longitude break
+         w<-which(abs(diff(land$x))>150)
          ml<-length(land$x)
          for(p in seq_along(w)) {
             land$x<-c(land$x[1:(w[p]+p-1)],NA,land$x[(w[p]+p):(ml+p-1)])
             land$y<-c(land$y[1:(w[p]+p-1)],NA,land$y[(w[p]+p):(ml+p-1)])
          }
          # Needs to be done twice? why?
-         w<-which(abs(diff(land$x))>350)
+         w<-which(abs(diff(land$x))>150)
          ml<-length(land$x)
          for(p in seq_along(w)) {
             land$x<-c(land$x[1:(w[p]+p-1)],NA,land$x[(w[p]+p):(ml+p-1)])
@@ -1069,6 +1008,7 @@ WeatherMap.draw.precipitation<-function(precip,Options) {
   precip.colours[n.colours+1]<-precip.colours[n.colours]
 
   # Remove precip below threshold
+  precip$data[]<-pmax(precip$data,0) # some models still have negative precip
   w<-which(sqrt(precip$data)<Options$precip.threshold)
   precip$data[w]<-0
   # Scale data to range 0-1 
