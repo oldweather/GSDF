@@ -74,7 +74,7 @@ Defaults<-list(
    obs.colour=rgb(255,215,0,100,
                    maxColorValue=255),  # For observations
    label='',                            # Label - the date is a good choice
-   label.xp=0.97,label.yp=0.04          # Location, 'npc, units
+   label.xp=0.99,label.yp=0.01          # Location, npc units
 )
 
 #' WeatherMap.option
@@ -1079,9 +1079,19 @@ WeatherMap.draw.obs<-function(obs,Options) {
 #' @return nothing - side effect only.
 WeatherMap.draw.label<-function(Options) {
    label.gp<-gpar(family='Helvetica',font=1,col='black')
-   grid.text(Options$label,x=unit(Options$label.xp,'npc'),
-                           y=unit(Options$label.yp,'npc'),
-             just='right',gp=label.gp)
+   tg<-textGrob(Options$label,x=unit(Options$label.xp,'npc'),
+                              y=unit(Options$label.yp,'npc'),
+                              hjust=1,vjust=0,
+                              gp=label.gp)
+   bg.gp<-gpar(col=Options$land.colour,fill=Options$land.colour)
+   h<-heightDetails(tg)
+   w<-widthDetails(tg)
+   xp<-unit(Options$label.xp,'npc')
+   yp<-unit(Options$label.yp,'npc')
+   grid.polygon(x=unit.c(xp,xp-w,xp-w,xp),
+                y=unit.c(yp+h,yp+h,yp,yp),
+                gp=bg.gp)
+   grid.draw(tg)
 }
 
 # Rotate the pole of a scalar field if necessary
