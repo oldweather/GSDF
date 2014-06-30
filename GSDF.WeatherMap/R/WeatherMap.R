@@ -275,6 +275,14 @@ WeatherMap.bridson<-function(Options,
     # in random order, culling any too close to one already loaded
     # and set all the survivors to active
     if(!is.null(previous)) {
+        w<-which(previous$lat<min(y.range) |
+                 previous$lat>max(y.range) |
+                 previous$lon<min(x.range) |
+                 previous$lon>max(x.range))
+        if(length(w)>0) {
+            previous$lat<-previous$lat[-w]
+            previous$lon<-previous$lon[-w]
+        }
     order<-sample.int(length(previous$lon))
     for(i in seq_along(order)) {
         index.i<-as.integer((previous$lat[i]-min(y.range))/r.y)*n.x+
@@ -534,15 +542,14 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
       lats<-s[['y']][,1]<-s[['y']][,1]+(s[['y']][,2]-s[['y']][,1])*move.scale
       longs<-s[['x']][,1]<-s[['x']][,1]+(s[['x']][,2]-s[['x']][,1])*move.scale
       status<-s[['status']]
-      w<-which(is.na(lats) | is.na(longs) | is.na(status))
+      w<-which(is.na(lats) | is.na(longs))
       if(length(w)>0) {
         lats<-lats[-w]
         longs<-longs[-w]
         status<-status[-w]
       }
       # Update plot status and remove expired ones or those outside the frame
-         w<-which(is.na(lats) | is.na(longs) | is.na(status) |
-                  (status<=0 & status>=-1/Options$wind.vector.fade.steps))
+         w<-which(is.na(lats) | is.na(longs))
          if(length(w)>0) {
            lats<-lats[-w]
            longs<-longs[-w]
