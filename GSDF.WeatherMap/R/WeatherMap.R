@@ -34,8 +34,8 @@ Defaults<-list(
    precip.lwd=1,
    precip.scale=1,                      # Scaling for precip blob size
    precip.max.opacity=1,
-   wind.vector.density=1,               # Decrease for closer-packed streamlines
-   bridson.max.attempt=20,              # Decrease=faster but less good streamline arrangement
+   wind.vector.density=1.5,             # Decrease for closer-packed streamlines
+   bridson.max.attempt=5,               # Decrease=faster but less good streamline arrangement
    wind.vector.fade.steps=1,            # Increase for gradual fade in/out
    wind.vector.iterate=1,               # Move streamlets n times before drawing
    wind.vector.seed=2,                  # Smaller -> more wind vectors
@@ -233,20 +233,11 @@ WeatherMap.bridson<-function(Options,
       idx.x<-index-(idx.y-1)*n.x
       x.range<-seq.int(max(1,idx.x-3),min(n.x,idx.x+3))
       y.range<-seq.int(max(1,idx.y-3),min(n.y,idx.y+3))
-      result<-rep(NA,48)
-      c<-1
-      for(i in x.range) {
-        for(j in y.range) {
-          if(i==idx.x && j==idx.y) next
-          result[c]<-(j-1)*n.x+i
-          c<-c+1
-        }
-      }
-      w<-which(is.na(result))
-      if(length(w)>0) result<-result[-w]
+      result=(rep(y.range,length(x.range))-1)*n.x+
+             sort(rep(x.range,length(y.range)))
       return(result)
     }
-    
+     
     # Choose background grid spacing close to r/sqrt(2)
     #  and which gives an integer number of points
     n.x<-as.integer(diff(x.range)/(r.min/sqrt(2)))
@@ -305,28 +296,37 @@ WeatherMap.bridson<-function(Options,
       c<-active[sample.int(length(active),1)] # Choose random active point
       cp<-close.points(c)
       cp<-cp[!is.na(x[cp])]
-      ns<-annular.sample(n=max.attempt,x=x[c],y=y[c],r=r.min)
-      for(i in seq(1,max.attempt)) {
-         if(ns$y[i]<min(y.range) || ns$y[i]>max(y.range) ||
-            ns$x[i]<min(x.range) || ns$x[i]>max(x.range)) next
-         index.s<-as.integer((ns$y[i]-min(y.range))/r.y)*n.x+
-                  as.integer((ns$x[i]-min(x.range))/r.x)+1
-         if(!is.na(x[index.s])) next
-         if(length(cp)>0) {
-            d.s<-((ns$x[i]-x[cp])**2+(ns$y[i]-y[cp])**2)
-            if(min(d.s,na.rm=TRUE)<r.min**2) next
-          }
-         x[index.s]<-ns$x[i]
-         y[index.s]<-ns$y[i]
-         active<-c(active,index.s)
-         break
-       }
-       if(i==max.attempt) {
+         ns<-annular.sample(n=max.attempt,x=x[c],y=y[c],r=r.min)
+         w<-which(ns$y<y.range[1] | ns$y>y.range[2] |
+            ns$x<x.range[1] | ns$x>x.range[2])
+         if(length(w)>0) {
+           ns$x<-ns$x[-w]
+           ns$y<-ns$y[-w]
+         }
+         index.s<-as.integer((ns$y-y.range[1])/r.y)*n.x+
+                     as.integer((ns$x-x.range[1])/r.x)+1
+         w<-which(is.na(ns$x[index.s]))
+         if(length(w)>0) { # At least one sample not in occupied box
+           index.s<-index.s[w]
+           ns$x<-ns$x[w]
+           ns$y<-ns$y[w]
+           if(length(cp)>0) { # At least one close point, so test necessary     
+              d<-(outer(ns$x,x[cp],FUN='-'))**2 +
+                 (outer(ns$y,y[cp],FUN='-'))**2
+              d<-apply(d,1,min)
+              w<-which(d>r.min**2)
+           } else w<-1 # no test - just take first point
+           if(length(w)>0) { # new point
+               x[index.s[w[1]]]<-ns$x[w[1]]
+               y[index.s[w[1]]]<-ns$y[w[1]]
+               active<-c(active,index.s[w[1]])
+               next
+           }
+         }
          # All failed - remove current point from active list
          w<-which(active==c)
          active<-active[-w]
-       }
-    }
+   }
 
     w<-which(is.na(x))
     x<-x[-w]
