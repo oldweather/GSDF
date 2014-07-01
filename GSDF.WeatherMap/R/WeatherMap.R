@@ -732,25 +732,10 @@ WeatherMap.land.fix.am<-function(land) {
 WeatherMap.get.land<-function(Options) {
 	
   if(Options$background.resolution=='high') {
-     hrfile<-NULL
-     if(file.exists('/data/cr2/hadpb/PBToolsData/land.masks/WeatherMap.land.Rdata'))
-       hrfile<-'/data/cr2/hadpb/PBToolsData/land.masks/WeatherMap.land.Rdata'
-     if(file.exists('/Users/philip/LocalData/PBToolsData/land.masks/WeatherMap.land.Rdata'))
-       hrfile<-'/Users/philip/LocalData/PBToolsData/land.masks/WeatherMap.land.Rdata'
-     if(!is.null(hrfile)) load(hrfile)
-     else stop("No high resolution polygon gile")
-     if(Options$pole.lon!=0 || Options$pole.lat!=90) {
-        l2<-GSDF.ll.to.rg(WeatherMap.land$y,WeatherMap.land$x,Options$pole.lat,Options$pole.lon)
-        WeatherMap.land$x<-l2$lon
-        WeatherMap.land$y<-l2$lat
-      }
-      # Trim all the edge points which might wrap
-      lon.range<-Options$lon.max-Options$lon.min
-      lower<-Options$lon.min-lon.range/2
-      upper<-Options$lon.max+lon.range/2
-      w<-which(WeatherMap.land$x< lower | WeatherMap.land$x>upper)
-      is.na(WeatherMap.land$x[w])<-T
-     return(WeatherMap.land)
+     if(Options$pole.lon!=180 || Options$pole.lat!=90) {
+        land<-GSDF.field.to.pole(WeatherMap.land.mask,Options$pole.lat,Options$pole.lon)
+      } else land<-WeatherMap.land.mask
+     return(land)
    }
   else {
       land<-map('worldHires',plot=F,fill=T)
@@ -817,47 +802,64 @@ WeatherMap.get.land<-function(Options) {
 #' @return nothing - side effect only.
 WeatherMap.draw.land<-function(land,Options) {
 
-  if(Options$show.ice.shelves) {
-      gp.ice<-gpar(col=Options$ice.colour,
-                   fill=Options$ice.colour)
-     if(Options$pole.lon!=180 || Options$pole.lat!=90) {
-        l2<-GSDF.ll.to.rg(WeatherMap.ice.shelves$y,
-                        WeatherMap.ice.shelves$x,
-                        Options$pole.lat,Options$pole.lon)
-      # Trim all the edge points which might wrap
-        w<-which(l2$lon< -178 | l2$lon>178)
-        is.na(l2$lon[w])<-T
-        grid.polygon(x=unit(l2$lon,'native'),
-                     y=unit(l2$lat,'native'),
-                     gp=gp.ice)
-      }
-     else{
-      grid.polygon(x=unit(WeatherMap.ice.shelves$x,'native'),
-                   y=unit(WeatherMap.ice.shelves$y,'native'),
-                   gp=gp.ice)
-    }
-  } 
-
   if(is.null(land)) {
 	land<-WeatherMap.get.land(Options)
   }
-    gp.land<-gpar(col=Options$land.colour,
-                  fill=Options$land.colour)
-    if(Options$background.resolution=='high') {
-      grid.polygon(x=unit(land$x,'native'),
-                   y=unit(land$y,'native'),
-                   id.lengths=rep(4,length(land$x)/4),
-                   gp=gp.land)
-  } else {
-    grid.polygon(x=unit(land$x,'native'),
-                 y=unit(land$y,'native'),
-                 gp=gp.land)
-    gp.sea<-gpar(col=Options$sea.colour,
-                  fill=Options$sea.colour)
-    grid.polygon(x=unit(land$lakes$x,'native'),
-                 y=unit(land$lakes$y,'native'),
-                 gp=gp.sea)
-  }
+  if(Options$background.resolution=='high') {
+    # land will be a GSDF land mask - plot it as an image
+      plot.colours<-rep(rgb(0,0,0,0),length(land$data))
+      lons<-land$dimensions[[GSDF.find.dimension(land,'lon')]]$values
+      w<-which(land$data>0)
+      plot.colours[w]<-Options$land.colour
+      m<-matrix(plot.colours, ncol=length(lons), byrow=T)
+      # flip the data order up<->down to be right for an image
+      m<-apply(m,2,rev)
+      grid.raster(m,
+                   x=unit(0,'native'),
+                   y=unit(0,'native'),
+                   width=unit(360,'native'),
+                   height=unit(180,'native'))
+   } else {
+    # land will be a list of polygons from MapData
+      if(Options$show.ice.shelves) {
+          gp.ice<-gpar(col=Options$ice.colour,
+                       fill=Options$ice.colour)
+         if(Options$pole.lon!=180 || Options$pole.lat!=90) {
+            l2<-GSDF.ll.to.rg(WeatherMap.ice.shelves$y,
+                            WeatherMap.ice.shelves$x,
+                            Options$pole.lat,Options$pole.lon)
+          # Trim all the edge points which might wrap
+            w<-which(l2$lon< -178 | l2$lon>178)
+            is.na(l2$lon[w])<-T
+            grid.polygon(x=unit(l2$lon,'native'),
+                         y=unit(l2$lat,'native'),
+                         gp=gp.ice)
+          }
+         else{
+          grid.polygon(x=unit(WeatherMap.ice.shelves$x,'native'),
+                       y=unit(WeatherMap.ice.shelves$y,'native'),
+                       gp=gp.ice)
+        }
+      } 
+
+        gp.land<-gpar(col=Options$land.colour,
+                      fill=Options$land.colour)
+        if(Options$background.resolution=='high') {
+          grid.polygon(x=unit(land$x,'native'),
+                       y=unit(land$y,'native'),
+                       id.lengths=rep(4,length(land$x)/4),
+                       gp=gp.land)
+      } else {
+        grid.polygon(x=unit(land$x,'native'),
+                     y=unit(land$y,'native'),
+                     gp=gp.land)
+        gp.sea<-gpar(col=Options$sea.colour,
+                      fill=Options$sea.colour)
+        grid.polygon(x=unit(land$lakes$x,'native'),
+                     y=unit(land$lakes$y,'native'),
+                     gp=gp.sea)
+      }
+    }
 }
 
 #' Draw sea-ice
