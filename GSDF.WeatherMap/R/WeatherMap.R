@@ -71,7 +71,7 @@ Defaults<-list(
    fog.min.transparency=0.85,           # 0-1, bigger -> thicker fog
    fog.resolution=1,                    # Grid resolution in degrees
    obs.size=0.5,                        # In degrees
-   obs.colour=rgb(255,215,0,100,
+   obs.colour=rgb(255,215,0,255,
                    maxColorValue=255),  # For observations
    label='',                            # Label - the date is a good choice
    label.xp=0.99,label.yp=0.01          # Location, npc units
