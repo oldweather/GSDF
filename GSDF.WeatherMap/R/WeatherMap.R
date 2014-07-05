@@ -28,38 +28,26 @@ Defaults<-list(
    precip.resolution=0.25,              # Grid resolution in degrees
    precip.colour=c(0,0,0),              # 0-1, RGB for intense precip
    precip.min.transparency=0.95,        # 0-1, density of intense precip
-   precip.T.snow=273,                   # Show as snow where colder (K)
-   precip.pch=21,                       # Graphics context for drawing precip
-   precip.lty=1,
-   precip.lwd=1,
-   precip.scale=1,                      # Scaling for precip blob size
    precip.max.opacity=1,
    wind.vector.density=1.5,             # Decrease for closer-packed streamlines
    bridson.max.attempt=5,               # Decrease=faster but less good streamline arrangement
-   wind.vector.fade.steps=1,            # Increase for gradual fade in/out
-   wind.vector.iterate=1,               # Move streamlets n times before drawing
-   wind.vector.seed=2,                  # Smaller -> more wind vectors
    wind.vector.arrow=NULL,              # See ?arrow
    wind.vector.points=3,                # Bigger -> smoother curves and slower
    wind.vector.scale=0.25,              # Bigger -> longer vectors
    wind.vector.move.scale=1,            # Bigger -> faster moving vectors
-   wind.vector.decimate=0.2,            # Bigger -> less vector clustering
-   wind.vector.decimate.bandwidth=0.5,  #
-   wind.vector.decimate.gridsize=1000,  #
    wind.vector.lwd=2,                   # Line width
    jitter=TRUE,                         # Jitter vector seed points?
    wind.palette=diverge_hcl(70, c = 50,
                     l = 25, power = 1), # Interpolated blue red
    wind.palette.bias=1,                 # ?colorRamp
    wind.palette.opacity=1,              # 
-   wind.palette.maxgrey=550,            # Smaller -> white lines darker
    temperature.range=7,                 # T2m anomaly for max. colour
    mslp.base=101325,                    # Base value for anomalies
    mslp.range=10000,                    # Anomaly for max contour
    mslp.step=750,                       # Smaller -> more contours
    mslp.tpscale=2000,                   # Smaller -> contours less transparent
    mslp.lwd=1, 
-   background.resolution='low',         # 'low' for fast, 'high' for pretty
+   background.resolution='low',         # 'low' for polygons, 'high' for grid
    sea.colour=rgb(80*1.5,95*1.5,107*1.5,255,
                   maxColorValue=255),   # For background
    ice.colour=rgb(150*1.2,165*1.2,177*1.2,255,
@@ -71,7 +59,7 @@ Defaults<-list(
    fog.min.transparency=0.85,           # 0-1, bigger -> thicker fog
    fog.resolution=1,                    # Grid resolution in degrees
    obs.size=0.5,                        # In degrees
-   obs.colour=rgb(255,215,0,100,
+   obs.colour=rgb(255,215,0,255,
                    maxColorValue=255),  # For observations
    label='',                            # Label - the date is a good choice
    label.xp=0.99,label.yp=0.01          # Location, npc units
@@ -83,74 +71,7 @@ Defaults<-list(
 #'
 #' The rendering of a map is controlled by a large
 #'  number of options contained in a list.
-#' Option:      Default:        Effect:
-#'   cores            1         Not currently used
-#'   pole.lat        90
-#'   pole.lon       180         Pole location for map
-#'   lon.min       -180
-#'   lon.max        180
-#'   lat.min        -90
-#'   lat.max         90         Map range (around centre)
-#'   show.wind=TRUE,
-#'   show.precipitation=TRUE,
-#'   show.mslp=TRUE,
-#'   show.temperature=TRUE,
-#'   show.ice=FALSE,
-#'   show.fog=FALSE,
-#'   show.obs=FALSE,
-#'   show.ice.shelves=TRUE,
-#'   precip.points=25000,                 # Bigger -> higher res precip
-#'   precip.threshold=0.0025,             # Only show where more than this
-#'   precip.range=0.03,                   # Precip rate for max intensity
-#'   precip.T.snow=273,                   # Show as snow where colder (K)
-#'   precip.pch=21,                       # Graphics context for drawing precip
-#'   precip.lty=1,
-#'   precip.lwd=1,
-#'   precip.scale=1,                      # Scaling for precip blob size
-#'   precip.max.opacity=1,
-#'   precip.colour=c(0,0,0),              # Colour for intense precip
-#'   wind.vector.fade.steps=1,            # Increase for gradual fade in/out
-#'   wind.vector.iterate=1,               # Move streamlets n times before drawing
-#'   wind.vector.seed=2,                  # Smaller -> more wind vectors
-#'   wind.vector.arrow=NULL,              # See ?arrow
-#'   wind.vector.points=3,                # Bigger -> smoother curves and slower
-#'   wind.vector.scale=0.25,              # Bigger -> longer vectors
-#'   wind.vector.move.scale=1,            # Bigger -> faster moving vectors
-#'   wind.vector.decimate=0.2,            # Bigger -> less vector clustering
-#'   wind.vector.decimate.bandwidth=0.5,  #
-#'   wind.vector.decimate.gridsize=1000,  #
-#'   wind.vector.lwd=2,                   # Line width
-#'   jitter=TRUE,                         # Jitter vector seed points?
-#'   wind.palette=rev(
-#'                brewer.pal(11,'RdBu')), # Interpolated blue red
-#'   wind.palette.bias=1,                 # ?colorRamp
-#'   wind.palette.opacity=1,              # 
-#'   wind.palette.maxgrey=550,            # Smaller -> white lines darker
-#'   temperature.range=7,                 # T2m anomaly for max. colour
-#'   mslp.base=101325,                    # Base value for anomalies
-#'   mslp.range=10000,                    # Anomaly for max contour
-#'   mslp.step=750,                       # Smaller -> more contours
-#'   mslp.tpscale=2000,                   # Smaller -> contours less transparent
-#'   mslp.lwd=1, 
-#'   background.resolution='low',         # 'low' for fast, 'high' for pretty
-#'   sea.colour=rgb(80*1.1,95*1.1,107*1.1,255,
-#'                  maxColorValue=255),   # For background
-#'   ice.colour=rgb(150,165,177,255,
-#'	          maxColorValue=255),
-#'   merge.colour=rgb(110,110,110,255,
-#'	           maxColorValue=255),  # Soften Wind colours
-#'   merge.weight=1,                      # Amount of softening to apply
-#'   ice.points=10000,                    # Bigger - higher res ice
-#'   land.colour=rgb(123,121,117,255,
-#'                    maxColorValue=255),
-#'   fog.colour=c(0.65,0.65,0.65),                       # 0-1, bigger -> lighter fog
-#'   fog.min.transparency=0.85,           # 0-1, bigger -> thicker fog
-#'   fog.resolution=1,                    # Grid resolution in degrees
-#'   obs.size=0.5,                       # In degrees
-#'   obs.colour=rgb(255,215,0,100,
-#'                   maxColorValue=255),  # For observations
-#'   label='',                            # Label - the date is a good choice
-#'   label.xp=0.97,label.yp=0.04          # Location, 'npc, units
+#' See source for values and defaults.
 #'
 #' @export
 #' @param Options list of options - if NULL, use defaults
@@ -185,6 +106,37 @@ WeatherMap.aspect<-function(Options) {
    return(Ratio)  
 }
 
+# Generate n random points at a distance between r.min and 2(r.min)
+#  of a specified point - we'll be doing this often so generate
+# a normalised sample of length about 1000 and then sa,mple from it
+bridson.annual.sample.cache<-list()
+    x.s<-(runif(2000)-0.5)*4
+    y.s<-(runif(2000)-0.5)*4
+    d.s<-sqrt(x.s**2+y.s**2)
+    w<-which(d.s<1 | d.s>2)
+    x.s<-x.s[-w]
+    y.s<-y.s[-w]
+bridson.annual.sample.cache$x<-x.s
+bridson.annual.sample.cache$y<-y.s
+
+bridson.annular.sample<-function(n=NULL,x=NULL,y=NULL,r=NULL) {
+   order<-sample.int(length(bridson.annual.sample.cache$x),size=n)
+   return(list(x=bridson.annual.sample.cache$x[order]*r+x,
+               y=bridson.annual.sample.cache$y[order]*r+y))
+}
+
+# Find the subset of points not too far from a selected point
+#  using their grid indices
+bridson.close.points<-function(index,n.x,n.y) {
+  idx.y<-as.integer((index-1)/n.x)+1
+  idx.x<-index-(idx.y-1)*n.x
+  x.range<-seq.int(max(1,idx.x-3),min(n.x,idx.x+3))
+  y.range<-seq.int(max(1,idx.y-3),min(n.y,idx.y+3))
+  result=(rep(y.range,length(x.range))-1)*n.x+
+         sort(rep(x.range,length(y.range)))
+  return(result)
+}
+
 #' Allocate points using poisson-disc coverage
 #'
 #' Uses Bridson's algorithm.
@@ -209,34 +161,6 @@ WeatherMap.bridson<-function(Options,
     view.scale<-max(diff(x.range)/360,diff(y.range)/180)
     r.min<-Options$wind.vector.density*view.scale
     max.attempt<-Options$bridson.max.attempt
-
-    # Generate n random points at a distance between r.min and 2(r.min)
-    #  of a specified point
-    annular.sample<-function(n=NULL,x=NULL,y=NULL,r=NULL) {
-      x.s<-numeric(0)
-      while(length(x.s)<n) {
-        x.s<-(runif(n*3)-0.5)*4
-        y.s<-(runif(n*3)-0.5)*4
-        d.s<-sqrt(x.s**2+y.s**2)
-        w<-which(d.s<1 | d.s>2)
-        x.s<-x.s[-w]
-        y.s<-y.s[-w]
-      }
-      return(list(x=x.s[1:n]*r.min+x,
-                  y=y.s[1:n]*r.min+y))
-    }
-
-    # Find the subset of points not too far from a selected point
-    #  using their grid indices
-    close.points<-function(index) {
-      idx.y<-as.integer((index-1)/n.x)+1
-      idx.x<-index-(idx.y-1)*n.x
-      x.range<-seq.int(max(1,idx.x-3),min(n.x,idx.x+3))
-      y.range<-seq.int(max(1,idx.y-3),min(n.y,idx.y+3))
-      result=(rep(y.range,length(x.range))-1)*n.x+
-             sort(rep(x.range,length(y.range)))
-      return(result)
-    }
      
     # Choose background grid spacing close to r/sqrt(2)
     #  and which gives an integer number of points
@@ -279,7 +203,7 @@ WeatherMap.bridson<-function(Options,
         index.i<-as.integer((previous$lat[i]-min(y.range))/r.y)*n.x+
                  as.integer((previous$lon[i]-min(x.range))/r.x)+1
         if(!is.na(x[index.i])) next
-        cp<-close.points(index.i)
+        cp<-bridson.close.points(index.i,n.x,n.y)
         cp<-cp[!is.na(x[cp])]
         if(length(cp)>0) {
             d.s<-((previous$x[i]-x[cp])**2+(previous$lat[i]-y[cp])**2)
@@ -294,9 +218,9 @@ WeatherMap.bridson<-function(Options,
     # Allocate more points to fill gaps
     while(length(active)>0) {
       c<-active[sample.int(length(active),1)] # Choose random active point
-      cp<-close.points(c)
+      cp<-bridson.close.points(c,n.x,n.y)
       cp<-cp[!is.na(x[cp])]
-         ns<-annular.sample(n=max.attempt,x=x[c],y=y[c],r=r.min)
+         ns<-bridson.annular.sample(n=max.attempt,x=x[c],y=y[c],r=r.min)
          w<-which(ns$y<y.range[1] | ns$y>y.range[2] |
             ns$x<x.range[1] | ns$x>x.range[2])
          if(length(w)>0) {
@@ -453,42 +377,6 @@ WeatherMap.streamline.getGC<-function(value,transparency=NA,status=1,Options) {
    return(gpar(col=colour,fill=colour,lwd=Options$wind.vector.lwd*status))
 }
 
-#' Thins the set of streamlines
-#'
-#' Streamlines clump together as they move. To keep an even spread we remove some of them
-#'  and seed new ones. This function decimates a set of streamlines, removing those
-#'   clustered most closely together.
-#'
-#'  Calculate a density field with a 2d normal kernel.
-#'  Delete each streamline with probability proportional to
-#'   the local density of streamlines. 
-#'
-#' @param s list of streamlines - see \code{WeatherMap.make.streamlines}
-#' @param Options list of options - see \code{WeatherMap.set.option}
-#' @return vector of integers - indices of streamlines to be thinned. 
-WeatherMap.decimate.streamlines<-function(s,Options) {
-  # Calculate a density field normalised to the given mean probability
-  kx<-cbind(na.omit(as.vector(s$x)),na.omit(as.vector(s$y)))
-  bk<-bkde2D(kx,bandwidth=rep(Options$wind.vector.decimate.bandwidth,2),
-                gridsize=rep(Options$wind.vector.decimate.gridsize,2))
-  #bk$fhat[]<-pmin(bk$fhat,quantile(bk$fhat)[4]) # Highlight low density areas
-  bk$fhat<-(bk$fhat/mean(bk$fhat))*Options$wind.vector.decimate
-  bk$fhat<-bk$fhat/Options$wind.vector.points
-  # Interpolate the field at every streamline location.
-  dx<-(Options$lon.max-Options$lon.min)/Options$wind.vector.decimate.gridsize
-  x<-seq(1,Options$wind.vector.decimate.gridsize)*dx+Options$lon.min
-  dy<-(Options$lat.max-Options$lat.min)/Options$wind.vector.decimate.gridsize
-  y<-seq(1,Options$wind.vector.decimate.gridsize)*dy+Options$lat.min
-  result<-vector('numeric',0)
-  for(i in seq(1,Options$wind.vector.points)) {
-    probs<-interp.surface(list(x=x,y=y,z=bk$fhat),
-                          cbind(s[['x']][,i],s[['y']][,i]))
-    #probs<-1/(Options$wind.vector.fade.steps)
-    d<-which(s[['status']]==1 & runif(length(s[['x']][,i]))<probs)
-    result<-unique(c(result,d))
-  }
-  return(result)
-}
 
 #' Make streamlines
 #'
@@ -617,82 +505,6 @@ WeatherMap.draw.streamlines<-function(s,Options) {
    }
  }
 
-#' Draw precipitation - retired - image is too messy
-#'
-#' Draw precipitation at a set of points.
-#'
-#' Precipitation is drawn as clouds of dots (details controled by Options).
-#'  Actually we plot sqrt(precipitation) otherwise the range is too large.
-#'
-#' @export
-#' @param lat vector of latitutes
-#' @param lon vector of longitudes
-#' @param precip GSDF field of precipitation rate (default TWCR units)
-#' @param t.actual GSDF field of 2m temperature (to split rain and snow)
-#' @param Options list of options - see \code{WeatherMap.set.option}
-#' @return nothing - side effect only.
-WeatherMap.draw.precipitation.dots<-function(lat,lon,precip,t.actual,Options) {
-  
- # Offset positions for rain-lines and snowflakes
- #  - random numbers, but constant between calls.
-   scale<-Options$precip.scale*sqrt((Options$lon.max-Options$lon.min)*
-                                    (Options$lat.max-Options$lat.min)/
-                                                   Options$precip.points)/4
-   length<-scale*4
-
-   precip<-WeatherMap.rotate.pole(precip,Options)
-   prp<-sqrt(pmax(GSDF.interpolate.ll(precip,lat,lon),0))
-   t.actual<-WeatherMap.rotate.pole(t.actual,Options)
-   ta<-GSDF.interpolate.ll(t.actual,lat,lon)
-   # Strip out the missing data - surely there's a neater way
-   w<-which(is.finite(prp) & is.finite(ta))
-   prp<-prp[w]
-   ta<-ta[w]
-   lat<-lat[w]
-   lon<-lon[w]
-   
-   level<-pmax(0,pmin(1,(prp-Options$precip.threshold)/Options$precip.range))
-   count<-as.integer(level*30)
-
-   pfl<-function(i) {
-       grb<-NULL
-       gp<-gpar(col=rgb(0.1,0.1,0.1,level[i]*Options$precip.max.opacity),fill=rgb(0.1,0.1,0.1,
-	                                                   level[i]*Options$precip.max.opacity),
-       lwd=Options$precip.lwd,lty=Options$precip.lty)
-       if(ta[i]<Options$precip.T.snow) {
-	   f.snow<-min(Options$precip.T.snow-ta[i],1)
-	   c.snow<-(0.85-.1)*f.snow+0.1
-	   gp<-gpar(col=rgb(c.snow,c.snow,c.snow,level[i]*Options$precip.max.opacity),
-                                   fill=rgb(c.snow,c.snow,c.snow,
-	                           level[i]*Options$precip.max.opacity),
-                                   lwd=Options$precip.lwd,
-                                   lty=Options$precip.lty)
-       }
-       if(count[i]>0) {
-          if(ta[i]<Options$precip.T.snow) {  # Snow
-              sx<-lon[i]+(runif(10)-.5)*length
-              sy<-lat[i]+(runif(10)-.5)*length
-              grid.points(x=unit(sx,'native'),
-                          y=unit(sy,'native'),
-                          size=unit(0.01,'native'),
-                          pch=20,gp=gp)
-          }
-          else {           # Rain
-              sx<-lon[i]+(runif(10)-.5)*length
-              sy<-lat[i]+(runif(10)-.5)*length
-              grid.points(x=unit(sx,'native'),
-                          y=unit(sy,'native'),
-                          size=unit(0.005,'native'),
-                          pch=20,gp=gp)
-          }
-       }
-       return(grb)
-     }
-
-     grbs<-lapply(seq_along(lat),pfl)
-     #lapply(seq_along(lats),function(i) if(!is.null(grbs[[i]])) grid.draw(grbs[[i]]))
-
- }
 
 # Deal with cases where land polygons are split by the anti-meridian
 # The polygons (from MapData) are designed for use with the standard pole,
