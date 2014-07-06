@@ -187,8 +187,7 @@ WeatherMap.bridson<-function(Options,
     y[index.c]<-y.c
 
     # If starting from a pre-existing set of points, load them
-    # in random order, culling any too close to one already loaded
-    # and set all the survivors to active
+    # in random order, culling any too close to one already loaded.
     if(!is.null(previous)) {
         w<-which(previous$lat<min(y.range) |
                  previous$lat>max(y.range) |
@@ -211,7 +210,9 @@ WeatherMap.bridson<-function(Options,
         }
         x[index.i]<-previous$lon[i]
         y[index.i]<-previous$lat[i]
-        active<-c(active,index.i)
+        # Ideally we'd set all points to active, but try
+        #  only a subset - faster
+        if(index.i%%7==0) active<-c(active,index.i)
       }
   }
     
