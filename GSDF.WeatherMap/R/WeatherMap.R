@@ -161,6 +161,14 @@ WeatherMap.bridson<-function(Options,
     view.scale<-max(diff(x.range)/360,diff(y.range)/180)
     r.min<-Options$wind.vector.density*view.scale
     max.attempt<-Options$bridson.max.attempt
+
+    # For spherical layout scale down x locations according to latitude
+    # use as normal on scaled locations, then scale up again and throw out
+    # any positions outside the lon.range.
+    # Inefficient, but simple.
+    if(Options$wrap.spherical && !is.null(previous)) {
+      previous$x<-previous$x*cos(previous$y*pi/180)
+    }
      
     # Choose background grid spacing close to r/sqrt(2)
     #  and which gives an integer number of points
@@ -256,6 +264,14 @@ WeatherMap.bridson<-function(Options,
     w<-which(is.na(x))
     x<-x[-w]
     y<-y[-w]
+
+    if(Options$wrap.spherical) {
+      x<-x/cos(y*pi/180)
+      w<-which(x<Options$lon.max & x>Options$lon.min)
+      x<-x[w]
+      y<-y[w]
+     }
+
     return(list(lon=x,lat=y))
   }
 
