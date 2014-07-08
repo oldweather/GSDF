@@ -153,11 +153,7 @@ WeatherMap.bridson<-function(Options,
                              previous=NULL) {
 
     x.range<-c(Options$lon.min,Options$lon.max)
-    if(!is.null(Options$vp.lon.min)) x.range[1]<-Options$vp.lon.min
-    if(!is.null(Options$vp.lon.max)) x.range[2]<-Options$vp.lon.max
     y.range<-c(Options$lat.min,Options$lat.max)
-    if(!is.null(Options$vp.lat.min)) y.range[1]<-Options$vp.lat.min
-    if(!is.null(Options$vp.lat.max)) y.range[2]<-Options$vp.lat.max
     view.scale<-max(diff(x.range)/360,diff(y.range)/180)
     r.min<-Options$wind.vector.density*view.scale
     max.attempt<-Options$bridson.max.attempt
@@ -267,7 +263,7 @@ WeatherMap.bridson<-function(Options,
 
     if(Options$wrap.spherical) {
       x<-x/cos(y*pi/180)
-      w<-which(x<Options$lon.max & x>Options$lon.min)
+      w<-which(x<Options$lon.max & x>=Options$lon.min)
       x<-x[w]
       y<-y[w]
      }
