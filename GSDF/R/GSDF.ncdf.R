@@ -58,7 +58,7 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
       if(!is.null(custom.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
                                           as.character(custom.range[1]),as.character(custom.range[2]))
       cache.file.name<-sprintf("%s/%s.Rd",GSDF.cache.dir,gsub('/','.',cache.file.name))
-      if(file.exists(cache.file.name)) {
+      if(file.exists(cache.file.name) && file.info(cache.file.name)$size>0) {
          load(cache.file.name)
          return(result)
        }
