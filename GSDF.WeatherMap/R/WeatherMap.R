@@ -146,7 +146,7 @@ bridson.close.points<-function(index,n.x,n.y) {
 #'
 #' @export
 #' @param Options list of options - see \code{WeatherMap.set.option}
-#' @param previous list with elements 'lats' and lons' - set of points to
+#' @param previous list with elements 'lat' and lon' - set of points to
 #'  start from. Defaults to NULL - start from scratch.
 #' @return list with elements 'lats' and lons'
 WeatherMap.bridson<-function(Options,
@@ -163,7 +163,7 @@ WeatherMap.bridson<-function(Options,
     # any positions outside the lon.range.
     # Inefficient, but simple.
     if(Options$wrap.spherical && !is.null(previous)) {
-      previous$x<-previous$x*cos(previous$y*pi/180)
+      previous$lon<-previous$lon*cos(previous$lat*pi/180)
     }
      
     # Choose background grid spacing close to r/sqrt(2)
