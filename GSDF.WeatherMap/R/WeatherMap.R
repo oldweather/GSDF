@@ -35,7 +35,7 @@ Defaults<-list(
    wind.vector.points=3,                # Bigger -> smoother curves and slower
    wind.vector.scale=0.25,              # Bigger -> longer vectors
    wind.vector.move.scale=1,            # Bigger -> faster moving vectors
-   wind.vector.lwd=2,                   # Line width
+   wind.vector.lwd=4,                   # Line width
    jitter=TRUE,                         # Jitter vector seed points?
    wind.palette=diverge_hcl(70, c = 50,
                     l = 25, power = 1), # Interpolated blue red
