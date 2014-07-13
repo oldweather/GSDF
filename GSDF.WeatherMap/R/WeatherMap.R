@@ -625,7 +625,7 @@ WeatherMap.get.land<-function(Options) {
 #' \code{grid.polygon}. If NULL, will be obtained from \code{WeatherMap.get.land}.
 #' @param Options list of options - see \code{WeatherMap.set.option}.
 #' @return nothing - side effect only.
-WeatherMap.draw.land<-function(land,Options) {
+WeatherMap.draw.land<-function(land,Options,height=NULL) {
 
   if(is.null(land)) {
 	land<-WeatherMap.get.land(Options)
@@ -685,6 +685,8 @@ WeatherMap.draw.land<-function(land,Options) {
                      gp=gp.sea)
       }
     }
+    if(!is.null(height)) WeatherMap.draw.haze(height,Options)
+
 }
 
 #' Draw sea-ice
@@ -730,7 +732,6 @@ WeatherMap.draw.ice<-function(lat,lon,icec,Options) {
         grid.polygon(x=unit(sx,'native'),
                      y=unit(sy,'native'),gp=gp)
    }
-
  }
 
 #' Draw Pressure Contours
@@ -824,6 +825,33 @@ WeatherMap.draw.fog<-function(fog,Options) {
                 height=unit(Options$lat.max-Options$lat.min,'native'))
 }
 
+#' Haze to indicate altitude.
+#' 
+#' Draw the haze - semi transparent blue
+#'
+#' As it's a semi-transparent area field we need to draw in
+#'  pixel coordinates to rule out gaps or overlaps, so
+#'   use an image.
+#'
+#' @export
+#' @param height height to simulate (hpa)
+#' @param Options list of options - see \code{WeatherMap.set.option}
+#' @return nothing - side effect only.
+#'
+#' 
+WeatherMap.draw.haze<-function(height,Options) {
+
+  hdx<-max(0,log(height)/log(1000))
+  hdx<-pmax(0.1,pmin(1,hdx*(1+(runif(10000)-0.5)*0.2)))
+  haze.colour<-rgb(0.8,0.8,1,1-hdx)
+  grid.raster(matrix(haze.colour, ncol=100, byrow=F),
+                x=unit((Options$lon.min+Options$lon.max)/2,'native'),
+                y=unit((Options$lat.min+Options$lat.max)/2,'native'),
+                width=unit(Options$lon.max-Options$lon.min,'native'),
+                height=unit(Options$lat.max-Options$lat.min,'native'))
+
+}
+
 #' Precipitation
 #'
 #' Draw the precipitation rate - semi-transparent black
@@ -915,8 +943,9 @@ WeatherMap.draw.label<-function(Options) {
    w<-widthDetails(tg)
    xp<-unit(Options$label.xp,'npc')
    yp<-unit(Options$label.yp,'npc')
-   grid.polygon(x=unit.c(xp,xp-w,xp-w,xp),
-                y=unit.c(yp+h,yp+h,yp,yp),
+   b<-unit(0.2,'char') # border
+   grid.polygon(x=unit.c(xp+b,xp-w-b,xp-w-b,xp+b),
+                y=unit.c(yp+h+b,yp+h+b,yp-b,yp-b),
                 gp=bg.gp)
    grid.draw(tg)
 }
@@ -957,7 +986,7 @@ WeatherMap.draw<-function(Options=NULL,t.actual=NULL,
                           t.normal=NULL,icec=NULL,
                           mslp=NULL,precip=NULL,obs=NULL,
                           uwnd=NULL,vwnd=NULL,land=NULL,
-                          streamlines=NULL,fog=NULL) {
+                          streamlines=NULL,fog=NULL,height=NULL) {
 
   if(is.null(Options)) Options<-WeatherMap.get.options()
   base.gp<-gpar(family='Helvetica',font=1,col='black')
@@ -977,7 +1006,7 @@ WeatherMap.draw<-function(Options=NULL,t.actual=NULL,
     if(is.null(icec)) stop("No icec provided")
 	WeatherMap.draw.ice(ip$lat,ip$lon,icec,Options)
   }
-  WeatherMap.draw.land(land,Options)
+  WeatherMap.draw.land(land,Options,height=height)
   if(Options$show.obs) {
     if(is.null(obs)) stop("No obs. provided")
     WeatherMap.draw.obs(obs,Options)

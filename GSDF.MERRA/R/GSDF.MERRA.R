@@ -335,8 +335,13 @@ MERRA.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,
         file.name<-MERRA.hourly.get.file.name(variable,year,month,day,hour,opendap=opendap,type=type)
            t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                     format=c(dates='y/m/d',times='h:m:s'))
+        offset<-3 # gap between dumps
+        group<-MERRA.get.variable.group(variable)
+        if(group=='MAT1NXSLV' || group=='MAI1NXINT' || group=='MAT1NXFLX' ||
+           group=='MAT1NXINT' || group=='MAT1NXLND' || group=='MAT1NXRAD') offset=1
+        
            v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(-180,180),
-                             height.range=rep(height,2),time.range=c(t,t+1/24-0.001))
+                             height.range=rep(height,2),time.range=c(t,t+offset/24-0.001))
 	   return(v)
 	}
 	# Interpolate from the previous and subsequent analysis times
