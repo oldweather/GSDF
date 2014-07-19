@@ -221,8 +221,8 @@ TWCR.monthly.get.file.name<-function(variable,year,month,opendap=NULL,version=2,
         if(TWCR.get.variable.group(variable)=='pressure') {
           base.dir<-sprintf("%s/Monthlies/pressure/",base.dir)
         }
-       return(sprintf("%s/%s.%04d.nc",base.dir,
-                   variable,year))
+       return(sprintf("%s/%s.mon.mean.nc",base.dir,
+                   variable))
     }
     if(type=='spread') {
         if(TWCR.get.variable.group(variable)=='monolevel') {
@@ -234,8 +234,8 @@ TWCR.monthly.get.file.name<-function(variable,year,month,opendap=NULL,version=2,
         if(TWCR.get.variable.group(variable)=='pressure') {
           base.dir<-sprintf("%s/Monthlies/pressure_sprd/",base.dir)
         }
-        return(sprintf("%s/%s.%04d.nc",base.dir,
-                   variable,year))
+        return(sprintf("%s/%s.mon.mean.nc",base.dir,
+                   variable))
     }
     if(type=='normal') {
         if(TWCR.get.variable.group(variable)=='monolevel') {
