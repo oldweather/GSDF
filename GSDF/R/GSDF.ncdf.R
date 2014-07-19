@@ -51,6 +51,8 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
                                           as.character(lat.range[1]),as.character(lat.range[2]))
       if(!is.null(lon.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
                                           as.character(lon.range[1]),as.character(lon.range[2]))
+      if(!is.null(height.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
+                                          as.character(height.range[1]),as.character(height.range[2]))
       if(!is.null(time.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
                                           as.character(time.range[1]),as.character(time.range[2]))
       if(!is.null(ens.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
@@ -66,7 +68,7 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
    # No cache- fetch from file
    f<-nc_open(file)
    v<-f$var[[variable]]
-   if(is.null(v)) v<-f$var[[1]] # Fixes TWCR cases where var has different name from file
+   if(is.null(v)) v<-f$var[[2]] # Fixes TWCR cases where var has different name from file
    if(v$name=='climatology_bounds')  v<-f$var[[2]] # Fudge for TWCR normals, with bounds variable
    lat.i<-GSDF.ncdf.get.lat(v,lat.name)
    if(is.null(lat.range) && !is.null(lat.i)) {
