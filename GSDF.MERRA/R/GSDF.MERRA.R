@@ -59,7 +59,7 @@ MERRA.MAT3CPUDT<-c('DUDTMST','DUDTTRB','DUDTGWD','DUDTDYN','DUDTANA','DVDTMST','
                    'DVDTGWD','DVDTDYN','DVDTANA')
 
 # Height of each pressure level in hPa
-MERRA.heights<-c(1000,970,950,925,900,875,850,825,800,775,750,725,700,650,600,550,500,450,
+MERRA.heights<-c(1000,975,950,925,900,875,850,825,800,775,750,725,700,650,600,550,500,450,
                  400,350,300,250,200,150,100,70,50,40,30,20,10,7,5,4,3,2,1,0.7,0.5,0.4,0.3,0.1)
 
 #' Merra show variables
@@ -341,7 +341,7 @@ MERRA.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,
            group=='MAT1NXINT' || group=='MAT1NXLND' || group=='MAT1NXRAD') offset=1
         
            v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(-180,180),
-                             height.range=rep(height,2),time.range=c(t,t+offset/24-0.001))
+                             height.range=c(height,height+0.05),time.range=c(t,t+offset/24-0.001))
 	   return(v)
 	}
 	# Interpolate from the previous and subsequent analysis times
