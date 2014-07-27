@@ -67,9 +67,10 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
     }
    # No cache- fetch from file
    f<-nc_open(file)
-   v<-f$var[[variable]]
-   if(is.null(v)) v<-f$var[[2]] # Fixes TWCR cases where var has different name from file
-   if(v$name=='climatology_bounds')  v<-f$var[[2]] # Fudge for TWCR normals, with bounds variable
+   v<-GSDF.ncdf.get.var(f,variable)
+#   v<-f$var[[variable]]
+#   if(is.null(v)) v<-f$var[[2]] # Fixes TWCR cases where var has different name from file
+#   if(v$name=='climatology_bounds')  v<-f$var[[2]] # Fudge for TWCR normals, with bounds variable
    lat.i<-GSDF.ncdf.get.lat(v,lat.name)
    if(is.null(lat.range) && !is.null(lat.i)) {
       stop('Latitude range required (lat.range=c(-90,90)')
@@ -159,6 +160,22 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
    f<-nc_close(f)
    if(!is.null(cache.file.name)) save(result,file=cache.file.name)
    return(result)
+}
+
+# TWCR uses different variable names in the .nc files from
+#  in the names of the files (sometimes). So finding the
+#  corect variable is not always trivial.
+GSDF.ncdf.get.var<-function(f,variable) {
+   v<-f$var[[variable]]
+   if(is.null(v)) {  # They have called the variable something else
+      # This code is specific to the current TWCR .nc files
+       if(length(f$var)>1) {
+          v<-f$var[[2]] # Monthly
+       } else {
+          v<-f$var[[1]] # Hourly
+       }
+   }
+   return(v)
 }
          
 # Want to be able to identify some special dimensions
