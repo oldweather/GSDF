@@ -77,19 +77,28 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
    } 
    lon.i<-GSDF.ncdf.get.lon(v,lon.name)
    if(is.null(lon.range) && !is.null(lon.i)) {
-      stop('Longitude range required (lon.range=c(-180,180)')
+     if(length(v$dim[[lon.i]]$vals)==1) {
+      lon.range<-rep(v$dim[[lon.i]]$vals,2)
+     } else stop('Longitude range required (lon.range=c(-180,180)')
    } 
    height.i<-GSDF.ncdf.get.height(v,height.name)
    if(is.null(height.range) && !is.null(height.i)) {
-      stop('Height range required (height.range=c(850,850)')
+     if(length(v$dim[[height.i]]$vals)==1) {
+      height.range<-rep(v$dim[[height.i]]$vals,2)
+     } else stop('Height range required (height.range=c(850,850)')
    } 
    ens.i<-GSDF.ncdf.get.ens(v,ens.name)
    if(is.null(ens.range) && !is.null(ens.i)) {
-      stop('Ensemble range required (ensemble.range=c(1,1)')
+     if(length(v$dim[[ens.i]]$vals)==1) {
+      ens.range<-rep(v$dim[[ens.i]]$vals,2)
+     } else stop('Ensemble range required (ensemble.range=c(1,1)')
    } 
    time.i<-GSDF.ncdf.get.time(v,time.name)
    if(is.null(time.range) && !is.null(time.i)) {
-      stop('Time range required (time.range=c(chron.1,chron.2)')
+     if(length(v$dim[[time.i]]$vals)==1) {
+      time.range<-rep(v$dim[[time.i]]$vals,2)
+      default.calendar<-'raw'
+     } else stop('Time range required (time.range=c(chron.1,chron.2)')
    }
    result<-GSDF()
    result$meta<-ncatt_get(f,v)
@@ -262,6 +271,9 @@ GSDF.ncdf.get.time <- function(variable,time.name) {
 
 # Convert the time to chron
 GSDF.ncdf.convert.time <- function(dim,default.calendar) {
+    if(default.calendar=='raw') {
+      return(dim$vals) # Special case - no conversion
+    }
     units<-dim$units
     if(!is.null(dim$calendar)) {
        return(GSDF.ncdf.offset.to.date(dim$vals,dim$units,
