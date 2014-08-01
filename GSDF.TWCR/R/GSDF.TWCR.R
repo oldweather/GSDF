@@ -349,6 +349,31 @@ TWCR.get.obs<-function(year,month,day,hour,version=2,range=0.5) {
     return(result)
 }
 
+#' TWCR get fixed field.
+#'
+#' Get a field of non-time-varying data.
+#'
+#' Always uses openDAP. Currently doesn't vary betwen versions.
+#'
+#' @export
+#' @param variable - one of hgt.sfc, land, lsmask, soiltype, vegtype,
+#' @return field of selected data.
+TWCR.get.fixed.field<-function(variable) {
+   if(variable != 'hgt.sfc' &&
+      variable != 'land' &&
+      variable != 'lsmask' &&
+      variable != 'soiltype' &&
+      variable != 'vegtype') {
+     stop(sprintf("Unsupported fixed variable %s",variable))
+   }
+   fn<-sprintf("%s%s%s.nc","http://www.esrl.noaa.gov/psd/thredds/dodsC/",
+                           "Datasets/20thC_ReanV2/gaussian/time_invariant/",
+                           variable)
+   
+   v<-GSDF.ncdf.load(fn,variable,lat.range=c(-90,90),lon.range=c(0,360))
+   return(v)  
+}
+
 TWCR.is.in.file<-function(variable,year,month,day,hour,type='mean') {
 		if(hour%%6==0) return(TRUE)
 		return(FALSE)

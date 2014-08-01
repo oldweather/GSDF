@@ -10,5 +10,3 @@ Depends:
     R (>= 1.7.0),
     GSDF
 License: Apache
-Collate:
-    'GSDF.GFS.R'

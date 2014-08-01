@@ -17,5 +17,3 @@ Depends:
 License: Personal use only
 LazyLoad: yes
 LazyData: true
-Collate:
-    'WeatherMap.R'

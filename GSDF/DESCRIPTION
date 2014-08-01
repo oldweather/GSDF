@@ -16,7 +16,3 @@ Depends:
     lattice,
     grid
 License: Apache
-Collate:
-    'GSDF.R'
-    'GSDF.ncdf.R'
-    'GSDF.plot.R'
