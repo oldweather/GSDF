@@ -197,11 +197,11 @@ TWCR.monthly.get.file.name<-function(variable,year,month,opendap=NULL,version=2,
                     name<-sprintf("%s/monthly/standard.deviations/%s.pp",base.dir,variable)
             }
             if(type=='mean') {
-               name<-sprintf("%s/monthly/variables/%s.mean.nc",base.dir,
+               name<-sprintf("%s/monthly/%s.mon.mean.nc",base.dir,
                            variable)
             }
             if(type=='spread') {
-               name<-sprintf("%s/monthly/variables/%s.spread.nc",base.dir,
+               name<-sprintf("%s/monthly/%s.mon.spread.nc",base.dir,
                            variable)
              }
             if(is.null(name)) stop(sprintf("Unsupported data type %s",type))
@@ -560,7 +560,7 @@ TWCR.get.slice.at.month<-function(variable,year,month,height=NULL,opendap=TRUE,v
 }
 TWCR.get.slice.at.level.at.month<-function(variable,year,month,height=NULL,opendap=FALSE,version=2,type='mean') {
     file.name<-TWCR.monthly.get.file.name(variable,year,month,opendap=opendap,version=version,type=type)
-           t1<-chron(sprintf("%04d/%02d/%02d",year,month,1),"00:00:00",
+           t<-chron(sprintf("%04d/%02d/%02d",year,month,1),"00:00:00",
                     format=c(dates='y/m/d',times='h:m:s'))
            if(opendap && type=='normal') { # Online normals are for year 1, which chron can't handle, and have no Feb 29
               t<-chron(sprintf("%04d/%02d/%02d",-1,month,1),"00:00:00",
