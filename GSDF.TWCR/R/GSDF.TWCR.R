@@ -452,7 +452,8 @@ TWCR.get.interpolation.times<-function(variable,year,month,day,hour,type='mean')
 #' Interpolates to the selected height when the selected height is not that of a 20RC level.
 #'
 #' @export
-#' @param variable 'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any 20CR variable
+#' @param variable 'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any 20CR variable.
+#'                 can also be 'sst' - will return 'air.sfc' over sea grids.
 #' @param type - 'mean' (default), 'spread', 'normal', or 'standard.deviation'. 
 #'  Note that standard deviations are not available over opendap.
 #' @param height Height in hPa - leave NULL for monolevel
@@ -460,6 +461,12 @@ TWCR.get.interpolation.times<-function(variable,year,month,day,hour,type='mean')
 #'  will use local files if available and network otherwise.
 #' @return A GSDF field with lat and long as extended dimensions
 TWCR.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,opendap=NULL,version=2,type='mean') {
+  if(variable=='sst') {
+    v<-TWCR.get.slice.at.hour('air.sfc',year,month,day,hour,height=height,opendap=opendap,version=version,type=type)
+    lm<-TWCR.get.fixed.field('lsmask')
+    is.na(v$data[lm$data==1])<-TRUE # Mask out land points
+    return(v)
+  }
   if(TWCR.get.variable.group(variable)=='monolevel' ||
      TWCR.get.variable.group(variable)=='gaussian') {
     if(!is.null(height)) warning("Ignoring height specification for monolevel variable")

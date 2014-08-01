@@ -7,7 +7,8 @@ TWCR.get.slice.at.hour(variable, year, month, day, hour, height = NULL,
   opendap = NULL, version = 2, type = "mean")
 }
 \arguments{
-\item{variable}{'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any 20CR variable}
+\item{variable}{'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any 20CR variable.
+can also be 'sst' - will return 'air.sfc' over sea grids.}
 
 \item{type}{- 'mean' (default), 'spread', 'normal', or 'standard.deviation'.
 Note that standard deviations are not available over opendap.}
