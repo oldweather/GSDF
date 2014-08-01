@@ -463,8 +463,9 @@ TWCR.get.interpolation.times<-function(variable,year,month,day,hour,type='mean')
 TWCR.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,opendap=NULL,version=2,type='mean') {
   if(variable=='sst') {
     v<-TWCR.get.slice.at.hour('air.sfc',year,month,day,hour,height=height,opendap=opendap,version=version,type=type)
+    i<-TWCR.get.slice.at.hour('icec',year,month,day,hour,height=height,opendap=opendap,version=version,type=type)
     lm<-TWCR.get.fixed.field('lsmask')
-    is.na(v$data[lm$data==1])<-TRUE # Mask out land points
+    is.na(v$data[lm$data==1|i$data>0.01])<-TRUE # Mask out land and ice points
     return(v)
   }
   if(TWCR.get.variable.group(variable)=='monolevel' ||
