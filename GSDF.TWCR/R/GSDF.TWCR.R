@@ -690,3 +690,44 @@ TWCR.sds<-function(s,n){
   return(s*v2/v1)
 }
 
+#' Get the ensemble members instead of the mean, spread etc.
+#' analogous to TWCR.get.slice.at.hour
+#'
+#' Currently only for prmsl, and only for V2.
+#'
+#' No interpolation - must be at an analysis time
+#'
+#' @export
+#' @param variable must be 'prmsl'
+#' @return A GSDF field with ensemble number, lat and long as extended dimensions
+TWCR.get.members.slice.at.hour<-function(variable,year,month,day,hour) {
+  if(variable != 'prmsl') stop('Only prmsl currently supported')
+  if(!TWCR.is.in.file(variable,year,month,day,hour)) stop('Members only available at analysis hours')
+  file.name<-sprintf("http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/%s/%s_%04d.nc",variable,variable,year)
+  t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
+                      format=c(dates='y/m/d',times='h:m:s'))
+  v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(0,360),
+                           ens.range=c(1,56),time.range=c(t,t))
+  return(v)  
+}
+
+#' Make a bootstrap version of an ensemble.
+#'
+#' Extract the ensemble with TWCR.get.members.slice.at.hour
+#'
+#' Makes a new ensemble subsampled with replacement from
+#'  the original.
+#'
+#' @export
+#' @param ensemble A GSDF field from TWCR.get.members.slice.at.hour
+#' @return A similar field, but with a bootstrap sample of the ensemble members
+TWCR.members.bootstrap<-function(ensemble) {
+   if(ensemble$dimensions[[3]]$type != 'ensemble' ||
+      length(ensemble$dimensions[[3]]$values) != 56) stop('Unsupported field format')
+   s<-sample(56,replace=TRUE)
+   result<-ensemble
+   for(i in seq(1,56)) {
+     result$data[,,i,]<-ensemble$data[,,s[i],]
+   }
+   return(result)
+}
