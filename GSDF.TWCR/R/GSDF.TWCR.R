@@ -706,6 +706,7 @@ TWCR.get.members.slice.at.hour<-function(variable,year,month,day,hour) {
   file.name<-sprintf("http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/%s/%s_%04d.nc",variable,variable,year)
   t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                       format=c(dates='y/m/d',times='h:m:s'))
+  t<-t+2 # Kludge for unknown bug in calendar processing - dates in nc file are interpreted as 2 days ahead.
   v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(0,360),
                            ens.range=c(1,56),time.range=c(t,t))
   return(v)  
