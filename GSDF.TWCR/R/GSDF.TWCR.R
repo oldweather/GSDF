@@ -171,6 +171,44 @@ TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
     stop(sprintf("Unsupported opendap data type %s",type))      
 }
 
+#' TWCR get file name (ensemble members, hourly)
+#'
+#' Get the file name (or URL) for selected variable and date (ensemble members hourly data)
+#'
+#' Called internally by \code{TWCR.get.members.slice.at.hour} but also useful
+#'  called directly - you can then access the data with another tool.
+#'
+#' @export
+#' @param variable 'prmsl', 'air.2m', prate, uwnd.10m and vwnd.10m. Others not currently available
+#' @param opendap TRUE for network retrieval, FALSE for local files (faster, if you have them),
+#'  NULL (default) will use local files if available, and network if not.
+#' @return File name or URL for netCDF file containing the requested data 
+TWCR.hourly.members.get.file.name<-function(variable,year,month,day,hour,
+                                              opendap=NULL,version=2) {
+   if(is.null(opendap) || opendap==FALSE) {
+        base.dir<-TWCR.get.data.dir(version)
+               name<-sprintf("%s/ensembles/hourly/%s/%s.%04d.nc",base.dir,
+                           variable,variable,year)
+        if(file.exists(name)) return(name)
+        if(!is.null(opendap) && opendap==FALSE) stop(sprintf("No local file %s",name))
+      }
+    if(version!=2 && version!='3.2.1') stop('Opendap only available for version 2')
+    base.dir<-'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble'
+        if(TWCR.get.variable.group(variable)=='monolevel') {
+          base.dir<-sprintf("%s/analysis",base.dir)
+        }
+        if(TWCR.get.variable.group(variable)=='gaussian') {
+          base.dir<-sprintf("%s/first_guess",base.dir)
+        }
+        if(TWCR.get.variable.group(variable)=='pressure') {
+          stop("Ensembles of pressure level variables not available by openDAP")
+        }
+       if(variable=='air.2m') variable<-'t2m'
+       if(variable=='uwnd.10m') variable<-'u10m'
+       if(variable=='vwnd.10m') variable<-'v10m'
+       return(sprintf("%s/%s/%s_%04d.nc",base.dir,variable,variable,year))
+ }
+
 #' TWCR get file name (monthly)
 #'
 #' Get the file name (or URL) for selected variable and date (monthly data)
@@ -698,15 +736,20 @@ TWCR.sds<-function(s,n){
 #' No interpolation - must be at an analysis time
 #'
 #' @export
-#' @param variable must be 'prmsl'
+#' @param variable 20CR variable name, only 'prmsl', 'air.2m', 'prate', 'uwnd.10m', and 'vwnd.10m' supported.
+#' @param opendap TRUE for network retrieval, FALSE for local files (faster, if you have them).
 #' @return A GSDF field with ensemble number, lat and long as extended dimensions
-TWCR.get.members.slice.at.hour<-function(variable,year,month,day,hour) {
-  if(variable != 'prmsl') stop('Only prmsl currently supported')
+TWCR.get.members.slice.at.hour<-function(variable,year,month,day,hour,opendap=NULL,version=2) {
+  if(variable != 'prmsl' && variable != 'air.2m' &&
+     variable != 'uwnd.10m' && variable != 'vwnd.10m' &&
+     variable != 'prate') stop('Unsupported ensemble variable')
   if(!TWCR.is.in.file(variable,year,month,day,hour)) stop('Members only available at analysis hours')
-  file.name<-sprintf("http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble/analysis/%s/%s_%04d.nc",variable,variable,year)
+  file.name<-TWCR.hourly.members.get.file.name(variable,year,month,day,hour,opendap=opendap,version=version)
   t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                       format=c(dates='y/m/d',times='h:m:s'))
-  t<-t+2 # Kludge for unknown bug in calendar processing - dates in nc file are interpreted as 2 days ahead.
+  if(substr(file.name,1,4)=='http') {
+     t<-t+2 # Kludge for unknown bug in calendar processing - dates in nc file are interpreted as 2 days ahead.
+  }
   v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(0,360),
                            ens.range=c(1,56),time.range=c(t,t))
   return(v)  

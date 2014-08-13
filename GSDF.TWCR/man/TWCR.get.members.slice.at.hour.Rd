@@ -4,10 +4,13 @@
 \title{Get the ensemble members instead of the mean, spread etc.
 analogous to TWCR.get.slice.at.hour}
 \usage{
-TWCR.get.members.slice.at.hour(variable, year, month, day, hour)
+TWCR.get.members.slice.at.hour(variable, year, month, day, hour,
+  opendap = NULL, version = 2)
 }
 \arguments{
-\item{variable}{must be 'prmsl'}
+\item{variable}{20CR variable name, only 'prmsl', 'air.2m', 'prate', 'uwnd.10m', and 'vwnd.10m' supported.}
+
+\item{opendap}{TRUE for network retrieval, FALSE for local files (faster, if you have them).}
 }
 \value{
 A GSDF field with ensemble number, lat and long as extended dimensions
