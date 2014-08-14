@@ -137,6 +137,17 @@ bridson.close.points<-function(index,n.x,n.y) {
   return(result)
 }
 
+# Calculate the minimum scaled distance, for each of n
+#  new points, from a set of m existing points.
+bridson.min.distance<-function(x.new,y.new,x.old,y.old,scale.x,scale.y) {
+  d<-rep(0,length(x.new))
+  for(i in seq_along(x.new)) {
+    d[i]<-min(((x.new[i]-x.old)/scale.x)**2+
+              ((y.new[i]-y.old)/scale.y)**2)
+  }
+  return(sqrt(d))
+}
+
 #' Allocate points using poisson-disc coverage
 #'
 #' Uses Bridson's algorithm.
@@ -148,9 +159,16 @@ bridson.close.points<-function(index,n.x,n.y) {
 #' @param Options list of options - see \code{WeatherMap.set.option}
 #' @param previous list with elements 'lat' and lon' - set of points to
 #'  start from. Defaults to NULL - start from scratch.
+#' @param scale.x GSDF field with horizontal wind speeds - used to adjust
+#'  horizontal distance to allow for streamlines extending with the wind.
+#'  Defaults to NULL - no adjustment made.
+#' @param scale.y GSDF field with vertical wind speeds - used to adjust
+#'  vertical distance to allow for streamlines extending with the wind.
+#'  Defaults to NULL - no adjustment made.
 #' @return list with elements 'lats' and lons'
 WeatherMap.bridson<-function(Options,
-                             previous=NULL) {
+                             previous=NULL,
+                             scale.x=NULL,scale.y=NULL) {
 
     x.range<-c(Options$lon.min,Options$lon.max)
     y.range<-c(Options$lat.min,Options$lat.max)
@@ -177,6 +195,22 @@ WeatherMap.bridson<-function(Options,
     #  NA if nothing there
     x<-rep(NA,n.x*n.y)
     y<-rep(NA,n.x*n.y)
+
+    # Scale factors at each grid location
+    scalef.x<-rep(1,n.x*n.y)
+    scalef.y<-rep(1,n.x*n.y)
+    if(!is.null(scale.x) && !is.null(scale.y)) {
+        gp.x<-(seq(1,n.x)-0.5)*r.x+x.range[1]
+        gp.y<-(seq(1,n.y)-0.5)*r.y+y.range[1]
+        gp.x.full<-as.vector(matrix(data=rep(gp.x,n.y),ncol=n.x,byrow=F))
+        gp.y.full<-as.vector(matrix(data=rep(gp.y,n.x),ncol=n.y,byrow=T))
+        scalef.x<-abs(GSDF.interpolate.ll(scale.x,gp.y.full,gp.x.full))
+        scalef.y<-abs(GSDF.interpolate.ll(scale.y,gp.y.full,gp.x.full))
+       # There's something wrong here - the *0.1 below should not be there (should be 1.0)
+        v.scale<-view.scale*Options$wind.vector.scale*0.1
+        scalef.x<-(scalef.x*v.scale+r.min)/r.min
+        scalef.y<-(scalef.y*v.scale+r.min)/r.min
+    }
 
     # set of active points
     active<-integer(0)
@@ -209,7 +243,8 @@ WeatherMap.bridson<-function(Options,
         cp<-bridson.close.points(index.i,n.x,n.y)
         cp<-cp[!is.na(x[cp])]
         if(length(cp)>0) {
-            d.s<-((previous$x[i]-x[cp])**2+(previous$lat[i]-y[cp])**2)
+            d.s<-(((previous$lon[i]-x[cp])/scalef.x[cp])**2+
+                  ((previous$lat[i]-y[cp])/scalef.y[cp])**2)
             if(min(d.s,na.rm=TRUE)<r.min**2) next
         }
         x[index.i]<-previous$lon[i]
@@ -240,10 +275,8 @@ WeatherMap.bridson<-function(Options,
            ns$x<-ns$x[w]
            ns$y<-ns$y[w]
            if(length(cp)>0) { # At least one close point, so test necessary     
-              d<-(outer(ns$x,x[cp],FUN='-'))**2 +
-                 (outer(ns$y,y[cp],FUN='-'))**2
-              d<-apply(d,1,min)
-              w<-which(d>r.min**2)
+              d<-bridson.min.distance(ns$x,ns$y,x[cp],y[cp],scalef.x[cp],scalef.y[cp])
+              w<-which(d>r.min)
            } else w<-1 # no test - just take first point
            if(length(w)>0) { # new point
                x[index.s[w[1]]]<-ns$x[w[1]]
@@ -459,7 +492,8 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
   }
    # Update positions and Roll-out the streamlines
    if(!Options$jitter) set.seed(27)
-   p<-WeatherMap.bridson(Options,previous=list(lat=lats,lon=longs))
+   p<-WeatherMap.bridson(Options,previous=list(lat=lats,lon=longs),
+                          scale.x=u,scale.y=v)
    s<-WeatherMap.propagate.streamlines(p$lat,p$lon,rep(1,length(p$lat)),u,v,t,t.c,Options)
    # Need periodic boundary conditions?
    if(Options$lon.max-Options$lon.min>360) {
