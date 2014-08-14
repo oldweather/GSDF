@@ -3,13 +3,22 @@
 \alias{WeatherMap.bridson}
 \title{Allocate points using poisson-disc coverage}
 \usage{
-WeatherMap.bridson(Options, previous = NULL)
+WeatherMap.bridson(Options, previous = NULL, scale.x = NULL,
+  scale.y = NULL)
 }
 \arguments{
 \item{Options}{list of options - see \code{WeatherMap.set.option}}
 
 \item{previous}{list with elements 'lat' and lon' - set of points to
 start from. Defaults to NULL - start from scratch.}
+
+\item{scale.x}{GSDF field with horizontal wind speeds - used to adjust
+horizontal distance to allow for streamlines extending with the wind.
+Defaults to NULL - no adjustment made.}
+
+\item{scale.y}{GSDF field with vertical wind speeds - used to adjust
+vertical distance to allow for streamlines extending with the wind.
+Defaults to NULL - no adjustment made.}
 }
 \value{
 list with elements 'lats' and lons'
