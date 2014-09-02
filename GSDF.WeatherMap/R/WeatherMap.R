@@ -62,7 +62,9 @@ Defaults<-list(
    obs.colour=rgb(255,215,0,255,
                    maxColorValue=255),  # For observations
    label='',                            # Label - the date is a good choice
-   label.xp=0.99,label.yp=0.01          # Location, npc units
+   label.xp=0.99,label.yp=0.01,         # Location, npc units
+   label.bg.colour=rgb(123,121,117,255, # Background colour for label
+                    maxColorValue=255)  #  defaults to land colour.
 )
 
 #' WeatherMap.option
@@ -214,15 +216,22 @@ WeatherMap.bridson<-function(Options,
 
     # set of active points
     active<-integer(0)
+
+    # Order of addition
+    order.added<-integer(0)
     
     # Generate start point at random
-    x.c<-runif(1)*diff(x.range)+min(x.range)
-    y.c<-runif(1)*diff(y.range)+min(y.range)
+    #x.c<-runif(1)*diff(x.range)+min(x.range)
+    #y.c<-runif(1)*diff(y.range)+min(y.range)
+    # start at top left
+    x.c<-min(x.range) + r.min/2
+    y.c<-max(y.range) - r.min/2
     index.c<-as.integer((y.c-min(y.range))/r.y)*n.x+
              as.integer((x.c-min(x.range))/r.x)+1
     active<-index.c
     x[index.c]<-x.c
     y[index.c]<-y.c
+    order.added<-c(order.added,index.c)
 
     # If starting from a pre-existing set of points, load them
     # in random order, culling any too close to one already loaded.
@@ -249,6 +258,7 @@ WeatherMap.bridson<-function(Options,
         }
         x[index.i]<-previous$lon[i]
         y[index.i]<-previous$lat[i]
+        order.added<-c(order.added,index.c)
         # Ideally we'd set all points to active, but try
         #  only a subset - faster
         if(index.i%%7==0) active<-c(active,index.i)
@@ -282,6 +292,7 @@ WeatherMap.bridson<-function(Options,
                x[index.s[w[1]]]<-ns$x[w[1]]
                y[index.s[w[1]]]<-ns$y[w[1]]
                active<-c(active,index.s[w[1]])
+               order.added<-c(order.added,index.s[w[1]])
                next
            }
          }
@@ -290,9 +301,11 @@ WeatherMap.bridson<-function(Options,
          active<-active[-w]
    }
 
-    w<-which(is.na(x))
-    x<-x[-w]
-    y<-y[-w]
+    #w<-which(is.na(x))
+    #x<-x[-w]
+    #y<-y[-w]
+    x<-x[order.added]
+    y<-y[order.added]
 
     if(Options$wrap.spherical) {
       x<-x/cos(y*pi/180)
@@ -754,9 +767,11 @@ WeatherMap.draw.ice<-function(lat,lon,icec,Options) {
    if(!Options$jitter) set.seed(27) # seed is abitrary - must be same each time
    vscale<-runif(length(lon))*0.05+1
    length<-length*vscale # Cosmetic, make plotted squares irregular
+   ice.transparency<-col2rgb(Options$ice.colour,alpha=TRUE)[4,1]
    for(i in seq_along(lat)) {
 
-     col<-(col2rgb(Options$ice.colour)*ip[i]+col2rgb(Options$sea.colour)*(1-ip[i]))[,1]
+     ipt<-ip[i]*ice.transparency/255
+     col<-(col2rgb(Options$ice.colour)*ipt+col2rgb(Options$sea.colour)*(1-ipt))[,1]
      col<-rgb(col[1],col[2],col[3],maxColorValue=255)
      gp<-gpar(col=col,fill=col)
               sx<-c(lon[i]-length[i]/2,lon[i]+length[i]/2,
