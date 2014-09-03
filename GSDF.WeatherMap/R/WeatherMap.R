@@ -476,9 +476,9 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
 	  v<-r.u.v$v
     }
    view.scale<-max((Options$lon.max-Options$lon.min)/360,(Options$lat.max-Options$lat.min)/180)
-   lats<-0
-   longs<-0
-   status<-1
+   lats<-numeric(0)
+   longs<-numeric(0)
+   status<-numeric(0)
    initial=FALSE # starting from scratch
    if(is.null(s)) initial=TRUE
    if(!is.null(s)) {
