@@ -258,7 +258,7 @@ WeatherMap.bridson<-function(Options,
         }
         x[index.i]<-previous$lon[i]
         y[index.i]<-previous$lat[i]
-        order.added<-c(order.added,index.c)
+        order.added<-c(order.added,index.i)
         # Ideally we'd set all points to active, but try
         #  only a subset - faster
         if(index.i%%7==0) active<-c(active,index.i)
@@ -701,7 +701,7 @@ WeatherMap.draw.land<-function(land,Options,height=NULL) {
                             WeatherMap.ice.shelves$x,
                             Options$pole.lat,Options$pole.lon)
           # Trim all the edge points which might wrap
-            w<-which(l2$lon< -178 | l2$lon>178)
+            w<-which(l2$lon< Options$lon.min+2 | l2$lon>Options$lon.max-2)
             is.na(l2$lon[w])<-T
             grid.polygon(x=unit(l2$lon,'native'),
                          y=unit(l2$lat,'native'),
