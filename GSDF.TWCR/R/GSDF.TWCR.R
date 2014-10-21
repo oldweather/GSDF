@@ -775,3 +775,58 @@ TWCR.members.bootstrap<-function(ensemble) {
    }
    return(result)
 }
+
+#' Make annual mean fields for each hour.
+#'
+#' Poor man's normals - just the mean for each hour (1:24) over a year
+#'
+#' Note that the indices are 1:24 not 0:23 as 0 can't be used as a list index.
+#'
+#' @export
+#' @param variable 20CR variable name, only 2d variables will work.
+#' @param year Year to make averages for.
+#' @param version 20CR version number - defaults to 2.
+#' @return A list (indexed 1:24) of fields, each of which is the annual average for that hour.
+TWCR.annual.mean.hourly<-function(variable,year,version=2) {
+   fn<-TWCR.hourly.get.file.name(variable,year,1,1,1,12,version=version)
+   t.s<-chron(sprintf("%04d/%02d/%02d",year,1,1),sprintf("%02d:00:00",0),
+            format=c(dates='y/m/d',times='h:m:s'))
+   t.e<-chron(sprintf("%04d/%02d/%02d",year+1,1,1),sprintf("%02d:00:00",0),
+            format=c(dates='y/m/d',times='h:m:s'))
+   annual<-GSDF.ncdf.load(fn,variable,lat.range=c(-90,90),
+                          lon.range=c(0,360),time.range=c(t.s,t.e))
+   hourly<-list()
+   for(hr in c(0,6,12,18)) {
+     tmp<-annual
+     w<-which(hours(annual$dimensions[[3]]$values)==hr)
+     tmp$data<-annual$data[,,w]
+     tmp$dimensions[[3]]$values<-annual$dimensions[[3]]$values[w]
+     if(hr==0) {
+        hourly[[24]]<-GSDF.reduce.1d(tmp,3,mean)
+     } else {
+        hourly[[hr]]<-GSDF.reduce.1d(tmp,3,mean)
+     }
+
+   }
+   for(hr in c(1,2,3,4,5)) {
+     hourly[[hr]]<-hourly[[24]]
+     weight<-(hr-0)/6
+     hourly[[hr]]$data[]<-hourly[[6]]$data*weight+hourly[[24]]$data*(1-weight)
+   }
+   for(hr in c(7,8,9,10,11)) {
+     hourly[[hr]]<-hourly[[24]]
+     weight<-(hr-6)/6
+     hourly[[hr]]$data[]<-hourly[[12]]$data*weight+hourly[[6]]$data*(1-weight)
+   }
+   for(hr in c(13,14,15,16,17)) {
+     hourly[[hr]]<-hourly[[24]]
+     weight<-(hr-12)/6
+     hourly[[hr]]$data[]<-hourly[[18]]$data*weight+hourly[[12]]$data*(1-weight)
+   }
+   for(hr in c(19,20,21,22,23)) {
+     hourly[[hr]]<-hourly[[24]]
+     weight<-(hr-18)/6
+     hourly[[hr]]$data[]<-hourly[[18]]$data*weight+hourly[[24]]$data*(1-weight)
+   }
+   return(hourly)
+}
