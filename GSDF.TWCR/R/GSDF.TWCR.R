@@ -826,7 +826,7 @@ TWCR.annual.mean.hourly<-function(variable,year,version=2) {
    for(hr in c(19,20,21,22,23)) {
      hourly[[hr]]<-hourly[[24]]
      weight<-(hr-18)/6
-     hourly[[hr]]$data[]<-hourly[[18]]$data*weight+hourly[[24]]$data*(1-weight)
+     hourly[[hr]]$data[]<-hourly[[24]]$data*weight+hourly[[18]]$data*(1-weight)
    }
    return(hourly)
 }
