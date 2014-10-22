@@ -3,7 +3,7 @@
 \alias{ERA20C.get.data.dir}
 \title{ERA20C get data directory}
 \usage{
-ERA20C.get.data.dir(version = 2)
+ERA20C.get.data.dir()
 }
 \value{
 Base directory name (or NULL is no local files)
