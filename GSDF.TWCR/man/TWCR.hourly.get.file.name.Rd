@@ -9,7 +9,8 @@ TWCR.hourly.get.file.name(variable, year, month, day, hour, height = NULL,
 \arguments{
 \item{variable}{'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any 20CR variable}
 
-\item{type}{- 'mean', 'spread', 'normal', or 'standard.deviation'.
+\item{type}{- 'mean', 'spread', 'normal', or 'standard.deviation'. Also
+  'fg.mean' and 'fg.spread' for first guess fields.
 Note that standard deviations are not available over opendap.}
 
 \item{opendap}{TRUE for network retrieval, FALSE for local files (faster, if you have them),

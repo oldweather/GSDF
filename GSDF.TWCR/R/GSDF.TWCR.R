@@ -80,7 +80,8 @@ TWCR.get.variable.group<-function(variable) {
 #'
 #' @export
 #' @param variable 'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any 20CR variable
-#' @param type - 'mean', 'spread', 'normal', or 'standard.deviation'. 
+#' @param type - 'mean', 'spread', 'normal', or 'standard.deviation'. Also
+#'    'fg.mean' and 'fg.spread' for first guess fields.
 #'  Note that standard deviations are not available over opendap.
 #' @param opendap TRUE for network retrieval, FALSE for local files (faster, if you have them),
 #'  NULL (default) will use local files if available, and network if not.
@@ -108,8 +109,16 @@ TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
                name<-sprintf("%s/hourly/%s/%s.%04d.nc",base.dir,
                            variable,variable,year)
             }
+            if(type=='fg.mean') {
+               name<-sprintf("%s/first.guess.hourly/%s/%s.%04d.nc",base.dir,
+                           variable,variable,year)
+            }
             if(type=='spread') {
                name<-sprintf("%s/hourly/%s/%s.%04d.spread.nc",base.dir,
+                           variable,variable,year)
+            }
+            if(type=='fg.spread') {
+               name<-sprintf("%s//first.guess.hourly/%s/%s.%04d.spread.nc",base.dir,
                            variable,variable,year)
             }
             if(is.null(name)) stop(sprintf("Unsupported data type %s",type))
