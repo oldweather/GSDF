@@ -175,14 +175,11 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
 #  in the names of the files (sometimes). So finding the
 #  corect variable is not always trivial.
 GSDF.ncdf.get.var<-function(f,variable) {
-   v<-f$var[[variable]]
-   if(is.null(v)) {  # They have called the variable something else
-      # This code is specific to the current TWCR .nc files
-       if(length(f$var)>1) {
-          v<-f$var[[2]] # Monthly
-       } else {
-          v<-f$var[[1]] # Hourly
-       }
+   v2<-gsub('\\..+$','',variable)
+   v<-f$var[[v2]]
+   if(is.null(v)) {
+     if(v2=='prmsl') v<-f$var[['slp']]
+     if(is.null(v)) stop(sprintf("Can't get variable %s",variable))
    }
    return(v)
 }

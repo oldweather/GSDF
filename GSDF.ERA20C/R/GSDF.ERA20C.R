@@ -249,7 +249,7 @@ ERA20C.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=
 #' @param year Year to make averages for.
 #' @return A list (indexed 1:24) of fields, each of which is the annual average for that hour.
 ERA20C.annual.mean.hourly<-function(variable,year) {
-   fn<-TWCR.hourly.get.file.name(variable,year,1,1,1,12)
+   fn<-ERA20C.hourly.get.file.name(variable,year,1,1,1,12)
    t.s<-chron(sprintf("%04d/%02d/%02d",year,1,1),sprintf("%02d:00:00",0),
             format=c(dates='y/m/d',times='h:m:s'))
    t.e<-chron(sprintf("%04d/%02d/%02d",year+1,1,1),sprintf("%02d:00:00",0),
