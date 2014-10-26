@@ -56,8 +56,8 @@ TWCR.get.data.dir<-function(version=2) {
     if(file.exists(sprintf("/data/cr2/hadpb/20CR/version_%s/",version))) {
             return(sprintf("/data/cr2/hadpb/20CR/version_%s/",version))
     }	
-    if(file.exists(sprintf("/project/projectdirs/incite11/brohan/netCDF.data/20CR_v%s/",version))) {
-            return(sprintf("/project/projectdirs/incite11/brohan/netCDF.data/20CR_v%s/",version))
+    if(file.exists(sprintf("/project/projectdirs/m958/netCDF.data/20CR_v%s/",version))) {
+            return(sprintf("/project/projectdirs/m958/netCDF.data/20CR_v%s/",version))
     }	
     return(NULL)
 }

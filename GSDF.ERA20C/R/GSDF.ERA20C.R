@@ -43,8 +43,8 @@ ERA20C.get.data.dir<-function() {
     if(file.exists("/data/cr2/hadpb/ERA20C/")) {
             return("/data/cr2/hadpb/ERA20C/")
     }	
-    if(file.exists("/project/projectdirs/incite11/brohan/netCDF.data/ERA20C/")) {
-            return("/project/projectdirs/incite11/brohan/netCDF.data/ERA20C/")
+    if(file.exists("/project/projectdirs/m958/netCDF.data/ERA20C/")) {
+            return("/project/projectdirs/m958/netCDF.data/ERA20C/")
     }	
     return(NULL)
 }
