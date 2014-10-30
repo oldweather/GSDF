@@ -1,7 +1,7 @@
 # Functions for getting data from the ERA20C reanalyis
 
 # names and classes of variables
-ERA20C.monolevel<-c('prmsl','air.2m')
+ERA20C.monolevel<-c('prmsl','air.2m','uwnd.10m','vwnd.10m')
 ERA20C.pressure.level<-NULL
 
 # Height of each level in hPa - not yet correct
