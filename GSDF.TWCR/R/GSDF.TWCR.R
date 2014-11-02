@@ -839,3 +839,63 @@ TWCR.annual.mean.hourly<-function(variable,year,version=2) {
    }
    return(hourly)
 }
+
+#' Extract a hyperslab of data.
+#'
+#' Up to 4d (lat, lon, height, time).
+#'
+#' Time must not span year boundaries (I.e. all in one file).
+#'
+#' @export
+#' @param variable 20CR variable name, only 2d variables will work.
+#' @param date.range A pair of text date strings, e.g. c('1981-02-05:12','1981-03-27:18') - inclusive.
+#' @param version 20CR version number - defaults to 2.
+#' @param type - 'mean' (default), 'spread', 'normal', or 'standard.deviation'. 
+#'  Note that standard deviations are not available over opendap.
+#' @param height.range Bottom and top heights in hPa - leave NULL for monolevel
+#' @param lat.range Min and max latitude in degrees - defaults to c(-90,90)
+#' @param lon.range Min and max longitude in degrees - defaults to c(0,360)
+#' @param opendap TRUE for network retrieval, FALSE for local files (faster, if you have them), NULL (default)
+#'  will use local files if available and network otherwise.
+#' @return A GSDF field with the selected multidimensional data
+TWCR.get.slab.from.hourly<-function(variable,date.range,
+                                             height.range=NULL,
+                                             lat.range=c(-90,90),
+                                             lon.range=c(0,360),
+                                    opendap=NULL,version=2,type='mean') {
+    # Get the start and end dates
+     start.d<-list()
+     start.d$year<-as.integer(substr(date.range[1],1,4))
+     start.d$month<-as.integer(substr(date.range[1],6,7))
+     start.d$day<-as.integer(substr(date.range[1],9,10))
+     start.d$hour<-as.integer(substr(date.range[1],12,13))
+     start.d$chron<-chron(sprintf("%04d/%02d/%02d",start.d$year,start.d$month,start.d$day),
+                          sprintf("%02d:00:00",start.d$hour),
+                          format=c(dates='y/m/d',times='h:m:s'))
+     end.d<-list()
+     end.d$year<-as.integer(substr(date.range[2],1,4))
+     end.d$month<-as.integer(substr(date.range[2],6,7))
+     end.d$day<-as.integer(substr(date.range[2],9,10))
+     end.d$hour<-as.integer(substr(date.range[2],12,13))
+     end.d$chron<-chron(sprintf("%04d/%02d/%02d",end.d$year,end.d$month,end.d$day),
+                          sprintf("%02d:00:00",end.d$hour),
+                          format=c(dates='y/m/d',times='h:m:s'))
+     if(start.d$year != end.d$year) stop("Start and end points must be in same calendar year")
+
+       file.name<-TWCR.hourly.get.file.name(variable,start.d$year,start.d$month,start.d$day,start.d$hour,
+					    height=height.range[1],
+					    opendap=opendap,version=version,type=type)
+       if(type=='normal') { # Normals are for year 1, which chron can't handle, and have no Feb 29
+	  start.d$chron<-chron(sprintf("%04d/%02d/%02d",-1,start.d$month,start.d$day),
+		      sprintf("%02d:00:00",start.d$hour),
+		      format=c(dates='y/m/d',times='h:m:s'))
+	  start.d$chron<-chron(as.numeric(t)+729)
+	  end.d$chron<-chron(sprintf("%04d/%02d/%02d",-1,end.d$month,end.d$day),
+		      sprintf("%02d:00:00",end.d$hour),
+		      format=c(dates='y/m/d',times='h:m:s'))
+	  end.d$chron<-chron(as.numeric(t)+729)
+       }
+       v<-GSDF.ncdf.load(file.name,variable,lat.range=lat.range,lon.range=lon.range,
+			 height.range=height.range,time.range=c(start.d$chron,end.d$chron))
+       return(v)
+}
