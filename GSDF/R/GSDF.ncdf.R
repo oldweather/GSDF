@@ -276,6 +276,8 @@ GSDF.ncdf.write<-function(f,file.name,name='variable',
 #  in the names of the files (sometimes). So finding the
 #  corect variable is not always trivial.
 GSDF.ncdf.get.var<-function(f,variable) {
+   v<-f$var[[variable]]
+   if(!is.null(v)) return(v)
    v2<-gsub('\\..+$','',variable)
    v<-f$var[[v2]]
    if(is.null(v)) {
