@@ -68,9 +68,6 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
    # No cache- fetch from file
    f<-nc_open(file)
    v<-GSDF.ncdf.get.var(f,variable)
-#   v<-f$var[[variable]]
-#   if(is.null(v)) v<-f$var[[2]] # Fixes TWCR cases where var has different name from file
-#   if(v$name=='climatology_bounds')  v<-f$var[[2]] # Fudge for TWCR normals, with bounds variable
    lat.i<-GSDF.ncdf.get.lat(v,lat.name)
    if(is.null(lat.range) && !is.null(lat.i)) {
       stop('Latitude range required (lat.range=c(-90,90)')
@@ -169,6 +166,110 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
    f<-nc_close(f)
    if(!is.null(cache.file.name)) save(result,file=cache.file.name)
    return(result)
+}
+
+
+#' Write to netCDF file
+#'
+#' Write a single field to a netCDF file.
+#' Overwites anything already in the file.
+#'
+#' Always uses 'hours since 1800-01-01:00' in the 
+#'  gregorian calendar for time fields.
+#'
+#' @export
+#' @param f A GSDF field
+#' @param file.name Output file name.
+#' @param missval see \code{\link{ncvar_def}}
+#' @param prec see \code{\link{ncvar_def}}
+#' @param shuffle see \code{\link{ncvar_def}}
+#' @param compression see \code{\link{ncvar_def}}
+#' @param chunksizes see \code{\link{ncvar_def}}
+#' @return 1 if successful, NULL for failure - invisibly.
+GSDF.ncdf.write<-function(f,file.name,name='variable',
+                          missval=NULL,prec='float',shuffle=FALSE,
+                          compression=NA,chunksizes=NA) {
+
+   nc.dims<-list()
+   for(i in seq_along(f$dimensions)) {
+      if(f$dimensions[[i]]$type=='time') {
+         origin<-attr(f$dimensions[[i]]$values[1],'origin')
+         nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
+            sprintf("hours since %04d-%02d-%02d 00:00",origin[3],origin[1],origin[2]),
+            as.numeric(f$dimensions[[i]]$values)*24)
+      }
+      if(f$dimensions[[i]]$type=='lat') {
+         nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
+            'degrees north',
+            f$dimensions[[i]]$values,
+            longname='latitude')
+      }
+      if(f$dimensions[[i]]$type=='lon') {
+         nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
+            'degrees east',
+            f$dimensions[[i]]$values,
+            longname='longitude')
+      }
+      if(f$dimensions[[i]]$type=='ensemble') {
+         nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
+            'member',
+            f$dimensions[[i]]$values)
+      }
+      if(f$dimensions[[i]]$type!='ensemble' &&
+         f$dimensions[[i]]$type!='lon' &&
+         f$dimensions[[i]]$type!='lat' &&
+         f$dimensions[[i]]$type!='time') {
+         nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
+            'other',
+            f$dimensions[[i]]$values)
+      }
+   }
+   v<-tryCatch({
+      ncvar_def(name,'',nc.dims,
+                missval=missval,
+                prec=prec,
+                compression=compression,
+                chunksizes=chunksizes)},
+      warning=function(w) {
+         warning('Problem creating nc4 variable',w)
+      },
+      error=function(e) {
+         warning('Failed to create nc4 variable',e)
+         return(invisible(NULL))
+      })
+         
+   nf<-tryCatch({
+     nc_create(file.name,v)},
+      warning=function(w) {
+         warning('Problem creating netCDF file',file.name,w)
+      },
+      error=function(e) {
+         warning('Failed to create netCDF file',file.name,e)
+         return(invisible(NULL))
+      })
+   np<-tryCatch({
+      ncvar_put(nf,v,f$data)},
+      warning=function(w) {
+         warning('Problem writing to netCDF file',file.name,w)
+      },
+      error=function(e) {
+         warning('Failed to write to netCDF file',file.name,e)
+         return(invisible(NULL))
+      })
+  # Add the metadata
+   for(i in names(f$meta)) {
+       np<-tryCatch({
+	  ncatt_put(nf,v,i,f$meta[[i]])},
+	  warning=function(w) {
+	     warning('Problem writing attribute to netCDF file',file.name,w)
+	  },
+	  error=function(e) {
+	     warning('Failed to write attribute to netCDF file',file.name,e)
+	     return(invisible(NULL))
+	  })
+   }
+   nc_close(nf)
+   return(invisible(1))
 }
 
 # TWCR uses different variable names in the .nc files from
