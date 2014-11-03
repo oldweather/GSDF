@@ -77,6 +77,10 @@ ERA20C.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
            name<-sprintf("%s/hourly/%s/%s.%04d.nc",base.dir,
                        variable,variable,year)
         }
+        if(type=='normal') {
+           name<-sprintf("%s/hourly/normals/%s.nc",base.dir,
+                       variable)
+        }
         if(is.null(name)) stop(sprintf("Unsupported data type %s",type))
         if(file.exists(name)) return(name)
         stop(sprintf("No local file %s",name))
@@ -203,6 +207,14 @@ ERA20C.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=
                                                 type=type)
            t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                     format=c(dates='y/m/d',times='h:m:s'))
+           if(type=='normal') { # Normals are for year 1, which chron can't handle, and have no Feb 29
+               month<-as.integer(month) # Sometimes still a factor, why?
+               day<-as.integer(day)
+               if(month==2 && day==29) day<-28
+              t<-chron(sprintf("%04d/%02d/%02d",-1,month,day),sprintf("%02d:00:00",hour),
+                       format=c(dates='y/m/d',times='h:m:s'))
+              t<-chron(as.numeric(t)+729)
+           }
            v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(0,360),
                              height.range=rep(height,2),time.range=c(t,t))
 	   return(v)
