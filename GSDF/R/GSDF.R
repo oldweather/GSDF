@@ -701,3 +701,55 @@ GSDF.pad.longitude<-function(g) {
   }
   stop('Field has no longitudes to pad')
 }
+
+
+#' Merge two fields along one dimension.
+#'
+#' Takes two n-dimensional fields where n-1 of the dimensions
+#'  are identical and concatnate the fields along the remaining
+#'  dimension.
+#'
+#' If you have a 3-d field (say) lat*lon*time1, and asecond field
+#'  lat*lon*time2 on the same lat lon grid - combine them to
+#'  make 1 output field lat*lon*(time1+time2). Can concatenate
+#'  along any dimension if all the other dimensions are the same.
+#'
+#' @export
+#' @param d1 GSDF field
+#' @param d2 GSDF field
+#' @param dimn name (e.g. 'ensemble') or number (3) of dimension to concatenate along
+#' @return reduced field.
+GSDF.concatenate<-function(d1,d2,dimn,fn) {
+  idx.d<-NULL
+  if(is.numeric(dimn)) {
+    idx.d<-dimn
+  } else {
+    idx.d<-GSDF.find.dimension(d1,dimn)
+    if(is.null(idx.d)) stop(sprintf("Field has no dimension %s",dimn))
+    if(GSDF.find.dimension(d2,dimn)!=idx.d) {
+       stop("Dimension orders don't match")
+    }
+  }
+  if(is.null(d1$dimension[[idx.d]]$type) ||
+     is.null(d2$dimension[[idx.d]]$type) ||
+     d1$dimension[[idx.d]]$type != d2$dimension[[idx.d]]$type) {
+    stop("Concatenation dimensions don't match")
+  }
+  if(length(d1$dimension)!=length(d2$dimension)) {
+    stop("Field dimensions don't match")
+  }
+  for(i in seq_along(d1$dimension)) {
+    if(i==idx.d) next
+    if(d1$dimsions[[i]]$type != d2$dimsion[[i]]$type ||
+       !is.True(all.equal(d1$dimsion[[i]]$values,
+                          d2$dimsion[[i]]$values))) {
+       stop(sprintf("Field dimensions %d don't match",i))
+    }
+  }
+  result<-d1
+  result$data<-abind(d1$data,d2$data,along=idx.d)
+  result$dimensions[[idx.d]]$values<-c(
+                      d1$dimensions[[idx.d]]$values,
+                      d2$dimensions[[idx.d]]$values)
+  return(result)
+}

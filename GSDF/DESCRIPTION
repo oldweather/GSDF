@@ -14,5 +14,6 @@ Depends:
     maps,
     mapdata,
     lattice,
-    grid
+    grid,
+    abind
 License: Apache
