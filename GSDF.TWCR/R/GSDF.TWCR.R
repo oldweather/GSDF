@@ -96,14 +96,7 @@ TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
                     name<-sprintf("%s/hourly/normals/%s.nc",base.dir,variable)
             }
             if(type=='standard.deviation') {
-                    if(month==2 && day==29) day=28
-                    if(is.null(height)) {
-                       name<-sprintf("%s/hourly/standard.deviations/%s/sd.%02d.%02d.%02d.rdata",
-                                      base.dir,variable,month,day,hour)
-                    } else {
-                       name<-sprintf("%s/hourly/standard.deviations/%s/sd.%04d.%02d.%02d.%02d.rdata",
-                                      base.dir,variable,height,month,day,hour)
-                    }
+                    name<-sprintf("%s/hourly/standard.deviations/%s.nc",base.dir,variable)
             }
             if(type=='mean') {
                name<-sprintf("%s/hourly/%s/%s.%04d.nc",base.dir,
@@ -545,25 +538,27 @@ TWCR.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
 	if(TWCR.is.in.file(variable,year,month,day,hour,type=type)) {
         file.name<-TWCR.hourly.get.file.name(variable,year,month,day,hour,height=height,
                                                 opendap=opendap,version=version,type=type)
-           if(type=='standard.deviation') { # sd's are a special case
-              if(grepl('://',file.name)) { # Is it a URL?
-                u<-url(file.name)
-                load(u)
-                close(u)
-              } else {
-                 load(file.name)
-              }
-              return(twcr.sd)
-           }   
            t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                     format=c(dates='y/m/d',times='h:m:s'))
-           if(type=='normal') { # Normals are for year 1, which chron can't handle, and have no Feb 29
+           if(type=='standard.deviation') { 
                month<-as.integer(month) # Sometimes still a factor, why?
                day<-as.integer(day)
                if(month==2 && day==29) day<-28
-              t<-chron(sprintf("%04d/%02d/%02d",-1,month,day),sprintf("%02d:00:00",hour),
-                       format=c(dates='y/m/d',times='h:m:s'))
-              t<-chron(as.numeric(t)+729)
+	       t<-chron(sprintf("%04d/%02d/%02d",1981,month,day),sprintf("%02d:00:00",hour),
+			       format=c(dates='y/m/d',times='h:m:s'))
+           }   
+           if(type=='normal' ) { # Normals are for year 1 (v2) or 1981 (otherwise), which chron can't handle, and have no Feb 29
+               month<-as.integer(month) # Sometimes still a factor, why?
+               day<-as.integer(day)
+               if(month==2 && day==29) day<-28
+              if(version==2 || version=='3.2.1') {
+		  t<-chron(sprintf("%04d/%02d/%02d",-1,month,day),sprintf("%02d:00:00",hour),
+			   format=c(dates='y/m/d',times='h:m:s'))
+		  t<-chron(as.numeric(t)+729)
+              } else {
+		  t<-chron(sprintf("%04d/%02d/%02d",1981,month,day),sprintf("%02d:00:00",hour),
+			   format=c(dates='y/m/d',times='h:m:s'))
+              }
            }
            v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(0,360),
                              height.range=rep(height,2),time.range=c(t,t))
@@ -880,20 +875,62 @@ TWCR.get.slab.from.hourly<-function(variable,date.range,
      end.d$chron<-chron(sprintf("%04d/%02d/%02d",end.d$year,end.d$month,end.d$day),
                           sprintf("%02d:00:00",end.d$hour),
                           format=c(dates='y/m/d',times='h:m:s'))
-     if(start.d$year != end.d$year) stop("Start and end points must be in same calendar year")
+     if(start.d$chron>end.d$chron) stop("End date must be after start date")
+     if(start.d$year != end.d$year) {
+        v<-TWCR.get.slab.from.hourly(variable,c(sprintf("%04d-%02d-%02d:%02d",
+                                                          start.d$year,start.d$month,
+                                                          start.d$day,start.d$hour),
+                                                  sprintf("%04d-12-31:23",
+                                                          start.d$year)),
+                                       height.range=height.range,lat.range=lat.range,
+                                       lon.range=lon.range,opendap=opendap,
+                                       version=version,type=type)
+        year<-start.d$year+1
+        while(year<end.d$year) {
+          v<-GSDF.concatenate(v,
+                  TWCR.get.slab.from.hourly(variable,c(sprintf("%04d-01-01:00",
+                                                          year),
+                                                         sprintf("%04d-12-31:23",
+                                                          year)),
+                                       height.range=height.range,lat.range=lat.range,
+                                       lon.range=lon.range,opendap=opendap,
+                                       version=version,type=type),'time')
+          year<-year+1
+        }
+          v<-GSDF.concatenate(v,
+                  TWCR.get.slab.from.hourly(variable,c(sprintf("%04d-01-01:00",
+                                                          end.d$year),
+                                                         sprintf("%04d-%02d-%02d:%02d",
+                                                          end.d$year,end.d$month,
+                                                          end.d$day,end.d$hour),
+                                                          end.d$year),
+                                       height.range=height.range,lat.range=lat.range,
+                                       lon.range=lon.range,opendap=opendap,
+                                       version=version,type=type),'time')
+        return(v)
+     }
 
        file.name<-TWCR.hourly.get.file.name(variable,start.d$year,start.d$month,start.d$day,start.d$hour,
 					    height=height.range[1],
 					    opendap=opendap,version=version,type=type)
-       if(type=='normal') { # Normals are for year 1, which chron can't handle, and have no Feb 29
-	  start.d$chron<-chron(sprintf("%04d/%02d/%02d",-1,start.d$month,start.d$day),
-		      sprintf("%02d:00:00",start.d$hour),
-		      format=c(dates='y/m/d',times='h:m:s'))
-	  start.d$chron<-chron(as.numeric(t)+729)
-	  end.d$chron<-chron(sprintf("%04d/%02d/%02d",-1,end.d$month,end.d$day),
-		      sprintf("%02d:00:00",end.d$hour),
-		      format=c(dates='y/m/d',times='h:m:s'))
-	  end.d$chron<-chron(as.numeric(t)+729)
+       if(type=='normal' || type =='standard.deviation' ) { 
+          if(type=='normal' && (version==2 || version=='3.2.1')) { #V2 normals are for year 1, where chron is buggy
+	      start.d$chron<-chron(sprintf("%04d/%02d/%02d",-1,start.d$month,start.d$day),
+			  sprintf("%02d:00:00",start.d$hour),
+			  format=c(dates='y/m/d',times='h:m:s'))
+	      start.d$chron<-chron(as.numeric(start.d$chron)+728.999)
+	      end.d$chron<-chron(sprintf("%04d/%02d/%02d",-1,end.d$month,end.d$day),
+			  sprintf("%02d:00:00",end.d$hour),
+			  format=c(dates='y/m/d',times='h:m:s'))
+	      end.d$chron<-chron(as.numeric(end.d$chron)+729.001)
+          } else {
+	      start.d$chron<-chron(sprintf("%04d/%02d/%02d",1981,start.d$month,start.d$day),
+			  sprintf("%02d:00:00",start.d$hour),
+			  format=c(dates='y/m/d',times='h:m:s'))
+	      end.d$chron<-chron(sprintf("%04d/%02d/%02d",1981,end.d$month,end.d$day),
+			  sprintf("%02d:00:00",end.d$hour),
+			  format=c(dates='y/m/d',times='h:m:s'))
+          }     
        }
        v<-GSDF.ncdf.load(file.name,variable,lat.range=lat.range,lon.range=lon.range,
 			 height.range=height.range,time.range=c(start.d$chron,end.d$chron))

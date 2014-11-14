@@ -730,19 +730,19 @@ GSDF.concatenate<-function(d1,d2,dimn,fn) {
        stop("Dimension orders don't match")
     }
   }
-  if(is.null(d1$dimension[[idx.d]]$type) ||
-     is.null(d2$dimension[[idx.d]]$type) ||
-     d1$dimension[[idx.d]]$type != d2$dimension[[idx.d]]$type) {
+  if(is.null(d1$dimensions[[idx.d]]$type) ||
+     is.null(d2$dimensions[[idx.d]]$type) ||
+     d1$dimensions[[idx.d]]$type != d2$dimensions[[idx.d]]$type) {
     stop("Concatenation dimensions don't match")
   }
-  if(length(d1$dimension)!=length(d2$dimension)) {
+  if(length(d1$dimensions)!=length(d2$dimensions)) {
     stop("Field dimensions don't match")
   }
-  for(i in seq_along(d1$dimension)) {
+  for(i in seq_along(d1$dimensions)) {
     if(i==idx.d) next
-    if(d1$dimsions[[i]]$type != d2$dimsion[[i]]$type ||
-       !is.True(all.equal(d1$dimsion[[i]]$values,
-                          d2$dimsion[[i]]$values))) {
+    if(d1$dimensions[[i]]$type != d2$dimensions[[i]]$type ||
+       !isTRUE(all.equal(d1$dimensions[[i]]$values,
+                          d2$dimensions[[i]]$values))) {
        stop(sprintf("Field dimensions %d don't match",i))
     }
   }

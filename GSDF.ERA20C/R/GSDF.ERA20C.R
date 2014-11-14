@@ -81,6 +81,10 @@ ERA20C.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
            name<-sprintf("%s/hourly/normals/%s.nc",base.dir,
                        variable)
         }
+        if(type=='standard.deviation') {
+           name<-sprintf("%s/hourly/standard.deviations/%s.nc",base.dir,
+                       variable)
+        }
         if(is.null(name)) stop(sprintf("Unsupported data type %s",type))
         if(file.exists(name)) return(name)
         stop(sprintf("No local file %s",name))
@@ -207,13 +211,12 @@ ERA20C.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=
                                                 type=type)
            t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                     format=c(dates='y/m/d',times='h:m:s'))
-           if(type=='normal') { # Normals are for year 1, which chron can't handle, and have no Feb 29
+           if(type=='normal' || type=='standard.deviation') { # Normals have no Feb 29
                month<-as.integer(month) # Sometimes still a factor, why?
                day<-as.integer(day)
                if(month==2 && day==29) day<-28
-              t<-chron(sprintf("%04d/%02d/%02d",-1,month,day),sprintf("%02d:00:00",hour),
+              t<-chron(sprintf("%04d/%02d/%02d",1981,month,day),sprintf("%02d:00:00",hour),
                        format=c(dates='y/m/d',times='h:m:s'))
-              t<-chron(as.numeric(t)+729)
            }
            v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(0,360),
                              height.range=rep(height,2),time.range=c(t,t))
@@ -308,7 +311,7 @@ ERA20C.annual.mean.hourly<-function(variable,year) {
 #'
 #' Up to 4d (lat, lon, height, time).
 #'
-#' Time must not span year boundaries (I.e. all in one file).
+#' This is an excellent way to generate out of memory errors - use with caution.
 #'
 #' @export
 #' @param variable ERA20C variable name.
@@ -341,24 +344,53 @@ ERA20C.get.slab.from.hourly<-function(variable,date.range,
      end.d$chron<-chron(sprintf("%04d/%02d/%02d",end.d$year,end.d$month,end.d$day),
                           sprintf("%02d:00:00",end.d$hour),
                           format=c(dates='y/m/d',times='h:m:s'))
-     if(start.d$year != end.d$year) stop("Start and end points must be in same calendar year")
+     if(start.d$chron>end.d$chron) stop("End date must be after start date")
+     if(start.d$year != end.d$year) {
+        v<-ERA20C.get.slab.from.hourly(variable,c(sprintf("%04d-%02d-%02d:%02d",
+                                                          start.d$year,start.d$month,
+                                                          start.d$day,start.d$hour),
+                                                  sprintf("%04d-12-31:23",
+                                                          start.d$year)),
+                                       height.range=height.range,lat.range=lat.range,
+                                       lon.range=lon.range,type=type)
+        year<-start.d$year+1
+        while(year<end.d$year) {
+          v<-GSDF.concatenate(v,
+                  ERA20C.get.slab.from.hourly(variable,c(sprintf("%04d-01-01:00",
+                                                          year),
+                                                         sprintf("%04d-12-31:23",
+                                                          year)),
+                                       height.range=height.range,lat.range=lat.range,
+                                       lon.range=lon.range,type=type),'time')
+          year<-year+1
+        }
+          v<-GSDF.concatenate(v,
+                  ERA20C.get.slab.from.hourly(variable,c(sprintf("%04d-01-01:00",
+                                                          end.d$year),
+                                                         sprintf("%04d-%02d-%02d:%02d",
+                                                          end.d$year,end.d$month,
+                                                          end.d$day,end.d$hour),
+                                                          end.d$year),
+                                       height.range=height.range,lat.range=lat.range,
+                                       lon.range=lon.range,type=type),'time')
+        return(v)
+     }
 
-       file.name<-ERA20C.hourly.get.file.name(variable,start.d$year,start.d$month,
-                                              start.d$day,start.d$hour,
-                                              height=height.range[1],
-                                              type=type)
-       if(type=='normal') { # Normals are for year 1, which chron can't handle, and have no Feb 29
-          start.d$chron<-chron(sprintf("%04d/%02d/%02d",-1,start.d$month,start.d$day),
-                      sprintf("%02d:00:00",start.d$hour),
-                      format=c(dates='y/m/d',times='h:m:s'))
-          start.d$chron<-chron(as.numeric(t)+729)
-          end.d$chron<-chron(sprintf("%04d/%02d/%02d",-1,end.d$month,end.d$day),
-                      sprintf("%02d:00:00",end.d$hour),
-                      format=c(dates='y/m/d',times='h:m:s'))
-          end.d$chron<-chron(as.numeric(t)+729)
-       }
-       v<-GSDF.ncdf.load(file.name,variable,lat.range=lat.range,lon.range=lon.range,
-                         height.range=height.range,time.range=c(start.d$chron,end.d$chron))
-       return(v)
+
+   file.name<-ERA20C.hourly.get.file.name(variable,start.d$year,start.d$month,
+					  start.d$day,start.d$hour,
+					  height=height.range[1],
+					  type=type)
+   if(type=='normal' || type=='standard.deviation') { 
+      start.d$chron<-chron(sprintf("%04d/%02d/%02d",1981,start.d$month,start.d$day),
+		  sprintf("%02d:00:00",start.d$hour),
+		  format=c(dates='y/m/d',times='h:m:s'))
+      end.d$chron<-chron(sprintf("%04d/%02d/%02d",1981,end.d$month,end.d$day),
+		  sprintf("%02d:00:00",end.d$hour),
+		  format=c(dates='y/m/d',times='h:m:s'))
+   }
+   v<-GSDF.ncdf.load(file.name,variable,lat.range=lat.range,lon.range=lon.range,
+		     height.range=height.range,time.range=c(start.d$chron,end.d$chron))
+   return(v)
 }
  
