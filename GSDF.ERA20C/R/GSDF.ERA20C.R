@@ -2,7 +2,7 @@
 
 # names and classes of variables
 ERA20C.monolevel<-c('prmsl','air.2m','uwnd.10m','vwnd.10m','icec',
-                    'hgt.500','prate')
+                    'hgt.500','prate','sst')
 ERA20C.pressure.level<-NULL
 
 # Height of each level in hPa - not yet correct
