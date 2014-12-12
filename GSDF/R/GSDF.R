@@ -249,7 +249,7 @@ GSDF.regrid.2d<-function(g,g.grid,full=NULL,greedy=FALSE) {
            new.y<-rerotated$lat
         }
         if(g$dimensions[[dims[1]]]$type!='lon' && g$dimensions[[dims[1]]]$type!='lat') {
-          stop('Regriding non-lat-lon grids with duifferent poles is not supported')
+          stop('Regriding non-lat-lon grids with different poles is not supported')
         }
       }   
       if(full) {
@@ -259,8 +259,8 @@ GSDF.regrid.2d<-function(g,g.grid,full=NULL,greedy=FALSE) {
                                                   new.y,g$dimensions[[dims[2]]]$type)
         g<-GSDF.pad.longitude(g)
       }  
-      result$data<-array(data=GSDF.interpolate.2d(g,new.x,new.y),
-                         dim=dim(g.grid$data),greedy=greedy)
+      result$data<-array(data=GSDF.interpolate.2d(g,new.x,new.y,greedy=greedy),
+                         dim=dim(g.grid$data))
       return(result)
    }
    if(g$dimensions[[dims[1]]]$type == g.grid$dimensions[[dims.grid[2]]]$type &&
@@ -299,8 +299,8 @@ GSDF.regrid.2d<-function(g,g.grid,full=NULL,greedy=FALSE) {
                                                   new.y,g$dimensions[[dims[2]]]$type)
         g<-GSDF.pad.longitude(g)
       }  
-      result$data<-array(data=GSDF.interpolate.2d(g,new.x,new.y),
-                        dim=dim(g.grid$data),greedy=greedy)
+      result$data<-array(data=GSDF.interpolate.2d(g,new.x,new.y,greedy=greedy),
+                        dim=dim(g.grid$data))
       return(result)
    }
    stop("Incompatable fields - different dimensions")
@@ -878,7 +878,7 @@ GSDF.addleap<-function(d) {
 #'          the obj\$z where any neighbour points are NA (same as version in fields).
 #'          If FALSE, only return NA where all neighbouring points are NA.
 #' @return An vector of interpolated values. 
-GSDF.interp.surface<-function(obj,loc.greedy=FALSE) {
+GSDF.interp.surface<-function(obj,loc,greedy=FALSE) {
     x <- obj$x
     y <- obj$y
     z <- obj$z
@@ -903,8 +903,8 @@ GSDF.interp.surface<-function(obj,loc.greedy=FALSE) {
             1, ly1)] * ex * (1 - ey) + z[cbind(lx1, ly1 + 1)] * (1 - 
             ex) * ey + z[cbind(lx1 + 1, ly1 + 1)] * ex * ey)
     } else {
-      result<-rep(0,length(x))
-      weight<-rep(0,length(x))
+      result<-rep(0,length(z))
+      weight<-rep(0,length(z))
       w<-which(!is.na(z[cbind(lx1, ly1)]))
       if(length(w)>0) {
         weight[w]<-weight[w]+(1 - ex[w]) * (1 - ey[w])
@@ -926,8 +926,12 @@ GSDF.interp.surface<-function(obj,loc.greedy=FALSE) {
         result[w]<-result[w]+z[cbind(lx1+1, ly1+1)][w]* ex[w] * ey[w]
       }
       w<-which(weight==0)
-      is.na(result[w])<-TRUE
-      result[-w]<-result[-w]/weight[-w]
+      if(length(w)>0) {
+         is.na(result[w])<-TRUE
+         result[-w]<-result[-w]/weight[-w]
+      } else {
+         result<-result/weight
+      }
       return(result)
     }
 }
