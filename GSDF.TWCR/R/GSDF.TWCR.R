@@ -410,6 +410,7 @@ TWCR.get.fixed.field<-function(variable) {
                            "Datasets/20thC_ReanV2/gaussian/time_invariant/",
                            variable)
    
+   if(variable=='lsmask') variable<-'land' # Wrong name in file
    v<-GSDF.ncdf.load(fn,variable,lat.range=c(-90,90),lon.range=c(0,360))
    return(v)  
 }
@@ -507,6 +508,12 @@ TWCR.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,openda
     lm<-TWCR.get.fixed.field('lsmask')
     is.na(v$data[lm$data==1|i$data>0.01])<-TRUE # Mask out land and ice points
     return(v)
+  }
+  if(variable=='icec') {
+    i<-TWCR.get.slice.at.level.at.hour('icec',year,month,day,hour,height=NULL,opendap=opendap,version=version,type=type)
+    lm<-TWCR.get.fixed.field('lsmask')
+    is.na(i$data[lm$data==1])<-TRUE # Mask out land points
+    return(i)
   }
   if(TWCR.get.variable.group(variable)=='monolevel' ||
      TWCR.get.variable.group(variable)=='gaussian') {
