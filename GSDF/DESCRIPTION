@@ -9,7 +9,6 @@ Description: A data structure to hold geospatial fields.
 Depends:
     R (>= 1.7.0),
     chron,
-    fields,
     ncdf4,
     maps,
     mapdata,
