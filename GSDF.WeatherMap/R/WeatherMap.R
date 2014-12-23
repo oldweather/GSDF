@@ -425,12 +425,17 @@ WeatherMap.streamline.getGC<-function(value,transparency=NA,status=1,Options) {
       colour<-rgb(255,255,255,0,maxColorValue = 255)
       return(gpar(col=colour,fill=colour,lwd=Options$wind.vector.lwd))
    }
-   value<-max(0,min(1,value))
-   rgb<-colorRamp(Options$wind.palette,bias=Options$wind.palette.bias)(value)
+   value<-max(0.001,min(0.999,value))
+   #rgb<-colorRamp(Options$wind.palette,bias=Options$wind.palette.bias)(value)
+   rgb<-col2rgb(Options$wind.palette[ceiling(value*length(Options$wind.palette))])
    if(is.na(transparency)) alpha<-255
    else {
 	 transparency<-max(0,min(1,transparency))
          alpha<-c(255,192,128,54,0)[min(as.integer(transparency*5)+1,5)]
+     }
+   if(anyNA(c(rgb,alpha))) {
+      colour<-rgb(255,255,255,0,maxColorValue = 255)
+      return(gpar(col=colour,fill=colour,lwd=Options$wind.vector.lwd))
    }
    colour<-rgb(rgb[1],rgb[2],rgb[3],alpha,maxColorValue = 255)
    return(gpar(col=colour,fill=colour,lwd=Options$wind.vector.lwd*status))
