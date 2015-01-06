@@ -433,7 +433,7 @@ WeatherMap.streamline.getGC<-function(value,transparency=NA,status=1,Options) {
 	 transparency<-max(0,min(1,transparency))
          alpha<-c(255,192,128,54,0)[min(as.integer(transparency*5)+1,5)]
      }
-   if(anyNA(c(rgb,alpha))) {
+   if(any(is.na(c(rgb,alpha)))) {
       colour<-rgb(255,255,255,0,maxColorValue = 255)
       return(gpar(col=colour,fill=colour,lwd=Options$wind.vector.lwd))
    }
