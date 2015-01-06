@@ -562,11 +562,25 @@ WeatherMap.draw.streamlines<-function(s,Options) {
           gp<-WeatherMap.streamline.getGC(level,transparency=tp,
                                           status=min(abs(s[['status']][i]),1),Options)
       }
-      grid.xspline(x=unit(na.omit(s[['x']][i,]),'native'),
-                   y=unit(na.omit(s[['y']][i,]),'native'),
-                   shape=na.omit(s[['shape']][i]),
-                   arrow=Options$wind.vector.arrow,
-                   gp=gp)
+      if(Options$wrap.spherical) {
+          theta<-atan2(diff(na.omit(s[['y']][i,])),diff(na.omit(s[['x']][i,])))
+          dx<-Options$wind.vector.lwd*sin(theta)*0.01
+          dx<-c(dx[1],dx)
+          dx<-dx/cos(na.omit(s[['y']][i,])*pi/180)
+          dy<-Options$wind.vector.lwd*cos(theta)*0.01
+          dy<-c(dy[1],dy)
+          grid.polygon(x=unit(c(na.omit(s[['x']][i,])-dx,rev(na.omit(s[['x']][i,])+dx))
+                         ,'native'),
+                       y=unit(c(na.omit(s[['y']][i,])+dy,rev(na.omit(s[['y']][i,])-dy))
+                         ,'native'),
+                       gp=gp)
+      } else {
+          grid.xspline(x=unit(na.omit(s[['x']][i,]),'native'),
+                       y=unit(na.omit(s[['y']][i,]),'native'),
+                       shape=na.omit(s[['shape']][i]),
+                       arrow=Options$wind.vector.arrow,
+                       gp=gp)
+      }
    }
  }
 
