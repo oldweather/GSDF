@@ -565,10 +565,10 @@ WeatherMap.draw.streamlines<-function(s,Options) {
       }
       if(Options$wrap.spherical) {
           theta<-atan2(diff(na.omit(s[['y']][i,])),diff(na.omit(s[['x']][i,])))
-          dx<-Options$wind.vector.lwd*sin(theta)*0.01
+          dx<-Options$wind.vector.lwd*sin(theta)*0.1
           dx<-c(dx[1],dx)
           dx<-dx/cos(na.omit(s[['y']][i,])*pi/180)
-          dy<-Options$wind.vector.lwd*cos(theta)*0.01
+          dy<-Options$wind.vector.lwd*cos(theta)*0.1
           dy<-c(dy[1],dy)
           grid.polygon(x=unit(c(na.omit(s[['x']][i,])-dx,rev(na.omit(s[['x']][i,])+dx))
                          ,'native'),
