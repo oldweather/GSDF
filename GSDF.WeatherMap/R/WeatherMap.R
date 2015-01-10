@@ -438,6 +438,7 @@ WeatherMap.streamline.getGC<-function(value,transparency=NA,status=1,Options) {
       return(gpar(col=colour,fill=colour,lwd=Options$wind.vector.lwd))
    }
    colour<-rgb(rgb[1],rgb[2],rgb[3],alpha,maxColorValue = 255)
+   if(Options$wrap.spherical) status<-0.01 # polygon fill in this case
    return(gpar(col=colour,fill=colour,lwd=Options$wind.vector.lwd*status))
 }
 
