@@ -903,13 +903,13 @@ GSDF.interp.surface<-function(obj,loc,greedy=FALSE) {
             1, ly1)] * ex * (1 - ey) + z[cbind(lx1, ly1 + 1)] * (1 - 
             ex) * ey + z[cbind(lx1 + 1, ly1 + 1)] * ex * ey)
     } else {
-      result<-rep(0,length(z))
-      weight<-rep(0,length(z))
+      result<-rep(0,length(lx))
+      weight<-rep(0,length(lx))
       w<-which(!is.na(z[cbind(lx1, ly1)]))
       if(length(w)>0) {
         weight[w]<-weight[w]+(1 - ex[w]) * (1 - ey[w])
         result[w]<-result[w]+z[cbind(lx1, ly1)][w]* (1 - ex[w]) * (1 - ey[w])
-      }
+      } 
       w<-which(!is.na(z[cbind(lx1+1, ly1)]))
       if(length(w)>0) {
         weight[w]<-weight[w]+ ex[w] * (1 - ey[w])
