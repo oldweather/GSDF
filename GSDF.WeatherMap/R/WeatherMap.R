@@ -987,7 +987,7 @@ WeatherMap.draw.obs<-function(obs,Options) {
 	   obs$Latitude<-l2$lat
   }
   if(length(obs$Latitude)<1) return()	
-  gp<-gpar(col=rgb(1,1,1,0),fill=Options$obs.colour) # transparent outline
+  gp<-gpar(col=Options$obs.colour,fill=Options$obs.colour)
   grid.points(x=unit(obs$Longitude,'native'),
               y=unit(obs$Latitude,'native'),
               size=unit(Options$obs.size,'native'),
