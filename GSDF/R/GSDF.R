@@ -581,9 +581,12 @@ GSDF.wind.to.pole <-function(u,v,pole.lat,pole.lon=180) {
 #' @param g field to be rotated
 #' @param pole.lat latitude of pole to rotate to (degrees).
 #' @param pole.lon longitude of pole to rotate to (degrees).
+#' @param greedy boolean. How to deal with missing data: If FALSE (default)
+#'   missing regions will stay missing (and grow). If TRUE, missing
+#'   regions will shrink.
 #' @return input field but with the rotated pole.
 #' @seealso \code{\link{GSDF.ll.to.rg}} and \code{\link{GSDF.rg.to.ll}}.
-GSDF.field.to.pole<-function(g,pole.lat,pole.lon) {
+GSDF.field.to.pole<-function(g,pole.lat,pole.lon,greedy=FALSE) {
   if(is.null(g$meta)) g$meta<-list()
   if(is.null(g$meta$pole.lat)) g$meta$pole.lat<-90
   if(is.null(g$meta$pole.lon)) g$meta$pole.lon<-180
@@ -593,11 +596,11 @@ GSDF.field.to.pole<-function(g,pole.lat,pole.lon) {
   if(is.null(result$meta)) result$meta<-list()
   result$meta$pole.lat<-pole.lat
   result$meta$pole.lon<-pole.lon
-  result<-GSDF.regrid.2d(g,result)
+  result<-GSDF.regrid.2d(g,result,greedy=greedy)
   return(result)
 }
 
-#' Grow field
+#' Grow field (Should no longer be necessary - use greedy interpolation instead).
 #'
 #' Given a spatially incomplete GSDF field, extrapolate the field into
 #'  missing regions by adding one grid point round the boundary of all

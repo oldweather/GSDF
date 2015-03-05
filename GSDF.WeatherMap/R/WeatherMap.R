@@ -64,7 +64,8 @@ Defaults<-list(
    label='',                            # Label - the date is a good choice
    label.xp=0.99,label.yp=0.01,         # Location, npc units
    label.bg.colour=rgb(123,121,117,255, # Background colour for label
-                    maxColorValue=255)  #  defaults to land colour.
+                    maxColorValue=255), #  defaults to land colour.
+   greedy=TRUE                          # Minimise missing data in rotation and regridding
 )
 
 #' WeatherMap.option
@@ -206,8 +207,8 @@ WeatherMap.bridson<-function(Options,
         gp.y<-(seq(1,n.y)-0.5)*r.y+y.range[1]
         gp.x.full<-as.vector(matrix(data=rep(gp.x,n.y),ncol=n.x,byrow=F))
         gp.y.full<-as.vector(matrix(data=rep(gp.y,n.x),ncol=n.y,byrow=T))
-        scalef.x<-abs(GSDF.interpolate.ll(scale.x,gp.y.full,gp.x.full))
-        scalef.y<-abs(GSDF.interpolate.ll(scale.y,gp.y.full,gp.x.full))
+        scalef.x<-abs(GSDF.interpolate.ll(scale.x,gp.y.full,gp.x.full,greedy=Options$greedy))
+        scalef.y<-abs(GSDF.interpolate.ll(scale.y,gp.y.full,gp.x.full,greedy=Options$greedy))
        # There's something wrong here - the *0.1 below should not be there (should be 1.0)
         v.scale<-view.scale*Options$wind.vector.scale*0.1
         scalef.x<-(scalef.x*v.scale+r.min)/r.min
@@ -379,16 +380,16 @@ WeatherMap.propagate.streamlines<-function(lat,lon,status,u,v,t,t.c,Options) {
     streamlets[['shape']][,1]<-0
     if(!is.null(t) && !is.null(t.c)) {
     # Get temperature anomalies
-        tp<-GSDF.interpolate.ll(t,lat,lon)
-        cp<-GSDF.interpolate.ll(t.c,lat,lon)
+        tp<-GSDF.interpolate.ll(t,lat,lon,greedy=Options$greedy)
+        cp<-GSDF.interpolate.ll(t.c,lat,lon,greedy=Options$greedy)
 	streamlets[['t_anom']]<-tp-cp
     }
     streamlets[['magnitude']]<-0
     view.scale<-max((Options$lon.max-Options$lon.min)/360,(Options$lat.max-Options$lat.min)/180)
     for(i in seq(1,Options$wind.vector.points)) {
-		up<-GSDF.interpolate.ll(u,lat,lon)
+		up<-GSDF.interpolate.ll(u,lat,lon,greedy=Options$greedy)
                 if(Options$wrap.spherical) up<-up/cos(lat*pi/180)
-		vp<-GSDF.interpolate.ll(v,lat,lon)
+		vp<-GSDF.interpolate.ll(v,lat,lon,greedy=Options$greedy)
 		m<-sqrt(up**2+vp**2)
 		direction<-atan2(vp,up)
 		streamlets[['x']][,i]<-lon
@@ -774,10 +775,8 @@ WeatherMap.draw.ice<-function(lat,lon,icec,Options) {
    length<-sqrt((Options$lon.max-Options$lon.min)*
                                     (Options$lat.max-Options$lat.min)/
                                                    Options$ice.points)
-   icec<-GSDF.grow(icec)
    icec<-WeatherMap.rotate.pole(icec,Options)
-   icec<-GSDF.grow(icec)
-   ip<-GSDF.interpolate.ll(icec,lat,lon)
+   ip<-GSDF.interpolate.ll(icec,lat,lon,greedy=Options$greedy)
    # discard missing and zero points
    w<-which(is.finite(ip) & ip>0.05)
    if(length(w)<1) return() # Might be no ice in field of view
@@ -884,7 +883,8 @@ WeatherMap.draw.fog<-function(fog,Options) {
   longs<-seq(Options$lon.min,Options$lon.max,Options$fog.resolution)
   full.lats<-matrix(data=rep(lats,length(longs)),ncol=length(longs),byrow=F)
   full.longs<-matrix(data=rep(longs,length(lats)),ncol=length(longs),byrow=T)
-  plot.colours<-GSDF.interpolate.ll(fog,as.vector(full.lats),as.vector(full.longs))
+  plot.colours<-GSDF.interpolate.ll(fog,as.vector(full.lats),as.vector(full.longs),
+                                    greedy=Options$greedy)
   plot.colours<-fog.colours[as.integer(plot.colours*n.colours)+1]
   dl<-longs[2]-longs[1]
     grid.raster(matrix(plot.colours, ncol=length(longs), byrow=F),
@@ -953,7 +953,8 @@ WeatherMap.draw.precipitation<-function(precip,Options) {
   longs<-seq(Options$lon.min,Options$lon.max,Options$precip.resolution)
   full.lats<-matrix(data=rep(lats,length(longs)),ncol=length(longs),byrow=F)
   full.longs<-matrix(data=rep(longs,length(lats)),ncol=length(longs),byrow=T)
-  plot.colours<-GSDF.interpolate.ll(precip,as.vector(full.lats),as.vector(full.longs))
+  plot.colours<-GSDF.interpolate.ll(precip,as.vector(full.lats),as.vector(full.longs)
+                                    ,greedy=Options$greedy)
   plot.colours<-precip.colours[as.integer(plot.colours*n.colours)+1]
   dl<-longs[2]-longs[1]
     grid.raster(matrix(plot.colours, ncol=length(longs), byrow=F),
@@ -1022,7 +1023,7 @@ WeatherMap.draw.label<-function(Options) {
 # Rotate the pole of a scalar field if necessary
 WeatherMap.rotate.pole<-function(field,Options) {
   
-  W<-GSDF.field.to.pole(field,Options$pole.lat,Options$pole.lon)
+  W<-GSDF.field.to.pole(field,Options$pole.lat,Options$pole.lon,greedy=Options$greedy)
   return(W)
 }
 
