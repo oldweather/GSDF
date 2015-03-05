@@ -392,9 +392,11 @@ GSDF.regrid.2d.boundary.conditions<-function(old,new,type) {
 #' @param lon vector of longitudes in standard pole (degrees).
 #' @param pole.lat latitude of pole to rotate to (degrees).
 #' @param pole.lon longitude of pole to rotate to (degrees).
+#' @param polygon are lats and longs sets of polygon vertices 
+#'  (probably from maps).
 #' @return list with components 'lat' and 'lon' - vectors of
 #'   rotated lat and lon (in degrees).
-GSDF.ll.to.rg<-function(lat,lon,pole.lat,pole.lon) {
+GSDF.ll.to.rg<-function(lat,lon,pole.lat,pole.lon,polygon=FALSE) {
 
    if(pole.lat==90 && pole.lon==180) {
      return(list(lat=lat,lon=lon))
@@ -438,6 +440,22 @@ GSDF.ll.to.rg<-function(lat,lon,pole.lat,pole.lon) {
    lon.rotated[w]<-lon.rotated[w]-360
    w<-which(!is.na(lon.rotated) & lon.rotated< -180)
    lon.rotated[w]<-lon.rotated[w]+360
+   if(polygon) { # Data are polygon vertices, shift them as whole polygons
+     idx<-1+cumsum(is.na(lon.rotated)) # polygon indices
+     d<-diff(lon.rotated)
+     w<-which(abs(d)>180)
+     if(length(w)>0) { # fixes needed
+       ptf<-unique(idx[w+1])
+       for(p in ptf) {
+          w<-which(idx==p & !is.na(lon.rotated))
+          d<-lon.rotated[w]-lon.rotated[w[1]] # distance from 1st point
+          wp<-which(d>180)
+          lon.rotated[w[wp]]<-lon.rotated[w[wp]]-360
+          wp<-which(d< -180)
+          lon.rotated[w[wp]]<-lon.rotated[w[wp]]+360
+       }
+     }
+   }
    return(list(lat=lat.rotated,lon=lon.rotated))
  }
 

@@ -644,36 +644,38 @@ WeatherMap.get.land<-function(Options) {
        land$y[split+1]<- -89.99
        land$y[split-1]<- -89.99
        if(Options$pole.lon!=0 || Options$pole.lat!=90) {
-           l2<-GSDF.ll.to.rg(land$y,land$x,Options$pole.lat,Options$pole.lon)
+           l2<-GSDF.ll.to.rg(land$y,land$x,Options$pole.lat,Options$pole.lon,
+                             polygon=TRUE )
            land$x<-l2$lon
            land$y<-l2$lat
        }
        lon.range<-Options$lon.max-Options$lon.min
-       if(lon.range>350) {
-          land<-WeatherMap.land.fix.am(land)
-       } else {
-         # Break all the polygons now wrapped across the longitude break
-         w<-which(abs(diff(land$x))>150)
-         ml<-length(land$x)
-         for(p in seq_along(w)) {
-            land$x<-c(land$x[1:(w[p]+p-1)],NA,land$x[(w[p]+p):(ml+p-1)])
-            land$y<-c(land$y[1:(w[p]+p-1)],NA,land$y[(w[p]+p):(ml+p-1)])
-         }
-         # Needs to be done twice? why?
-         w<-which(abs(diff(land$x))>150)
-         ml<-length(land$x)
-         for(p in seq_along(w)) {
-            land$x<-c(land$x[1:(w[p]+p-1)],NA,land$x[(w[p]+p):(ml+p-1)])
-            land$y<-c(land$y[1:(w[p]+p-1)],NA,land$y[(w[p]+p):(ml+p-1)])
-         }
-       }
+       #if(lon.range>350) {
+       #   land<-WeatherMap.land.fix.am(land)
+       #} else {
+       #  # Break all the polygons now wrapped across the longitude break
+       #  w<-which(abs(diff(land$x))>150)
+       #  ml<-length(land$x)
+       #  for(p in seq_along(w)) {
+       #     land$x<-c(land$x[1:(w[p]+p-1)],NA,land$x[(w[p]+p):(ml+p-1)])
+       #     land$y<-c(land$y[1:(w[p]+p-1)],NA,land$y[(w[p]+p):(ml+p-1)])
+       #  }
+       #  # Needs to be done twice? why?
+       #  w<-which(abs(diff(land$x))>150)
+       #  ml<-length(land$x)
+       #  for(p in seq_along(w)) {
+       #     land$x<-c(land$x[1:(w[p]+p-1)],NA,land$x[(w[p]+p):(ml+p-1)])
+       #     land$y<-c(land$y[1:(w[p]+p-1)],NA,land$y[(w[p]+p):(ml+p-1)])
+       #  }
+       #}
        lakes<-map('worldHires',plot=F,fill=T,exact=F,region=c('.*Lake|.*Sea'))
        if(Options$pole.lon!=0 || Options$pole.lat!=90) {
-           l2<-GSDF.ll.to.rg(lakes$y,lakes$x,Options$pole.lat,Options$pole.lon)
+           l2<-GSDF.ll.to.rg(lakes$y,lakes$x,Options$pole.lat,Options$pole.lon,
+                             polygon=TRUE)
            lakes$x<-l2$lon
            lakes$y<-l2$lat
         }
-        lakes<-WeatherMap.land.fix.am(lakes)
+        #lakes<-WeatherMap.land.fix.am(lakes)
         land$lakes<-lakes
         return(land)
     }
