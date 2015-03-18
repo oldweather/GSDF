@@ -379,3 +379,51 @@ MERRA.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,
     return(v)
 }
 
+#' Extract a hyperslab of data.
+#'
+#' Up to 4d (lat, lon, height, time).
+#'
+#' MERRA data is in daily files - time range must be contained in 1 day
+#'
+#' @export
+#' @param variable MERRA variable name, only 2d variables will work.
+#' @param date.range A pair of text date strings, e.g. c('1981-02-05:12','1981-03-27:18') - inclusive.
+#' @param type - 'mean' (default), 'spread', 'normal', or 'standard.deviation'. 
+#'  Note that standard deviations are not available over opendap.
+#' @param height.range Bottom and top heights in hPa - leave NULL for monolevel
+#' @param lat.range Min and max latitude in degrees - defaults to c(-90,90)
+#' @param lon.range Min and max longitude in degrees - defaults to c(-180,180)
+#' @param opendap must be TRUE - no local option
+#' @return A GSDF field with the selected multidimensional data
+MERRA.get.slab.from.hourly<-function(variable,date.range,
+                                             height.range=NULL,
+                                             lat.range=c(-90,90),
+                                             lon.range=c(-180,180),
+                                    opendap=TRUE,type='mean') {
+    # Get the start and end dates
+     start.d<-list()
+     start.d$year<-as.integer(substr(date.range[1],1,4))
+     start.d$month<-as.integer(substr(date.range[1],6,7))
+     start.d$day<-as.integer(substr(date.range[1],9,10))
+     start.d$hour<-as.integer(substr(date.range[1],12,13))
+     start.d$chron<-chron(sprintf("%04d/%02d/%02d",start.d$year,start.d$month,start.d$day),
+                          sprintf("%02d:00:00",start.d$hour),
+                          format=c(dates='y/m/d',times='h:m:s'))
+     end.d<-list()
+     end.d$year<-as.integer(substr(date.range[2],1,4))
+     end.d$month<-as.integer(substr(date.range[2],6,7))
+     end.d$day<-as.integer(substr(date.range[2],9,10))
+     end.d$hour<-as.integer(substr(date.range[2],12,13))
+     end.d$chron<-chron(sprintf("%04d/%02d/%02d",end.d$year,end.d$month,end.d$day),
+                          sprintf("%02d:00:00",end.d$hour),
+                          format=c(dates='y/m/d',times='h:m:s'))
+     if(start.d$chron>end.d$chron) stop("End date must be after start date")
+     if(start.d$year != end.d$year | start.d$month != end.d$month | start.d$day != end.d$day ) {
+       stop('Extraction not contained in one day')
+     }
+     file.name<-MERRA.hourly.get.file.name(variable,start.d$year,start.d$month,start.d$day,start.d$hour,
+					    opendap=opendap,type=type)
+     v<-GSDF.ncdf.load(file.name,variable,lat.range=lat.range,lon.range=lon.range,
+			height.range=height.range,time.range=c(start.d$chron,end.d$chron))
+     return(v)
+}
