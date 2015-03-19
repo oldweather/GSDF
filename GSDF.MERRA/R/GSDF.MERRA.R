@@ -133,6 +133,7 @@ MERRA.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=TRUE,t
         runId<-100
         if(year>=1993 && year<2001) runId<-200
         if(year>=2001) runId<-300
+        if(year==2010 & (month>5 & month < 9)) runId<-301
         if(type=='mean') {
             base.dir<-'http://goldsmr2.sci.gsfc.nasa.gov:80/opendap/MERRA'
             if(MERRA.get.variable.group(variable)=='MAT1NXSLV') {
