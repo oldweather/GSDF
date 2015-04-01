@@ -208,7 +208,16 @@ MERRA.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=TRUE,t
           if(file.exists(fn) && file.info(fn)$size>0) return(fn)
           stop("Selected normal not available on this system")
         }
-        stop(sprintf("Only mean values available from MERRA"))      
+        if(type=='standard.deviation') {
+          fn<-sprintf("/project/projectdirs/m958/netCDF.data/MERRA/hourly/standard.deviations/%s/%02d-%02d.nc",
+	              variable,month,day)
+          if(file.exists(fn) && file.info(fn)$size>0) return(fn)
+          fn<-sprintf("/data/cr2/hadpb//MERRA/hourly/standard.deviations/%s/%02d-%02d.nc",
+	              variable,month,day)
+          if(file.exists(fn) && file.info(fn)$size>0) return(fn)
+          stop("Selected standard deviation not available on this system")
+        }
+        stop(sprintf("Only means, normals, and SDs available from MERRA"))      
     }     
     else {
         stop(sprintf("MERRA only available via openDAP"))
@@ -306,12 +315,13 @@ MERRA.get.interpolation.times<-function(variable,year,month,day,hour,type='mean'
 #'
 #' @export
 #' @param variable 'T2M', 'SLP', 'U10M', 'H500' - or any MERRA variable
-#' @param type must be 'mean', (no spreads, normals etc available from MERRA)
+#' @param type 'mean' (default), 'normal', or 'standard.deviation' (no spreads available from MERRA)
 #' @param height Height in hPa - leave NULL for monolevel
 #' @param opendap Must be TRUE - no local option currently supported.
 #' @return A GSDF field with lat and long as extended dimensions
 MERRA.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,opendap=TRUE,type='mean') {
   if(type=='normal') year<-1981 # MERRA normals have this year
+  if(type=='standard.deviation') year<-1981 # So do SDs
   group<-MERRA.get.variable.group(variable)
   if(group=='MAT1NXSLV' || group=='MAI1NXINT' || group=='MAT1NXFLX' ||
       group=='MAT1NXINT' || group=='MAT1NXLND' || group=='MAT1NXRAD') {
