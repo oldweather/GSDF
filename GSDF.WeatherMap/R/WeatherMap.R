@@ -991,7 +991,7 @@ WeatherMap.draw.obs<-function(obs,Options) {
   grid.points(x=unit(obs$Longitude,'native'),
               y=unit(obs$Latitude,'native'),
               size=unit(Options$obs.size,'native'),
-              pch=20,gp=gp)
+              pch=21,gp=gp)
   
 }
 
