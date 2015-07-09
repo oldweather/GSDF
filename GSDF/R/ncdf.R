@@ -1,12 +1,12 @@
 #' Load a GSDF field from a netCDF file or URL
 #'
 #' Loads a specified hyperslab (range of lat, lon, height and time)
-#'  from a NetCDF file (or an openDAP server)
+#'  from a NetCDF file (or an openDAP server).
 #'
 #' This works only for some netCDF files (netCDF is a very flexible file 
 #'  format and it's necessary to make assumptions about how the data is stored);
 #'  currently known to work are the 20CR and MERRA reanalyses.
-#' Writing is not yet supported.
+#' 
 #' @export
 #' @param file Text name of file or URI.
 #' @param variable Text name of variable (in file).
@@ -35,7 +35,7 @@
 #' @param use.cache Unless FALSE, use a cached version of the data if available (requires
 #'   GSDF.cache.dir set and the exact data available in that directory).
 #' @return GSDF field with selected subset of file data.
-GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
+LoadNetCDF<-function(file,variable,lat.range=NULL,lon.range=NULL,
                          height.range=NULL,time.range=NULL,
                          ens.range=NULL,custom.range=NULL,
                          default.calendar='gregorian',
@@ -66,39 +66,39 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
        }
     }
    # No cache- fetch from file
-   f<-nc_open(file)
-   v<-GSDF.ncdf.get.var(f,variable)
-   lat.i<-GSDF.ncdf.get.lat(v,lat.name)
+   f<-ncdf4::nc_open(file)
+   v<-GSDF::GetVarNCDF(f,variable)
+   lat.i<-GSDF::GetLatNCDF(v,lat.name)
    if(is.null(lat.range) && !is.null(lat.i)) {
       stop('Latitude range required (lat.range=c(-90,90)')
    } 
-   lon.i<-GSDF.ncdf.get.lon(v,lon.name)
+   lon.i<-GetLonNCDF(v,lon.name)
    if(is.null(lon.range) && !is.null(lon.i)) {
      if(length(v$dim[[lon.i]]$vals)==1) {
       lon.range<-rep(v$dim[[lon.i]]$vals,2)
      } else stop('Longitude range required (lon.range=c(-180,180)')
    } 
-   height.i<-GSDF.ncdf.get.height(v,height.name)
+   height.i<-GetHeightNCDF(v,height.name)
    if(is.null(height.range) && !is.null(height.i)) {
      if(length(v$dim[[height.i]]$vals)==1) {
       height.range<-rep(v$dim[[height.i]]$vals,2)
      } else stop('Height range required (height.range=c(850,850)')
    } 
-   ens.i<-GSDF.ncdf.get.ens(v,ens.name)
+   ens.i<-GetEnsembleNCDF(v,ens.name)
    if(is.null(ens.range) && !is.null(ens.i)) {
      if(length(v$dim[[ens.i]]$vals)==1) {
       ens.range<-rep(v$dim[[ens.i]]$vals,2)
      } else stop('Ensemble range required (ensemble.range=c(1,1)')
    } 
-   time.i<-GSDF.ncdf.get.time(v,time.name)
+   time.i<-GSDF::GetTimeNCDF(v,time.name)
    if(is.null(time.range) && !is.null(time.i)) {
      if(length(v$dim[[time.i]]$vals)==1) {
       time.range<-rep(v$dim[[time.i]]$vals,2)
       default.calendar<-'raw'
      } else stop('Time range required (time.range=c(chron.1,chron.2)')
    }
-   result<-GSDF()
-   result$meta<-ncatt_get(f,v)
+   result<-GSDF::GSDF()
+   result$meta<-ncdf4::ncatt_get(f,v)
    start<-rep(NA,v$ndim)
    count<-rep(NA,v$ndim)
    for(d in seq(1,v$ndim)) {
@@ -138,15 +138,6 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
                     'values'=v$dim[[d]]$vals[seq(start[d],start[d]+count[d]-1)])
          next
       }
-      if(!is.null(height.i) && height.i==d) {
-         start[d]<-min(which(v$dim[[d]]$vals>=min(height.range) &
-                             v$dim[[d]]$vals<=max(height.range)))
-         count[d]<-max(which(v$dim[[d]]$vals>=min(height.range) &
-                             v$dim[[d]]$vals<=max(height.range)))-start[d]+1
-         result$dimensions[[d]]<-list('type'='height',
-                    'values'=v$dim[[d]]$vals[seq(start[d],start[d]+count[d]-1)])
-         next
-      }
       if(!is.null(time.i) && time.i==d) {
          time.values<-GSDF.ncdf.convert.time(v$dim[[d]],
                             default.calendar=default.calendar)
@@ -161,9 +152,9 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
       if(v$dim[[d]]$name=='nbnds') next # TWCR normals fudge
       stop('Custom dimensions not yet supported')
    }
-   slab<-ncvar_get(f,v,start,count)
+   slab<-ncdf4::ncvar_get(f,v,start,count)
    result$data<-array(data=slab,dim=count)
-   f<-nc_close(f)
+   f<-ncdf4::nc_close(f)
    if(!is.null(cache.file.name)) save(result,file=cache.file.name)
    return(result)
 }
@@ -186,7 +177,7 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
 #' @param compression see \code{\link{ncvar_def}}
 #' @param chunksizes see \code{\link{ncvar_def}}
 #' @return 1 if successful, NULL for failure - invisibly.
-GSDF.ncdf.write<-function(f,file.name,name='variable',
+WriteNCDF<-function(f,file.name,name='variable',
                           missval=NULL,prec='float',shuffle=FALSE,
                           compression=NA,chunksizes=NA) {
 
@@ -194,24 +185,24 @@ GSDF.ncdf.write<-function(f,file.name,name='variable',
    for(i in seq_along(f$dimensions)) {
       if(f$dimensions[[i]]$type=='time') {
          origin<-attr(f$dimensions[[i]]$values[1],'origin')
-         nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
+         nc.dims[[i]]<-ncdf4::ncdim_def(f$dimensions[[i]]$type,
             sprintf("hours since %04d-%02d-%02d 00:00",origin[3],origin[1],origin[2]),
             as.numeric(f$dimensions[[i]]$values)*24)
       }
       if(f$dimensions[[i]]$type=='lat') {
-         nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
+         nc.dims[[i]]<-ncdf4::ncdim_def(f$dimensions[[i]]$type,
             'degrees north',
             f$dimensions[[i]]$values,
             longname='latitude')
       }
       if(f$dimensions[[i]]$type=='lon') {
-         nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
+         nc.dims[[i]]<-ncdf4::ncdim_def(f$dimensions[[i]]$type,
             'degrees east',
             f$dimensions[[i]]$values,
             longname='longitude')
       }
       if(f$dimensions[[i]]$type=='ensemble') {
-         nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
+         nc.dims[[i]]<-ncdf4::ncdim_def(f$dimensions[[i]]$type,
             'member',
             f$dimensions[[i]]$values)
       }
@@ -219,13 +210,13 @@ GSDF.ncdf.write<-function(f,file.name,name='variable',
          f$dimensions[[i]]$type!='lon' &&
          f$dimensions[[i]]$type!='lat' &&
          f$dimensions[[i]]$type!='time') {
-         nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
+         nc.dims[[i]]<-ncdf4::ncdim_def(f$dimensions[[i]]$type,
             'other',
             f$dimensions[[i]]$values)
       }
    }
    v<-tryCatch({
-      ncvar_def(name,'',nc.dims,
+      ncdf4::ncvar_def(name,'',nc.dims,
                 missval=missval,
                 prec=prec,
                 compression=compression,
@@ -239,7 +230,7 @@ GSDF.ncdf.write<-function(f,file.name,name='variable',
       })
          
    nf<-tryCatch({
-     nc_create(file.name,v)},
+     ncdf4::nc_create(file.name,v)},
       warning=function(w) {
          warning('Problem creating netCDF file',file.name,w)
       },
@@ -248,7 +239,7 @@ GSDF.ncdf.write<-function(f,file.name,name='variable',
          return(invisible(NULL))
       })
    np<-tryCatch({
-      ncvar_put(nf,v,f$data)},
+      ncdf4::ncvar_put(nf,v,f$data)},
       warning=function(w) {
          warning('Problem writing to netCDF file',file.name,w)
       },
@@ -259,7 +250,7 @@ GSDF.ncdf.write<-function(f,file.name,name='variable',
   # Add the metadata
    for(i in names(f$meta)) {
        np<-tryCatch({
-	  ncatt_put(nf,v,i,f$meta[[i]])},
+	  ncdf4::ncatt_put(nf,v,i,f$meta[[i]])},
 	  warning=function(w) {
 	     warning('Problem writing attribute to netCDF file',file.name,w)
 	  },
@@ -268,14 +259,14 @@ GSDF.ncdf.write<-function(f,file.name,name='variable',
 	     return(invisible(NULL))
 	  })
    }
-   nc_close(nf)
+   ncdf4::nc_close(nf)
    return(invisible(1))
 }
 
 # TWCR uses different variable names in the .nc files from
 #  in the names of the files (sometimes). So finding the
 #  corect variable is not always trivial.
-GSDF.ncdf.get.var<-function(f,variable) {
+GetVarNCDF<-function(f,variable) {
    v<-f$var[[variable]]
    if(!is.null(v)) return(v)
    v2<-gsub('\\..+$','',variable)
@@ -288,7 +279,7 @@ GSDF.ncdf.get.var<-function(f,variable) {
 }
          
 # Want to be able to identify some special dimensions
-GSDF.ncdf.is.lat <- function(dimension,lat.name) {
+IsLatNCDF <- function(dimension,lat.name) {
     if(!is.null(lat.name)) {
       if(regexpr(lat.name,dimension$name,ignore.case = T)>0) return(TRUE)
       return(FALSE)
@@ -297,7 +288,7 @@ GSDF.ncdf.is.lat <- function(dimension,lat.name) {
        regexpr('YDim',dimension$name,ignore.case = T)>0) return(TRUE)
     return(FALSE)
 }
-GSDF.ncdf.is.lon <- function(dimension,lon.name) {
+IsLonNCDF <- function(dimension,lon.name) {
     if(!is.null(lon.name)) {
       if(regexpr(lon.name,dimension$name,ignore.case = T)>0) return(TRUE)
       return(FALSE)
@@ -306,7 +297,7 @@ GSDF.ncdf.is.lon <- function(dimension,lon.name) {
        regexpr('XDim',dimension$name,ignore.case = T)>0) return(T)
     return(F)
 }
-GSDF.ncdf.is.height <- function(dimension,height.name) {
+IsHeightNCDF <- function(dimension,height.name) {
     if(!is.null(height.name)) {
       if(regexpr(height.name,dimension$name,ignore.case = T)>0) return(TRUE)
       return(FALSE)
@@ -315,7 +306,7 @@ GSDF.ncdf.is.height <- function(dimension,height.name) {
        regexpr('Height',dimension$name,ignore.case = T)>0 ) return(T)
     return(F)
 }
-GSDF.ncdf.is.time <- function(dimension,time.name) {
+IsTimeNCDF <- function(dimension,time.name) {
     if(!is.null(time.name)) {
       if(regexpr(time.name,dimension$name,ignore.case = T)>0) return(TRUE)
       return(FALSE)
@@ -323,7 +314,7 @@ GSDF.ncdf.is.time <- function(dimension,time.name) {
     if(regexpr('time',dimension$name,ignore.case = T)>0) return(T)
     return(F)
 }
-GSDF.ncdf.is.ens <- function(dimension,ens.name) {
+IsEnsembleNCDF <- function(dimension,ens.name) {
     if(!is.null(ens.name)) {
       if(regexpr(ens.name,dimension$name,ignore.case = T)>0) return(TRUE)
       return(FALSE)
@@ -334,58 +325,58 @@ GSDF.ncdf.is.ens <- function(dimension,ens.name) {
 
 # Given a variable, get the latitude values
 # Pass an instance of class 'var.ncdf' (?var.def.ncdf)
-GSDF.ncdf.get.lat <- function(variable,lat.name) {
+GetLatNCDF <- function(variable,lat.name) {
    for(i in seq(1,variable$ndims)) {
-      if(GSDF.ncdf.is.lat(variable$dim[[i]],lat.name)) return(i)
+      if(IsLatNCDF(variable$dim[[i]],lat.name)) return(i)
    }
    return(NULL)
 }
 # Same for longitude
-GSDF.ncdf.get.lon <- function(variable,lon.name) {
+GetLonNCDF <- function(variable,lon.name) {
    for(i in seq(1,variable$ndims)) {
-      if(GSDF.ncdf.is.lon(variable$dim[[i]],lon.name)) return(i)
+      if(IsLonNCDF(variable$dim[[i]],lon.name)) return(i)
    }
    return(NULL)
 }
 # Same for pressure level
-GSDF.ncdf.get.height <- function(variable,height.name) {
+GetHeightNCDF <- function(variable,height.name) {
    for(i in seq(1,variable$ndims)) {
-      if(GSDF.ncdf.is.height(variable$dim[[i]],height.name)) return(i)
+      if(IsHeightNCDF(variable$dim[[i]],height.name)) return(i)
    }
    return(NULL)
 }
 # Same for ensemble number
-GSDF.ncdf.get.ens <- function(variable,ens.name) {
+GetEnsembleNCDF <- function(variable,ens.name) {
    for(i in seq(1,variable$ndims)) {
-      if(GSDF.ncdf.is.ens(variable$dim[[i]],ens.name)) return(i)
+      if(IsEnsembleNCDF(variable$dim[[i]],ens.name)) return(i)
    }
    return(NULL)
 }
 # Same for date/time
-GSDF.ncdf.get.time <- function(variable,time.name) {
+GetTimeNCDF <- function(variable,time.name) {
    for(i in seq(1,variable$ndims)) {
-      if(GSDF.ncdf.is.time(variable$dim[[i]],time.name)) return(i)
+      if(IsTimeNCDF(variable$dim[[i]],time.name)) return(i)
    }
    return(NULL)
 }
 
 # Convert the time to chron
-GSDF.ncdf.convert.time <- function(dim,default.calendar) {
+ConvertTimeNCDF <- function(dim,default.calendar) {
     if(default.calendar=='raw') {
       return(dim$vals) # Special case - no conversion
     }
     units<-dim$units
     if(!is.null(dim$calendar)) {
-       return(GSDF.ncdf.offset.to.date(dim$vals,dim$units,
+       return(OffsetToDateNCDF(dim$vals,dim$units,
 				       dim$calendar))
     } else {
-       return(GSDF.ncdf.offset.to.date(dim$vals,dim$units,
+       return(OffsetToDateNCDF(dim$vals,dim$units,
 				       default.calendar))	
     }
 }
 
 # Turn a date offset, start point and calendar choice into a chron date
-GSDF.ncdf.offset.to.date<-function(offset,start,calendar) {
+OffsetToDateNCDF<-function(offset,start,calendar) {
   start.year<-as.integer(sub('\\D*(\\d+)\\D(\\d+)\\D(\\d+).*','\\1',start))
   if(is.na(start.year)) stop(paste("Unsupported date initial point",start))
   start.month<-as.integer(sub('\\D*(\\d+)\\D(\\d+)\\D(\\d+).*','\\2',start))
@@ -416,7 +407,7 @@ GSDF.ncdf.offset.to.date<-function(offset,start,calendar) {
     minute<-as.integer(in.hours*60)
     in.hours<-in.hours-minute/60
     second<-as.integer(in.hours*60*60)
-    return(chron(sprintf("%02/%02d/%04d %02d:%02d:%02d",
+    return(chron::chron(sprintf("%02/%02d/%04d %02d:%02d:%02d",
                    month,day,year,hour,minute,second)))    
   }
   if(calendar=='noleap' || calendar=='365_day') {
@@ -438,23 +429,24 @@ GSDF.ncdf.offset.to.date<-function(offset,start,calendar) {
     minute<-as.integer(in.hours*60)
     in.hours<-in.hours-minute/60
     second<-as.integer(in.hours*60*60)
-    return(chron(sprintf("%02d/%02d/%04d %02d:%02d:%02d",
+    return(chron::chron(sprintf("%02d/%02d/%04d %02d:%02d:%02d",
           month,day,year,hour,minute,second)))    
   }
   if(calendar=='gregorian' || calendar=='standard' || calendar=='julian') { # GFDL claims to be Julian - surely lying.
     offset<-offset+start.hour+start.minute/60
-    base<-chron(as.numeric(as.Date(sprintf("%02d-%02d-%04d",start.day,start.month,start.year), format = "%d-%m-%Y")),
+    base<-chron::chron(as.numeric(as.Date(sprintf("%02d-%02d-%04d",start.day,start.month,start.year),
+                       format = "%d-%m-%Y")),
                 sprintf("%02d:%02d:%02d",0,0,0),format = c(dates = "m/d/y", times = "h:m:s"))
-    offset<-chron(as.numeric(base)+offset/24)
+    offset<-chron::chron(as.numeric(base)+offset/24)
     return(offset)
   }
   if(calendar=='proleptic_gregorian') { 
     # Shift the calendar into the Gregorian era for processing, and then back for output
     shift<-0
     while(start.year+shift<1582) shift<-shift+400
-    base<-chron(sprintf("%02d/%02d/%04d",start.month,start.day,start.year),
+    base<-chron::chron(sprintf("%02d/%02d/%04d",start.month,start.day,start.year),
                 sprintf("%02d:%02d:%02d",0,0,0),format = c(dates = "m/d/y", times = "h:m:s"))
-    offset<-chron(as.numeric(base)+offset/24-400*365-97)
+    offset<-chron::chron(as.numeric(base)+offset/24-400*365-97)
     return(offset)    
   }
   stop(paste("Unsupported calendar",calendar))

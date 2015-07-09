@@ -6,7 +6,7 @@ Date: 2014-01-19
 Author: Philip Brohan
 Maintainer: Philip Brohan <philip@brohan.org>
 Description: A data structure to hold geospatial fields.
-Depends:
+Depends: 
     R (>= 1.7.0),
     chron,
     ncdf4,
@@ -16,3 +16,4 @@ Depends:
     grid,
     abind
 License: Apache
+Suggests: testthat

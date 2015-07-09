@@ -1,6 +1,6 @@
 # Plot a GSDF record
 
-#' Map a field with only 2 dimesions
+#' Map a field with only 2 dimensions
 #' 
 #' Make an imagemap or contourplot of a 2-dimensional GSDF field
 #'
@@ -36,7 +36,7 @@
 #' @param aspect Control aspect ratio - see ?contourplot. If NULL (default) set
 #' to 'iso' for lat::lon and lon::lat and to 'fill' otherwise.
 #' @return Grob containing map if draw=FALSE, nothing otherwise.
-GSDF.plot.2d<-function(g,dimensions=NULL,
+Plot2d<-function(g,dimensions=NULL,
                       palette="diverging",ncols=17,levels=NULL,
                       draw=TRUE,continents=NULL,
                       y.range=NULL,y.scale=NULL,y.label=NULL,
@@ -69,9 +69,9 @@ GSDF.plot.2d<-function(g,dimensions=NULL,
         dimensions<-c(dims[1],dims[2])
      }
    }
-   x.coords<-GSDF.roll.dimensions(g,dimensions[1],dimensions[2])
+   x.coords<-GSDF::RollDimensions(g,dimensions[1],dimensions[2])
    if(g$dimensions[[dimensions[1]]]$type=='time') x.coords=chron(x.coords)
-   y.coords<-GSDF.roll.dimensions(g,dimensions[2],dimensions[1])
+   y.coords<-GSDF::RollDimensions(g,dimensions[2],dimensions[1])
    if(g$dimensions[[dimensions[2]]]$type=='time') y.coords=chron(y.coords)
    if(is.null(continents) && 
          g$dimensions[[dimensions[1]]]$type=='lon' &&
@@ -102,7 +102,7 @@ GSDF.plot.2d<-function(g,dimensions=NULL,
    pole.lon<-NULL
    if(!is.null(g$meta$pole.lon)) pole.lon<-g$meta$pole.lon
     
-   GSDF.plot.map(as.vector(g$data),x.coords,y.coords,
+   PlotMap(as.vector(g$data),x.coords,y.coords,
                   palette=palette,ncols=ncols,levels=levels,
                   draw=draw,continents=continents,
                   y.range=y.range,y.scale=y.scale,y.label=y.label,
@@ -112,7 +112,7 @@ GSDF.plot.2d<-function(g,dimensions=NULL,
                   aspect=aspect)
 }
 
-GSDF.plot.map <-function(data,x.coords,y.coords,
+PlotMap <-function(data,x.coords,y.coords,
                   palette="diverging",ncols=17,levels=NULL,
                   draw=TRUE,continents=NULL,
                   y.range=NULL,y.scale=NULL,y.label='',
@@ -125,14 +125,14 @@ GSDF.plot.map <-function(data,x.coords,y.coords,
     if(is.null(x.scale)) x.scale<-pretty(x.coords)
   	    
     # Get continental outline data
-    continent.outlines <- map('world',interior=FALSE,plot=FALSE)
+    continent.outlines <- maps::map('world',interior=FALSE,plot=FALSE)
     is.na(continent.outlines$x[8836])=T  # Remove Antarctic bug
     if(!is.null(continents) && tolower(continents)=='high') {
-       continent.outlines <- map('worldHires',interior=FALSE,plot=FALSE)
+       continent.outlines <- maps::map('worldHires',interior=FALSE,plot=FALSE)
     }  
     # If w are using a rotated pole, rotate the continent outlines to match.
     if(!is.null(pole.lat) && !is.null(pole.lon)) {
-          nl<-GSDF.ll.to.rg(continent.outlines$y,
+          nl<-GSDF::RotateLatLon(continent.outlines$y,
                                      continent.outlines$x,
                                      pole.lat,pole.lon)
           continent.outlines$y<-nl$lat
@@ -154,10 +154,10 @@ GSDF.plot.map <-function(data,x.coords,y.coords,
 
 
     mappanel <- function(x,y,...) {
-        panel.contourplot(x,y,...)
+        lattice::panel.contourplot(x,y,...)
         if(!is.null(continents) &&
              (tolower(continents)=='high' || tolower(continents)=='low')) {
-            llines(continent.outlines$x,
+            lattice::llines(continent.outlines$x,
                    continent.outlines$y,col="black")
         }
     }
@@ -165,7 +165,7 @@ GSDF.plot.map <-function(data,x.coords,y.coords,
   c<-0
   if(length(levels)>1) {
       ncols<-length(levels)
-      c<-contourplot(data ~ x.coords * y.coords,
+      c<-lattice::contourplot(data ~ x.coords * y.coords,
          ylab=y.label,xlab=x.label,
          xlim=x.range,
          ylim=y.range,
@@ -180,13 +180,13 @@ GSDF.plot.map <-function(data,x.coords,y.coords,
          cuts=ncols-1,
          at=levels,
          col.regions=switch(palette,
-             diverging=GSDF.plot.getPalette.diverging(ncols),
-             sequential=GSDF.plot.getPalette.sequential(ncols),
-             greyscale=GSDF.plot.getPalette.greyscale(ncols))
+             diverging=GetPaletteDiverging(ncols),
+             sequential=GetPaletteSequential(ncols),
+             greyscale=GetPaletteGreyscale(ncols))
       )
   }
   else {
-      c<-contourplot(data ~ x.coords * y.coords,
+      c<-lattice::contourplot(data ~ x.coords * y.coords,
          ylab=y.label,xlab=x.label,
          xlim=x.range,
          ylim=y.range,
@@ -200,9 +200,9 @@ GSDF.plot.map <-function(data,x.coords,y.coords,
          pretty=pretty,
          cuts=ncols-1,
          col.regions=switch(palette,
-             diverging=GSDF.plot.getPalette.diverging(ncols),
-             sequential=GSDF.plot.getPalette.sequential(ncols),
-             greyscale=GSDF.plot.getPalette.greyscale(ncols))
+             diverging=GetPaletteDiverging(ncols),
+             sequential=GetPaletteSequential(ncols),
+             greyscale=GetPaletteGreyscale(ncols))
       )
   }
   if(draw) { print(c) }
@@ -212,7 +212,7 @@ GSDF.plot.map <-function(data,x.coords,y.coords,
     
 
 # Use the Light and Bartlein sequential and diverging colour schemes
-GSDF.plot.getPalette.diverging<-colorRampPalette(
+GetPaletteDiverging<-colorRampPalette(
        c(
         rgb( 36,  0,   216 ,maxColorValue = 255 ),
         rgb( 24,  28,  247 ,maxColorValue = 255 ),
@@ -235,7 +235,7 @@ GSDF.plot.getPalette.diverging<-colorRampPalette(
        )
    )
 
-GSDF.plot.getPalette.sequential<-colorRampPalette(
+GetPaletteSequential<-colorRampPalette(
        c(
          rgb( 229, 255, 255 ,maxColorValue = 255 ),
          rgb( 204, 250, 255 ,maxColorValue = 255 ),
@@ -250,7 +250,7 @@ GSDF.plot.getPalette.sequential<-colorRampPalette(
         )
    )
    
-GSDF.plot.getPalette.greyscale<-colorRampPalette(
+GetPaletteGreyscale<-colorRampPalette(
        c(
          rgb( 192, 192, 192 ,maxColorValue = 255 ),
          rgb( 160, 160, 160 ,maxColorValue = 255 ),
@@ -274,14 +274,14 @@ GSDF.plot.getPalette.greyscale<-colorRampPalette(
 #' @param g1 GSDF (with 2 extended dimensions)
 #' @param g2 GSDF (with 2 extended dimensions)
 #' @param ... see GSDF.plot.2d
-GSDF.pplot.2d<-function(g1,g2,...) {
-  grid.newpage()
-    pushViewport(viewport(x=0,y=0.5,width=1,height=0.5,just=c('left','bottom')))
+PPlot2d<-function(g1,g2,...) {
+  grid::grid.newpage()
+    grid::pushViewport(viewport(x=0,y=0.5,width=1,height=0.5,just=c('left','bottom')))
      m1<-GSDF.plot.2d(g1,...,draw=F)
      print(m1,newpage=F)
-  popViewport()
-  pushViewport(viewport(x=0,y=0,width=1,height=0.5,just=c('left','bottom')))
+  grid::popViewport()
+  grid::pushViewport(viewport(x=0,y=0,width=1,height=0.5,just=c('left','bottom')))
      m2<-GSDF.plot.2d(g2,...,draw=F)
      print(m2,newpage=F)
-  popViewport()
+  grid::popViewport()
 }
