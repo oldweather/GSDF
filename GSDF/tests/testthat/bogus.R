@@ -29,3 +29,13 @@ y<-as.integer(uk$data/622)/810
 x<-(uk$data%%622)/622
 uk$data[]<-sin(2*pi*x)*sin(2*pi*y)
 uk$meta<-list(pole.lat=37.5,pole.lon=177.5)
+
+has.leap<-GSDF()
+has.leap$dimensions[[1]]<-list(type='lat',values=c(1,2))
+has.leap$dimensions[[2]]<-list(type='lon',values=c(3,4))
+has.leap$dimensions[[3]]<-list(type='time',values=
+  chron::chron(sprintf("%02d/%02d/%04d",c(2,2,3),c(28,29,1),c(2000,2000,2000)),
+               sprintf("%02d:%02d:%02d",c(12,12,12),c(0,0,0),c(0,0,0)),
+               format = c(dates = "m/d/y", times = "h:m:s"))
+)
+has.leap$data<-array(data=seq(1,2*2*3),dim=c(2,2,3))
