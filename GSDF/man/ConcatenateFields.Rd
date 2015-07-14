@@ -4,7 +4,7 @@
 \alias{ConcatenateFields}
 \title{Merge two fields along one dimension.}
 \usage{
-ConcatenateFields(d1, d2, dimn, fn)
+ConcatenateFields(d1, d2, dimn)
 }
 \arguments{
 \item{d1}{GSDF field}

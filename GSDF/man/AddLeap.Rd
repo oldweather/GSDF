@@ -22,6 +22,6 @@ Often want to compare data from two years, one of which was a leap year
 Most often occurs when making anomalies.
 Note that the time dimension values are just copied, so the data block
  will be sized as if there was a Feb 29th, but selecting data for Feb 29 will
- fail, and selecting data for Feb 28th will select the doubled data.
+ fail, andelecting data for Feb 28th will select the doubled data.
 }
 

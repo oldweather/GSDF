@@ -30,10 +30,6 @@ RotateLatLon<-function(lat,lon,pole.lat,pole.lon,polygon=FALSE) {
    dtr<-pi/180
    sin.pole.lat<-sin(pole.lat*dtr)
    cos.pole.lat<-cos(pole.lat*dtr)
-   if(pole.lat<0) {
-      sin.pole.lat<- -sin.pole.lat
-      cos.pole.lat<- -cos.pole.lat
-   }
    
    lat.rotated<-asin(pmax(-1,pmin(1,-cos.pole.lat*
                                    cos(lon*dtr)*
@@ -59,23 +55,30 @@ RotateLatLon<-function(lat,lon,pole.lat,pole.lon,polygon=FALSE) {
    w<-which(!is.na(lon.rotated) & lon.rotated< -180)
    lon.rotated[w]<-lon.rotated[w]+360
    if(polygon) { # Data are polygon vertices, shift them as whole polygons
-     idx<-1+cumsum(is.na(lon.rotated)) # polygon indices
-     d<-diff(lon.rotated)
-     w<-which(abs(d)>180)
-     if(length(w)>0) { # fixes needed
-       ptf<-unique(idx[w+1])
-       for(p in ptf) {
-          w<-which(idx==p & !is.na(lon.rotated))
-          d<-lon.rotated[w]-lon.rotated[w[1]] # distance from 1st point
-          wp<-which(d>180)
-          lon.rotated[w[wp]]<-lon.rotated[w[wp]]-360
-          wp<-which(d< -180)
-          lon.rotated[w[wp]]<-lon.rotated[w[wp]]+360
-       }
-     }
+     lon.rotated<-RotatePolygonAdjust(lon.rotated)
    }
    return(list(lat=lat.rotated,lon=lon.rotated))
  }
+
+# Adjust polygons spanning the anti-meridian boundary
+RotatePolygonAdjust<-function(lon.rotated) {
+  idx<-1+cumsum(is.na(lon.rotated)) # polygon indices
+  d<-diff(lon.rotated)
+  w<-which(abs(d)>180)
+  if(length(w)>0) { # fixes needed
+    ptf<-unique(idx[w+1])
+    for(p in ptf) {
+      w<-which(idx==p & !is.na(lon.rotated))
+      d<-lon.rotated[w]-lon.rotated[w[1]] # distance from 1st point
+      wp<-which(d>180)
+      lon.rotated[w[wp]]<-lon.rotated[w[wp]]-360
+      wp<-which(d< -180)
+      lon.rotated[w[wp]]<-lon.rotated[w[wp]]+360
+    }
+  }
+  return(lon.rotated)
+}
+
 
 #' Reverse rotate lats and lons
 #'
@@ -89,21 +92,20 @@ RotateLatLon<-function(lat,lon,pole.lat,pole.lon,polygon=FALSE) {
 #' @param lon vector of longitudes in rotated pole (degrees).
 #' @param pole.lat latitude of pole to rotate from (degrees).
 #' @param pole.lon longitude of pole to rotate from (degrees).
+#' @param polygon are lats and longs sets of polygon vertices 
+#'  (probably from maps)?
 #' @return list with components 'lat' and 'lon' - vectors of
 #'   un-rotated lat and lon (in degrees).
-UnrotateLatLon<-function(lat,lon,pole.lat,pole.lon) {
+UnrotateLatLon<-function(lat,lon,pole.lat,pole.lon,polygon=FALSE) {
 
    if(pole.lat==90 && pole.lon==180) {
      return(list(lat=lat,lon=lon))
    }
+   while(pole.lon>180) pole.lon<-pole.lon-360
    l0<-pole.lon+180
    dtr<-pi/180
    sin.pole.lat<-sin(pole.lat*dtr)
    cos.pole.lat<-cos(pole.lat*dtr)
-   if(pole.lat<0) {
-      sin.pole.lat<- -sin.pole.lat
-      cos.pole.lat<- -cos.pole.lat
-   }
    w<-which(!is.na(lon) & lon>180)
    lon[w]<-lon[w]-360
    w<-which(!is.na(lon) & lon< -180)
@@ -134,6 +136,9 @@ UnrotateLatLon<-function(lat,lon,pole.lat,pole.lon) {
    lon.rotated[w]<-lon.rotated[w]-360
    w<-which(!is.na(lon.rotated) & lon.rotated< -180)
    lon.rotated[w]<-lon.rotated[w]+360
+   if(polygon) { # Data are polygon vertices, shift them as whole polygons
+     lon.rotated<-RotatePolygonAdjust(lon.rotated)
+   }
    return(list(lat=lat.rotated,lon=lon.rotated))
  }
 
@@ -171,8 +176,12 @@ WindToPoleInternal <-function(u,v,lat.orig,lon.orig,
    c1<- sin((lon.orig-l0)*dtr)*sin(lon.new*dtr)*sin(pole.lat*dtr)+
            cos((lon.orig-l0)*dtr)*cos(lon.new*dtr)
    c2<-sqrt(1-c1*c1)
-   w<-which(sin(lon.new*dtr)*sin(pole.lat*dtr)<0)
-   c2[w]<-c2[w]*-1
+   w<-which(sin(lon.new*dtr)<0)
+   if(pole.lat>=-90 && pole.lat<=90) {
+      if(length(w)>0) c2[w]<-c2[w]*-1
+   } else {
+      if(length(w)<length(c2)) c2[-w]<-c2[-w]*-1
+   }  
    if(pole.lat>180) pole.lat<-pole.lat-360
    return(list(u=c1*u-c2*v,v=c1*v+c2*u))
 }
@@ -193,10 +202,10 @@ WindToPoleInternal <-function(u,v,lat.orig,lon.orig,
 RotateWindToPole <-function(u,v,pole.lat,pole.lon=180) {
       u2<-GSDF::RotateFieldToPole(u,pole.lat,pole.lon)
       v2<-GSDF::RotateFieldToPole(v,pole.lat,pole.lon)
-      lat.new<-GSDF::RollDimensions(u2,GSDF.find.dimension(u2,'lat'),
-                                       GSDF.find.dimension(u2,'lon'))
-      lon.new<-GSDF::RollDimensions(u2,GSDF.find.dimension(u2,'lon'),
-                                       GSDF.find.dimension(u2,'lat'))
+      lat.new<-GSDF::RollDimensions(u2,GSDF::FindDimension(u2,'lat'),
+                                       GSDF::FindDimension(u2,'lon'))
+      lon.new<-GSDF::RollDimensions(u2,GSDF::FindDimension(u2,'lon'),
+                                       GSDF::FindDimension(u2,'lat'))
       ll.orig<-GSDF::RotateLatLon(lat.new,lon.new,pole.lat,pole.lon)
       r.u.v<-WindToPoleInternal(u2$data,v2$data,ll.orig$lat,
                                         ll.orig$lon,lat.new,lon.new,
@@ -222,7 +231,7 @@ RotateWindToPole <-function(u,v,pole.lat,pole.lon=180) {
 #'   regions will shrink.
 #' @return input field but with the rotated pole.
 #' @seealso \code{\link{GSDF::RotateLatLon}} and \code{\link{GSDF::UnrotateLatLon}}.
-FieldToPole<-function(g,pole.lat,pole.lon,greedy=FALSE) {
+RotateFieldToPole<-function(g,pole.lat,pole.lon,greedy=FALSE) {
   if(is.null(g$meta)) g$meta<-list()
   if(is.null(g$meta$pole.lat)) g$meta$pole.lat<-90
   if(is.null(g$meta$pole.lon)) g$meta$pole.lon<-180

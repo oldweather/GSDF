@@ -277,11 +277,11 @@ GetPaletteGreyscale<-colorRampPalette(
 PPlot2d<-function(g1,g2,...) {
   grid::grid.newpage()
     grid::pushViewport(viewport(x=0,y=0.5,width=1,height=0.5,just=c('left','bottom')))
-     m1<-GSDF.plot.2d(g1,...,draw=F)
+     m1<-GSDF::Plot2d(g1,...,draw=F)
      print(m1,newpage=F)
   grid::popViewport()
   grid::pushViewport(viewport(x=0,y=0,width=1,height=0.5,just=c('left','bottom')))
-     m2<-GSDF.plot.2d(g2,...,draw=F)
+     m2<-GSDF::Plot2d(g2,...,draw=F)
      print(m2,newpage=F)
   grid::popViewport()
 }

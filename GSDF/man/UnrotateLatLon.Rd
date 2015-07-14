@@ -4,7 +4,7 @@
 \alias{UnrotateLatLon}
 \title{Reverse rotate lats and lons}
 \usage{
-UnrotateLatLon(lat, lon, pole.lat, pole.lon)
+UnrotateLatLon(lat, lon, pole.lat, pole.lon, polygon = FALSE)
 }
 \arguments{
 \item{lat}{vector of latitudes in rotated pole (degrees).}
@@ -14,6 +14,9 @@ UnrotateLatLon(lat, lon, pole.lat, pole.lon)
 \item{pole.lat}{latitude of pole to rotate from (degrees).}
 
 \item{pole.lon}{longitude of pole to rotate from (degrees).}
+
+\item{polygon}{are lats and longs sets of polygon vertices
+(probably from maps)?}
 }
 \value{
 list with components 'lat' and 'lon' - vectors of
