@@ -15,6 +15,6 @@ field of selected data.
 Get a field of non-time-varying data.
 }
 \details{
-Always uses openDAP. Currently doesn't vary betwen versions.
+Currently doesn't vary betwen versions.
 }
 

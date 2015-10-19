@@ -412,10 +412,6 @@ GSDF.ll.to.rg<-function(lat,lon,pole.lat,pole.lon,polygon=FALSE) {
    dtr<-pi/180
    sin.pole.lat<-sin(pole.lat*dtr)
    cos.pole.lat<-cos(pole.lat*dtr)
-   if(pole.lat<0) {
-      sin.pole.lat<- -sin.pole.lat
-      cos.pole.lat<- -cos.pole.lat
-   }
    
    lat.rotated<-asin(pmax(-1,pmin(1,-cos.pole.lat*
                                    cos(lon*dtr)*
@@ -553,8 +549,12 @@ GSDF.wind.to.pole.internal <-function(u,v,lat.orig,lon.orig,
    c1<- sin((lon.orig-l0)*dtr)*sin(lon.new*dtr)*sin(pole.lat*dtr)+
            cos((lon.orig-l0)*dtr)*cos(lon.new*dtr)
    c2<-sqrt(1-c1*c1)
-   w<-which(sin(lon.new*dtr)*sin(pole.lat*dtr)<0)
-   c2[w]<-c2[w]*-1
+   w<-which(sin(lon.new*dtr)<0)
+   if(pole.lat>=-90 && pole.lat<=90) {
+      if(length(w)>0) c2[w]<-c2[w]*-1
+   } else {
+      if(length(w)<length(c2)) c2[-w]<-c2[-w]*-1
+   }  
    if(pole.lat>180) pole.lat<-pole.lat-360
    return(list(u=c1*u-c2*v,v=c1*v+c2*u))
 }
