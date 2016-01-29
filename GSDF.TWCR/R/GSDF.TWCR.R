@@ -187,6 +187,21 @@ TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
 #' @return File name or URL for netCDF file containing the requested data 
 TWCR.hourly.members.get.file.name<-function(variable,year,month,day,hour,
                                               opendap=NULL,version=2) {
+   if((version=='2c' || version=='3.5.1') &&
+    file.exists('/project/projectdirs/20C_Reanalysis')) { # Nersc operational 2c
+      base.name<-'/project/projectdirs/20C_Reanalysis/www/20C_Reanalysis_version2c_ensemble/'
+      file.name<-list(
+         'air.2m' = 'analysis/t9950/t9950',
+         'prmsl' = 'analysis/prmsl/prmsl',
+         'prate' = 'first_guess/prate/prate',
+         'uwnd.10m' = 'first_guess/u10m/u10m',
+         'vwnd.10m' = 'first_guess/v10m/v10m',
+         'air.sfc' = 'first_guess/tsfc/tsfc')
+      if(is.null(file.name[[variable]])) {
+         stop(sprintf("Unavailable ensemble variable %s",variable))
+      }
+      return(sprintf("%s/%s_%04d.nc",base.name,file.name[[variable]],year))
+   }
    if(is.null(opendap) || opendap==FALSE) {
         base.dir<-TWCR.get.data.dir(version)
                name<-sprintf("%s/ensembles/hourly/%s/%s.%04d.nc",base.dir,
@@ -744,7 +759,7 @@ TWCR.sds<-function(s,n){
 #' Get the ensemble members instead of the mean, spread etc.
 #' analogous to TWCR.get.slice.at.hour
 #'
-#' Currently only for prmsl, and only for V2.
+#' Currently only for prmsl, and only for V2c.
 #'
 #' No interpolation - must be at an analysis time
 #'
@@ -752,12 +767,16 @@ TWCR.sds<-function(s,n){
 #' @param variable 20CR variable name, only 'prmsl', 'air.2m', 'prate', 'uwnd.10m', and 'vwnd.10m' supported.
 #' @param opendap TRUE for network retrieval, FALSE for local files (faster, if you have them).
 #' @return A GSDF field with ensemble number, lat and long as extended dimensions
-TWCR.get.members.slice.at.hour<-function(variable,year,month,day,hour,opendap=NULL,version=2) {
+TWCR.get.members.slice.at.hour<-function(variable,year,month,day,hour,opendap=NULL,version='2c') {
   if(variable != 'prmsl' && variable != 'air.2m' &&
      variable != 'uwnd.10m' && variable != 'vwnd.10m' &&
      variable != 'prate') stop('Unsupported ensemble variable')
   if(!TWCR.is.in.file(variable,year,month,day,hour)) stop('Members only available at analysis hours')
   file.name<-TWCR.hourly.members.get.file.name(variable,year,month,day,hour,opendap=opendap,version=version)
+  # Different variable names for official 2c data
+  if(variable=='air.2m') variable<-'t9950'
+  if(variable=='uwnd.10m') variable<-'u10m'
+  if(variable=='vwnd.10m') variable<-'v10m'
   t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                       format=c(dates='y/m/d',times='h:m:s'))
   if(substr(file.name,1,4)=='http') {
