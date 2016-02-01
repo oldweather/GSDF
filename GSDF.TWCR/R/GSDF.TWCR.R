@@ -446,12 +446,13 @@ TWCR.get.interpolation.times<-function(variable,year,month,day,hour,type='mean')
 		stop("Internal interpolation failure")
 	}
 	ct<-chron(dates=sprintf("%04d/%02d/%02d",year,month,day),
-	          times=sprintf("%02d:00:00",hour),
+	          times=sprintf("%02d:%02d:00",as.integer(hour),
+                                      as.integer(hour%%1*60)),
 	          format=c(dates='y/m/d',times='h:m:s'))
 	t.previous<-list()
-        back.hours=1
+        back.hours=0
 	while(back.hours<24) {
-		p.hour<-hour-back.hours
+		p.hour<-as.integer(hour-back.hours)
                 p.year<-year
                 p.month<-month
                 p.day<-day
@@ -476,7 +477,7 @@ TWCR.get.interpolation.times<-function(variable,year,month,day,hour,type='mean')
 	t.next<-list()
 	forward.hours<-1
 	while(forward.hours<24) {
-		n.hour<-hour+forward.hours
+		n.hour<-as.integer(hour+forward.hours)
                 n.year<-year
                 n.month<-month
                 n.day<-day
@@ -557,9 +558,10 @@ TWCR.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,openda
 }
 
 TWCR.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NULL,opendap=NULL,version=2,type='mean') {
-	dstring<-sprintf("%04d-%02d-%02d:%02d",year,month,day,hour)
+	#dstring<-sprintf("%04d-%02d-%02d:%02d",year,month,day,hour)
 	# Is it from an analysis time (no need to interpolate)?
 	if(TWCR.is.in.file(variable,year,month,day,hour,type=type)) {
+        hour<-as.integer(hour)
         file.name<-TWCR.hourly.get.file.name(variable,year,month,day,hour,height=height,
                                                 opendap=opendap,version=version,type=type)
            t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
@@ -599,15 +601,15 @@ TWCR.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
 	c1<-chron(dates=sprintf("%04d/%02d/%02d",interpolation.times[[1]]$year,
 	                                         interpolation.times[[1]]$month,
 	                                         interpolation.times[[1]]$day),
-	          times=sprintf("%02d:00:00",interpolation.times[[1]]$hour),
+	          times=sprintf("%02d:00:00",as.integer(interpolation.times[[1]]$hour)),
 	          format=c(dates='y/m/d',times='h:m:s'))
 	c2<-chron(dates=sprintf("%04d/%02d/%02d",interpolation.times[[2]]$year,
 	                                         interpolation.times[[2]]$month,
 	                                         interpolation.times[[2]]$day),
-	          times=sprintf("%02d:00:00",interpolation.times[[2]]$hour),
+	          times=sprintf("%02d:00:00",as.integer(interpolation.times[[2]]$hour)),
 	          format=c(dates='y/m/d',times='h:m:s'))
 	c3<-chron(dates=sprintf("%04d/%02d/%02d",year,month,day),
-	          times=sprintf("%02d:00:00",hour),
+	          times=sprintf("%02d:%02d:00",as.integer(hour),as.integer(hour%%1*60)),
 	          format=c(dates='y/m/d',times='h:m:s'))
     if(c2==c1) stop("Zero interval in time interpolation")
     weight<-as.numeric((c2-c3)/(c2-c1))
