@@ -715,7 +715,7 @@ GSDF.select.from.1d<-function(d,dimn,idx,...) {
     idx.d<-dimn
   } else idx.d<-GSDF.find.dimension(d,dimn)
   if(is.null(idx.d)) stop(sprintf("Field has no dimension %s",dimn))
-  ndim<-length(dim(t$data))
+  ndim<-length(dim(d$data))
   args <- rep("", times = ndim)
   args[idx.d] <- sprintf("%d", idx)
   args <- paste(args, collapse = ",")

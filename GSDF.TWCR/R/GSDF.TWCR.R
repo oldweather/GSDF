@@ -380,7 +380,7 @@ TWCR.get.obs<-function(year,month,day,hour,version=2,range=0.5) {
     base.dir<-TWCR.get.data.dir(version)
     if(is.null(base.dir)) stop("No local TWCR files on this system")
     today<-chron(dates=sprintf("%04d/%02d/%02d",year,month,day),
-          times=sprintf("%02d:00:00",hour),
+          times=sprintf("%02d:%02d:00",as.integer(hour),as.integer(hour%%1*60)),
           format=c(dates='y/m/d',times='h:m:s'))
     result<-NULL
     for(hour2 in seq(today-range,today+range,1/24)) {
@@ -388,10 +388,10 @@ TWCR.get.obs<-function(year,month,day,hour,version=2,range=0.5) {
                 "%s/observations/%04d/prepbufrobs_assim_%04d%02d%02d%02d.txt",base.dir,
                  as.integer(as.character(years(hour2))),
                  as.integer(as.character(years(hour2))),
-                 months(hour2),days(hour2),hours(hour2))
+                 months(hour2),days(hour2),as.integer(hours(hour2)))
         if(!file.exists(of.name)) next
         o<-TWCR.get.obs.1file(as.integer(as.character(years(hour2))),
-                               months(hour2),days(hour2),hours(hour2),version)
+                               months(hour2),days(hour2),as.integer(hours(hour2)),version)
         odates<-chron(dates=sprintf("%04d/%02d/%02d",as.integer(substr(o$UID,1,4)),
                                                      as.integer(substr(o$UID,5,6)),
                                                      as.integer(substr(o$UID,7,8))),
