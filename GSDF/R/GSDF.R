@@ -694,6 +694,45 @@ GSDF.reduce.1d<-function(d,dimn,fn,...) {
   return(result)
 }
 
+#' Select one value from one dimension
+#'
+#' Convert a n-dimensional field to an (n-1) dimensional field
+#'  by selecting a single value from one dimension.
+#'
+#' This is a special case of \code{\link{GSDF.reduce.1d}}, but
+#' a common one, and it does not use an
+#'  'apply' loop - so it's faster.
+#'
+#' @export
+#' @param d GSDF field
+#' @param dimn name (e.g. 'ensemble') or number (3) of dimension to reduce
+#' @param idx which member of that dimension to keep.
+#' @param ... additional arguments to fn (e.g. na.rm=T)
+#' @return reduced field.
+GSDF.select.from.1d<-function(d,dimn,idx,...) {
+  idx.d<-NULL
+  if(is.numeric(dimn)) {
+    idx.d<-dimn
+  } else idx.d<-GSDF.find.dimension(d,dimn)
+  if(is.null(idx.d)) stop(sprintf("Field has no dimension %s",dimn))
+  ndim<-length(dim(t$data))
+  args <- rep("", times = ndim)
+  args[idx.d] <- sprintf("%d", idx)
+  args <- paste(args, collapse = ",")
+  code <- paste("result$data<-d$data[", args, "]", sep = "")
+  expr <- parse(text = code)
+  result<-d
+  eval(expr)
+  old.d<-seq_along(dim(d$data))
+  if(length(old.d)>idx.d) {
+     for(i in seq(idx.d,length(old.d)-1)) {
+       result$dimensions[[i]]<-d$dimensions[[i+1]]
+     }
+  }
+  result$dimensions[[length(old.d)]]<-NULL
+  return(result)
+}
+
 # Expand a field in longitude - copying the first column to the end
 #  and the last column to the beginning (or rows, if apropriate)
 # Allows correct interpolation of points beyond the last row or before
