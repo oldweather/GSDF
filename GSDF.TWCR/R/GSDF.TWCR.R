@@ -761,7 +761,7 @@ TWCR.sds<-function(s,n){
 #' Get the ensemble members instead of the mean, spread etc.
 #' analogous to TWCR.get.slice.at.hour
 #'
-#' Currently only for prmsl, and only for V2c.
+#' Currently only some 2d variables, and for V2c.
 #'
 #' No interpolation - must be at an analysis time
 #'
@@ -773,7 +773,37 @@ TWCR.get.members.slice.at.hour<-function(variable,year,month,day,hour,opendap=NU
   if(variable != 'prmsl' && variable != 'air.2m' &&
      variable != 'uwnd.10m' && variable != 'vwnd.10m' &&
      variable != 'prate') stop('Unsupported ensemble variable')
-  if(!TWCR.is.in.file(variable,year,month,day,hour)) stop('Members only available at analysis hours')
+  if(!TWCR.is.in.file(variable,year,month,day,hour)) {
+	interpolation.times<-TWCR.get.interpolation.times(variable,year,month,day,hour)
+	v1<-TWCR.get.members.slice.at.hour(variable,interpolation.times[[1]]$year,interpolation.times[[1]]$month,
+		                               interpolation.times[[1]]$day,interpolation.times[[1]]$hour,
+                                               opendap=opendap,version=version)
+	v2<-TWCR.get.members.slice.at.hour(variable,interpolation.times[[2]]$year,interpolation.times[[2]]$month,
+		                               interpolation.times[[2]]$day,interpolation.times[[2]]$hour,
+                                               opendap=opendap,version=version)
+	c1<-chron(dates=sprintf("%04d/%02d/%02d",interpolation.times[[1]]$year,
+	                                         interpolation.times[[1]]$month,
+	                                         interpolation.times[[1]]$day),
+	          times=sprintf("%02d:00:00",as.integer(interpolation.times[[1]]$hour)),
+	          format=c(dates='y/m/d',times='h:m:s'))
+	c2<-chron(dates=sprintf("%04d/%02d/%02d",interpolation.times[[2]]$year,
+	                                         interpolation.times[[2]]$month,
+	                                         interpolation.times[[2]]$day),
+	          times=sprintf("%02d:00:00",as.integer(interpolation.times[[2]]$hour)),
+	          format=c(dates='y/m/d',times='h:m:s'))
+	c3<-chron(dates=sprintf("%04d/%02d/%02d",year,month,day),
+	          times=sprintf("%02d:%02d:00",as.integer(hour),as.integer(hour%%1*60)),
+	          format=c(dates='y/m/d',times='h:m:s'))
+    if(c2==c1) stop("Zero interval in time interpolation")
+    weight<-as.numeric((c2-c3)/(c2-c1))
+    v<-v1
+    idx.t<-GSDF.find.dimension(v,'time')
+    v$dimensions[[idx.t]]$value<-v1$dimensions[[idx.t]]$value+
+                                 as.numeric(v2$dimensions[[idx.t]]$value-v1$dimensions[[idx.t]]$value)*(1-weight)
+    v$data[]<-v1$data*weight+v2$data*(1-weight)
+    return(v)
+  }
+  # At calculation time - do the actual retrieval
   file.name<-TWCR.hourly.members.get.file.name(variable,year,month,day,hour,opendap=opendap,version=version)
   # Different variable names for official 2c data
   if(variable=='air.2m') variable<-'t9950'
