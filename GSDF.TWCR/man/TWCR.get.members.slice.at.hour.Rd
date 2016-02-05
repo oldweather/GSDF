@@ -5,7 +5,7 @@
 analogous to TWCR.get.slice.at.hour}
 \usage{
 TWCR.get.members.slice.at.hour(variable, year, month, day, hour,
-  opendap = NULL, version = 2)
+  opendap = NULL, version = "2c")
 }
 \arguments{
 \item{variable}{20CR variable name, only 'prmsl', 'air.2m', 'prate', 'uwnd.10m', and 'vwnd.10m' supported.}
@@ -16,7 +16,7 @@ TWCR.get.members.slice.at.hour(variable, year, month, day, hour,
 A GSDF field with ensemble number, lat and long as extended dimensions
 }
 \description{
-Currently only for prmsl, and only for V2.
+Currently only some 2d variables.
 }
 \details{
 No interpolation - must be at an analysis time
