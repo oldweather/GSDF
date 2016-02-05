@@ -761,7 +761,7 @@ TWCR.sds<-function(s,n){
 #' Get the ensemble members instead of the mean, spread etc.
 #' analogous to TWCR.get.slice.at.hour
 #'
-#' Currently only some 2d variables, and for V2c.
+#' Currently only some 2d variables.
 #'
 #' No interpolation - must be at an analysis time
 #'
@@ -806,16 +806,18 @@ TWCR.get.members.slice.at.hour<-function(variable,year,month,day,hour,opendap=NU
   # At calculation time - do the actual retrieval
   file.name<-TWCR.hourly.members.get.file.name(variable,year,month,day,hour,opendap=opendap,version=version)
   # Different variable names for official 2c data
-  if(variable=='air.2m') variable<-'t9950'
-  if(variable=='uwnd.10m') variable<-'u10m'
-  if(variable=='vwnd.10m') variable<-'v10m'
+  if(version=='2c' || version=='3.5.1') {
+     if(variable=='air.2m') variable<-'t9950'
+     if(variable=='uwnd.10m') variable<-'u10m'
+     if(variable=='vwnd.10m') variable<-'v10m'
+  }
   t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                       format=c(dates='y/m/d',times='h:m:s'))
   if(substr(file.name,1,4)=='http') {
      t<-t+2 # Kludge for unknown bug in calendar processing - dates in nc file are interpreted as 2 days ahead.
   }
   v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(0,360),
-                           ens.range=c(1,56),time.range=c(t,t))
+                           ens.range=c(0,56),time.range=c(t,t))
   return(v)  
 }
 
