@@ -813,8 +813,8 @@ TWCR.get.members.slice.at.hour<-function(variable,year,month,day,hour,opendap=NU
   }
   t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                       format=c(dates='y/m/d',times='h:m:s'))
-  if(substr(file.name,1,4)=='http') {
-     t<-t+2 # Kludge for unknown bug in calendar processing - dates in nc file are interpreted as 2 days ahead.
+  if(version==2 || version=='3.2.1' || version=='2c' || version=='3.5.1') {
+     t<-t+2 # Kludge. Are dates 2 days ahead?
   }
   v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(0,360),
                            ens.range=c(0,56),time.range=c(t,t))
