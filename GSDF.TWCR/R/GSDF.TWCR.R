@@ -529,8 +529,8 @@ TWCR.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,openda
   }
   if(variable=='icec') {
     i<-TWCR.get.slice.at.level.at.hour('icec',year,month,day,hour,height=NULL,opendap=opendap,version=version,type=type)
-    lm<-TWCR.get.fixed.field('lsmask')
-    is.na(i$data[lm$data==1])<-TRUE # Mask out land points
+    #lm<-TWCR.get.fixed.field('lsmask')
+    #is.na(i$data[lm$data==1])<-TRUE # Mask out land points
     return(i)
   }
   if(TWCR.get.variable.group(variable)=='monolevel' ||
