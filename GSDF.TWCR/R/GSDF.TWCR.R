@@ -53,6 +53,9 @@ TWCR.get.data.dir<-function(version=2) {
     if(file.exists(sprintf("/Volumes/DataDir/20CR/version_%s/",version))) {
             return(sprintf("/Volumes/DataDir/20CR/version_%s/",version))
     }	
+    if(file.exists(sprintf("/scratch/hadpb/20CR/version_%s/",version))) {
+            return(sprintf("/scratch/hadpb/20CR/version_%s/",version))
+    }	
     if(file.exists(sprintf("/data/cr2/hadpb/20CR/version_%s/",version))) {
             return(sprintf("/data/cr2/hadpb/20CR/version_%s/",version))
     }	
