@@ -157,7 +157,7 @@ MERRA.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=TRUE,t
                                 base.dir,year,month,runId,year,month,day))
             }
             if(MERRA.get.variable.group(variable)=='MAT1NXRAD') {
-              runId<-runId+1
+              #runId<-runId+1
               return(sprintf("%s/MAT1NXRAD.5.2.0/%04d/%02d/MERRA%03d.prod.assim.tavg1_2d_rad_Nx.%04d%02d%02d.hdf",
                                 base.dir,year,month,runId,year,month,day))
             }
