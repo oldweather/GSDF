@@ -11,7 +11,7 @@ TWCR.gaussian.monolevel<-c('air.2m','air.sfc','albedo','cprat','cwork.eatm','dlw
                            'snod','snowc','soilm','ssrunoff','tcdc.bndrylyr','tcdc.convcld',
                            'tcdc.eatm','tcdc.lowcld','tcdc.midcld','tcdc.topcld','tmax.2m',
                            'tmin.2m','trans','uflx','ugwd','ulwrf.ntat','ulwrf.sfc','uswrf.ntat',
-                           'uswf.sfc','uwnd.10m','vflx','vgwd','vwnd.10m','weasd')
+                           'uswf.sfc','uwnd.10m','vflx','vgwd','vwnd.10m','weasd','cduvb')
 TWCR.pressure.level<-c('air','hgt','omega','rhum','shum','uwnd','vwnd')
 # Also subsurface soil - not currently supported
 
@@ -436,6 +436,7 @@ TWCR.get.fixed.field<-function(variable) {
 }
 
 TWCR.is.in.file<-function(variable,year,month,day,hour,type='mean') {
+                if(variable=='prate' && hour%%3==0) return(TRUE)
 		if(hour%%6==0) return(TRUE)
 		return(FALSE)
 }

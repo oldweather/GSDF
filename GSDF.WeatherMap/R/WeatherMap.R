@@ -258,7 +258,13 @@ WeatherMap.bridson<-function(Options,
         if(length(cp)>0) {
             d.s<-(((previous$lon[i]-x[cp])/scalef.x[cp])**2+
                   ((previous$lat[i]-y[cp])/scalef.y[cp])**2)
-            if(min(d.s,na.rm=TRUE)<r.min**2) next
+            if(min(d.s,na.rm=TRUE)<r.min**2) {
+              # Cull points with low status
+              if(previous$status[i]<3) next
+              # fade out other points by reducing their status
+              if(previous$status[i]>4) previous$status[i]<-5
+              previous$status[i]<-previous$status[i]-2
+            }
         }
         x[index.i]<-previous$lon[i]
         y[index.i]<-previous$lat[i]
