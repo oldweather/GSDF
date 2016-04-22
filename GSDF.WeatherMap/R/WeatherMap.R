@@ -237,7 +237,7 @@ WeatherMap.bridson<-function(Options,
     order.added<-c(order.added,index.c)
 
     # If starting from a pre-existing set of points, load them
-    # in random order, culling any too close to one already loaded.
+    # in decreasing order of status, culling any too close to one already loaded.
     if(!is.null(previous)) {
         w<-which(previous$lat<min(y.range) |
                  previous$lat>max(y.range) |
@@ -248,33 +248,33 @@ WeatherMap.bridson<-function(Options,
             previous$lon<-previous$lon[-w]
             previous$status<-previous$status[-w]
         }
-    order<-sample.int(length(previous$lon))
-    for(i in seq_along(order)) {
-        index.i<-as.integer((previous$lat[i]-min(y.range))/r.y)*n.x+
-                 as.integer((previous$lon[i]-min(x.range))/r.x)+1
-        if(!is.na(x[index.i])) next
-        cp<-bridson.close.points(index.i,n.x,n.y)
-        cp<-cp[!is.na(x[cp])]
-        if(length(cp)>0) {
-            d.s<-(((previous$lon[i]-x[cp])/scalef.x[cp])**2+
-                  ((previous$lat[i]-y[cp])/scalef.y[cp])**2)
-            if(min(d.s,na.rm=TRUE)<r.min**2) {
-              # Cull points with low status
-              if(previous$status[i]<3) next
-              # fade out other points by reducing their status
-              if(previous$status[i]>4) previous$status[i]<-5
-              previous$status[i]<-previous$status[i]-2
+        pts.order<-order(previous$status,decreasing=TRUE)
+        for(i in pts.order) {
+            index.i<-as.integer((previous$lat[i]-min(y.range))/r.y)*n.x+
+                     as.integer((previous$lon[i]-min(x.range))/r.x)+1
+            if(!is.na(x[index.i])) next
+            cp<-bridson.close.points(index.i,n.x,n.y)
+            cp<-cp[!is.na(x[cp])]
+            if(length(cp)>0) {
+                d.s<-(((previous$lon[i]-x[cp])/scalef.x[cp])**2+
+                      ((previous$lat[i]-y[cp])/scalef.y[cp])**2)
+                if(min(d.s,na.rm=TRUE)<r.min**2) {
+                  # Cull points with low status
+                  if(previous$status[i]<3) next
+                  # fade out other points by reducing their status
+                  if(previous$status[i]>4) previous$status[i]<-5
+                  previous$status[i]<-previous$status[i]-2
+                }
             }
-        }
-        x[index.i]<-previous$lon[i]
-        y[index.i]<-previous$lat[i]
-        status[index.i]<-previous$status[i]
-        order.added<-c(order.added,index.i)
-        # Ideally we'd set all points to active, but try
-        #  only a subset - faster
-        if(index.i%%7==0) active<-c(active,index.i)
+            x[index.i]<-previous$lon[i]
+            y[index.i]<-previous$lat[i]
+            status[index.i]<-previous$status[i]
+            order.added<-c(order.added,index.i)
+            # Ideally we'd set all points to active, but try
+            #  only a subset - faster
+            if(index.i%%7==0) active<-c(active,index.i)
+         }
       }
-  }
     
     # Allocate more points to fill gaps
     while(length(active)>0) {
