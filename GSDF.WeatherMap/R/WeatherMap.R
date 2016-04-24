@@ -198,6 +198,7 @@ WeatherMap.bridson<-function(Options,
     #  NA if nothing there
     x<-rep(NA,n.x*n.y)
     y<-rep(NA,n.x*n.y)
+    status<-rep(NA,n.x*n.y)
 
     # Scale factors at each grid location
     scalef.x<-rep(1,n.x*n.y)
@@ -232,10 +233,11 @@ WeatherMap.bridson<-function(Options,
     active<-index.c
     x[index.c]<-x.c
     y[index.c]<-y.c
+    status[index.c]<-1
     order.added<-c(order.added,index.c)
 
     # If starting from a pre-existing set of points, load them
-    # in random order, culling any too close to one already loaded.
+    # in decreasing order of status, culling any too close to one already loaded.
     if(!is.null(previous)) {
         w<-which(previous$lat<min(y.range) |
                  previous$lat>max(y.range) |
@@ -244,27 +246,35 @@ WeatherMap.bridson<-function(Options,
         if(length(w)>0) {
             previous$lat<-previous$lat[-w]
             previous$lon<-previous$lon[-w]
+            previous$status<-previous$status[-w]
         }
-    order<-sample.int(length(previous$lon))
-    for(i in seq_along(order)) {
-        index.i<-as.integer((previous$lat[i]-min(y.range))/r.y)*n.x+
-                 as.integer((previous$lon[i]-min(x.range))/r.x)+1
-        if(!is.na(x[index.i])) next
-        cp<-bridson.close.points(index.i,n.x,n.y)
-        cp<-cp[!is.na(x[cp])]
-        if(length(cp)>0) {
-            d.s<-(((previous$lon[i]-x[cp])/scalef.x[cp])**2+
-                  ((previous$lat[i]-y[cp])/scalef.y[cp])**2)
-            if(min(d.s,na.rm=TRUE)<r.min**2) next
-        }
-        x[index.i]<-previous$lon[i]
-        y[index.i]<-previous$lat[i]
-        order.added<-c(order.added,index.i)
-        # Ideally we'd set all points to active, but try
-        #  only a subset - faster
-        if(index.i%%7==0) active<-c(active,index.i)
+        pts.order<-order(previous$status,decreasing=TRUE)
+        for(i in pts.order) {
+            index.i<-as.integer((previous$lat[i]-min(y.range))/r.y)*n.x+
+                     as.integer((previous$lon[i]-min(x.range))/r.x)+1
+            if(!is.na(x[index.i])) next
+            cp<-bridson.close.points(index.i,n.x,n.y)
+            cp<-cp[!is.na(x[cp])]
+            if(length(cp)>0) {
+                d.s<-(((previous$lon[i]-x[cp])/scalef.x[cp])**2+
+                      ((previous$lat[i]-y[cp])/scalef.y[cp])**2)
+                if(min(d.s,na.rm=TRUE)<r.min**2) {
+                  # Cull points with low status
+                  if(previous$status[i]<3) next
+                  # fade out other points by reducing their status
+                  if(previous$status[i]>4) previous$status[i]<-5
+                  previous$status[i]<-previous$status[i]-2
+                }
+            }
+            x[index.i]<-previous$lon[i]
+            y[index.i]<-previous$lat[i]
+            status[index.i]<-previous$status[i]
+            order.added<-c(order.added,index.i)
+            # Ideally we'd set all points to active, but try
+            #  only a subset - faster
+            if(index.i%%7==0) active<-c(active,index.i)
+         }
       }
-  }
     
     # Allocate more points to fill gaps
     while(length(active)>0) {
@@ -292,6 +302,7 @@ WeatherMap.bridson<-function(Options,
            if(length(w)>0) { # new point
                x[index.s[w[1]]]<-ns$x[w[1]]
                y[index.s[w[1]]]<-ns$y[w[1]]
+               status[index.s[w[1]]]<-1
                active<-c(active,index.s[w[1]])
                order.added<-c(order.added,index.s[w[1]])
                next
@@ -307,15 +318,17 @@ WeatherMap.bridson<-function(Options,
     #y<-y[-w]
     x<-x[order.added]
     y<-y[order.added]
+    status<-status[order.added]
 
     if(Options$wrap.spherical) {
       x<-x/cos(y*pi/180)
       w<-which(x<Options$lon.max & x>=Options$lon.min)
       x<-x[w]
       y<-y[w]
+      status<-status[w]
      }
 
-    return(list(lon=x,lat=y))
+    return(list(lon=x,lat=y,status=status))
   }
 
 #' Rectpoints
@@ -438,9 +451,15 @@ WeatherMap.streamline.getGC<-function(value,transparency=NA,status=1,Options) {
       colour<-rgb(255,255,255,0,maxColorValue = 255)
       return(gpar(col=colour,fill=colour,lwd=Options$wind.vector.lwd))
    }
+   alpha<-c(10,50,150,255)[min(status,4)]
    colour<-rgb(rgb[1],rgb[2],rgb[3],alpha,maxColorValue = 255)
-   if(Options$wrap.spherical) status<-0.01 # polygon fill in this case
-   return(gpar(col=colour,fill=colour,lwd=Options$wind.vector.lwd*status))
+   colourb<-rgb(rgb[1],rgb[2],rgb[3],0,maxColorValue = 255)
+   #if(Options$wrap.spherical) status<-0.01 # polygon fill in this case
+   if(Options$wrap.spherical) {
+      return(gpar(col=colour,fill=colour,lwd=0))
+    } else {
+      return(gpar(col=colour,fill=colour,lwd=Options$wind.vector.lwd))
+    }
 }
 
 
@@ -495,7 +514,7 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
       move.scale<-move.scale*Options$wind.vector.move.scale*view.scale
       lats<-s[['y']][,1]<-s[['y']][,1]+(s[['y']][,2]-s[['y']][,1])*move.scale
       longs<-s[['x']][,1]<-s[['x']][,1]+(s[['x']][,2]-s[['x']][,1])*move.scale
-      status<-s[['status']]
+      status<-s[['status']]+1
       w<-which(is.na(lats) | is.na(longs))
       if(length(w)>0) {
         lats<-lats[-w]
@@ -512,9 +531,9 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
   }
    # Update positions and Roll-out the streamlines
    if(!Options$jitter) set.seed(27)
-   p<-WeatherMap.bridson(Options,previous=list(lat=lats,lon=longs),
+   p<-WeatherMap.bridson(Options,previous=list(lat=lats,lon=longs,status=status),
                           scale.x=u,scale.y=v)
-   s<-WeatherMap.propagate.streamlines(p$lat,p$lon,rep(1,length(p$lat)),u,v,t,t.c,Options)
+   s<-WeatherMap.propagate.streamlines(p$lat,p$lon,p$status,u,v,t,t.c,Options)
    # Need periodic boundary conditions?
    if(Options$lon.max-Options$lon.min>360) {
       w<-which(s[['x']][,1]< Options$lon.max-360)
@@ -561,8 +580,9 @@ WeatherMap.draw.streamlines<-function(s,Options) {
           tp<-min(1-min(1,abs(level-0.5)*2),0.75)
           tp<-1.0-Options$wind.palette.opacity
           #tp<-tp*abs(s[['status']])
+          tp
           gp<-WeatherMap.streamline.getGC(level,transparency=tp,
-                                          status=min(abs(s[['status']][i]),1),Options)
+                                          status=s[['status']][i],Options)
       }
       if(Options$wrap.spherical) {
           theta<-atan2(diff(na.omit(s[['y']][i,])),diff(na.omit(s[['x']][i,])))

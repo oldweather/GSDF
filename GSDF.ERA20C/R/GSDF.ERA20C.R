@@ -41,6 +41,9 @@ ERA20C.get.data.dir<-function() {
     if(file.exists("/Volumes/DataDir/ERA20C/")) {
             return("/Volumes/DataDir/ERA20C/")
     }	
+    if(file.exists("/scratch/hadpb/ERA20C/")) {
+            return("/scratch/hadpb/ERA20C/")
+    }	
     if(file.exists("/data/cr2/hadpb/ERA20C/")) {
             return("/data/cr2/hadpb/ERA20C/")
     }	
