@@ -638,7 +638,7 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
          s[[var]]<-s[[var]][-w,]
       }
       w<-which(s[['x']][,1]> Options$lon.min+360)
-      for(var in c('shape','t_anom','magnitude')) {
+      for(var in c('status','t_anom','magnitude')) {
         s[[var]]<-c(s[[var]],s[[var]][w])
       }
       for(var in c('x','y','shape')) {
