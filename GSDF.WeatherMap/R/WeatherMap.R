@@ -507,7 +507,7 @@ WeatherMap.propagate.streamlines<-function(lat,lon,status,u,v,t,t.c,Options) {
 		direction<-atan2(vp,up)
 		streamlets[['x']][,i]<-lon
 		streamlets[['y']][,i]<-lat        
-		streamlets[['shape']][i]<-0
+		streamlets[['shape']][,i]<-0
 		streamlets[['magnitude']]<-streamlets[['magnitude']] +
 		(m)*view.scale*Options$wind.vector.scale/Options$wind.vector.points
 		lon<-lon+cos(direction)*(m)*

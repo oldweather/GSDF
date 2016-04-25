@@ -613,7 +613,7 @@ TWCR.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
 	          times=sprintf("%02d:00:00",as.integer(interpolation.times[[2]]$hour)),
 	          format=c(dates='y/m/d',times='h:m:s'))
 	c3<-chron(dates=sprintf("%04d/%02d/%02d",year,month,day),
-	          times=sprintf("%02d:%02d:00",as.integer(hour),as.integer(hour%%1*60)),
+	          times=sprintf("%02d:%02d:00",as.integer(hour),as.integer((hour%%1)*60)),
 	          format=c(dates='y/m/d',times='h:m:s'))
     if(c2==c1) stop("Zero interval in time interpolation")
     weight<-as.numeric((c2-c3)/(c2-c1))
