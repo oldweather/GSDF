@@ -13,7 +13,8 @@ Depends:
     mapdata,
     fields,
     KernSmooth,
-    colorspace
+    colorspace,
+    parallel
 License: Personal use only
 LazyLoad: yes
 LazyData: true

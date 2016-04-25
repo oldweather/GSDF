@@ -178,14 +178,6 @@ WeatherMap.bridson<-function(Options,
     view.scale<-max(diff(x.range)/360,diff(y.range)/180)
     r.min<-Options$wind.vector.density*view.scale
     max.attempt<-Options$bridson.max.attempt
-
-    # For spherical layout scale down x locations according to latitude
-    # use as normal on scaled locations, then scale up again and throw out
-    # any positions outside the lon.range.
-    # Inefficient, but simple.
-    if(Options$wrap.spherical && !is.null(previous)) {
-      previous$lon<-previous$lon*cos(previous$lat*pi/180)
-    }
      
     # Choose background grid spacing close to r/sqrt(2)
     #  and which gives an integer number of points
@@ -320,16 +312,124 @@ WeatherMap.bridson<-function(Options,
     y<-y[order.added]
     status<-status[order.added]
 
-    if(Options$wrap.spherical) {
-      x<-x/cos(y*pi/180)
-      w<-which(x<Options$lon.max & x>=Options$lon.min)
-      x<-x[w]
-      y<-y[w]
-      status<-status[w]
-     }
-
     return(list(lon=x,lat=y,status=status))
   }
+
+#' The bridson point allocation is often the rate-limiting step
+#'
+#' Run it on n cores - this means dividing the window into 2n
+#' vertical slices, doing the n odd slices in parallel and then
+#' the n even slices in parallel. Avoids doing two adjacent regions
+#' at the same time, which would over-allocate points.
+#'
+#' Each vertical slice is expanded a bit horizontally to avoid
+#' boundary artefacts when doing the calculation, but only points in
+#' the slice are kept from the results.
+#'
+#' @export
+#' @param Options list of options - see \code{WeatherMap.set.option}
+#' @param previous list with elements 'lat' and lon' - set of points to
+#'  start from. Defaults to NULL - start from scratch.
+#' @param scale.x GSDF field with horizontal wind speeds - used to adjust
+#'  horizontal distance to allow for streamlines extending with the wind.
+#'  Defaults to NULL - no adjustment made.
+#' @param scale.y GSDF field with vertical wind speeds - used to adjust
+#'  vertical distance to allow for streamlines extending with the wind.
+#'  Defaults to NULL - no adjustment made.
+#' @return list with elements 'lats' and lons'
+WeatherMap.bridson.parallel<-function(Options,
+                             previous=NULL,
+                             scale.x=NULL,scale.y=NULL) {
+  
+    # For spherical layout scale down x locations according to latitude
+    # use as normal on scaled locations, then scale up again and throw out
+    # any positions outside the lon.range.
+    # Inefficient, but simple.
+    if(Options$wrap.spherical && !is.null(previous)) {
+      previous$lon<-previous$lon*cos(previous$lat*pi/180)
+    }
+
+  if(Options$cores==1) {
+    return(WeatherMap.bridson(Options,previous,
+                             scale.x=scale.x,scale.y=scale.y))
+  }
+  # Allocate the ranges for each core
+  slices<-list()
+  slices$idx<-seq(1,Options$cores*2)
+  slices$width<-(Options$lon.max-Options$lon.min)/length(slices$idx)
+  slices$x.min<-Options$lon.min+(slices$idx-1)*slices$width
+  slices$x.max<-Options$lon.min+slices$idx*slices$width
+  slices$x.pad<-slices$width/4
+  # Set up a function to be called in parallel for each slice
+  bpf<-function(idx) {
+    Options.slice<-Options
+    Options.slice$lon.min<-max(Options$lon.min,slices$x.min[idx]-slices$x.pad)
+    Options.slice$lon.max<-min(Options$lon.max,slices$x.max[idx]+slices$x.pad)
+    previous.slice<-previous
+    if(!is.null(previous.slice)) {
+      w<-which(previous$lon>=Options.slice$lon.min &
+               previous$lon<Options.slice$lon.max)
+      previous.slice$lon<-previous.slice$lon[w]
+      previous.slice$lat<-previous.slice$lat[w]
+      previous.slice$status<-previous.slice$status[w]
+    }
+    res<-WeatherMap.bridson(Options.slice,previous.slice,
+                             scale.x=scale.x,scale.y=scale.y)
+    w<-which(res$lon>=slices$x.min[idx] & res$lon<slices$x.max[idx])
+    res$lon<-res$lon[w]
+    res$lat<-res$lat[w]
+    res$status<-res$status[w]
+    return(res)
+  }
+  # Run for all the odd slices
+  res.odd<-mclapply(seq(1,length(slices$idx),2),bpf,mc.cores=Options$cores)
+  # Update the previous positions with the new ones
+  if(is.null(previous)) {
+    previous<-list(lat=numeric(0),lon=numeric(0),status=numeric(0))
+  }
+  s.count<-1
+  for(slice in seq(1,length(slices$idx),2)) {
+    w<-which(previous$lon>=slices$x.min[slice] &
+             previous$lon<slices$x.max[slice])
+    if(length(w)>0) {
+      previous$lon<-previous$lon[-w]
+      previous$lat<-previous$lat[-w]
+      previous$status<-previous$status[-w]
+    }
+    previous$lon<-c(previous$lon,res.odd[[s.count]]$lon)
+    previous$lat<-c(previous$lat,res.odd[[s.count]]$lat)
+    previous$status<-c(previous$status,res.odd[[s.count]]$status)
+    s.count<-s.count+1
+  }
+  # Run for all the even slices
+  res.even<-mclapply(seq(2,length(slices$idx),2),bpf,mc.cores=Options$cores)
+  # Update the previous positions with the new ones
+  s.count<-1
+  for(slice in seq(2,length(slices$idx),2)) {
+    w<-which(previous$lon>=slices$x.min[slice] &
+             previous$lon<slices$x.max[slice])
+    if(length(w)>0) {
+      previous$lon<-previous$lon[-w]
+      previous$lat<-previous$lat[-w]
+      previous$status<-previous$status[-w]
+    }
+    previous$lon<-c(previous$lon,res.even[[s.count]]$lon)
+    previous$lat<-c(previous$lat,res.even[[s.count]]$lat)
+    previous$status<-c(previous$status,res.even[[s.count]]$status)
+    s.count<-s.count+1
+  }
+
+  # Scale-out for spherical case
+    if(Options$wrap.spherical) {
+      previous$lon<-previous$lon/cos(previous$lat*pi/180)
+      w<-which(previous$lon<Options$lon.max & previous$lon>=Options$lon.min)
+      previous$lon<-previous$lon[w]
+      previous$lat<-previous$lat[w]
+      previous$status<-previous$status[w]
+     }
+
+  return(previous)
+}
 
 #' Rectpoints
 #'
@@ -515,12 +615,6 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
       lats<-s[['y']][,1]<-s[['y']][,1]+(s[['y']][,2]-s[['y']][,1])*move.scale
       longs<-s[['x']][,1]<-s[['x']][,1]+(s[['x']][,2]-s[['x']][,1])*move.scale
       status<-s[['status']]+1
-      w<-which(is.na(lats) | is.na(longs))
-      if(length(w)>0) {
-        lats<-lats[-w]
-        longs<-longs[-w]
-        status<-status[-w]
-      }
       # Update plot status and remove expired ones or those outside the frame
          w<-which(is.na(lats) | is.na(longs))
          if(length(w)>0) {
@@ -531,7 +625,7 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
   }
    # Update positions and Roll-out the streamlines
    if(!Options$jitter) set.seed(27)
-   p<-WeatherMap.bridson(Options,previous=list(lat=lats,lon=longs,status=status),
+   p<-WeatherMap.bridson.parallel(Options,previous=list(lat=lats,lon=longs,status=status),
                           scale.x=u,scale.y=v)
    s<-WeatherMap.propagate.streamlines(p$lat,p$lon,p$status,u,v,t,t.c,Options)
    # Need periodic boundary conditions?
@@ -544,7 +638,7 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
          s[[var]]<-s[[var]][-w,]
       }
       w<-which(s[['x']][,1]> Options$lon.min+360)
-      for(var in c('status','t_anom','magnitude')) {
+      for(var in c('shape','t_anom','magnitude')) {
         s[[var]]<-c(s[[var]],s[[var]][w])
       }
       for(var in c('x','y','shape')) {
