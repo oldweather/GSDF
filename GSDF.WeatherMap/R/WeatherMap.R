@@ -111,7 +111,7 @@ WeatherMap.aspect<-function(Options) {
 
 # Generate n random points at a distance between r.min and 2(r.min)
 #  of a specified point - we'll be doing this often so generate
-# a normalised sample of length about 1000 and then sa,mple from it
+# a normalised sample of length about 1000 and then sample from it
 bridson.annual.sample.cache<-list()
     x.s<-(runif(2000)-0.5)*4
     y.s<-(runif(2000)-0.5)*4
@@ -218,8 +218,8 @@ WeatherMap.bridson<-function(Options,
     #x.c<-runif(1)*diff(x.range)+min(x.range)
     #y.c<-runif(1)*diff(y.range)+min(y.range)
     # start at top left
-    x.c<-min(x.range) + r.min/2
-    y.c<-max(y.range) - r.min/2
+    x.c<-min(x.range) + 2*r.min
+    y.c<-max(y.range) - 2*r.min
     index.c<-as.integer((y.c-min(y.range))/r.y)*n.x+
              as.integer((x.c-min(x.range))/r.x)+1
     active<-index.c
@@ -381,13 +381,6 @@ WeatherMap.bridson.parallel<-function(Options,
     res$status<-res$status[w]
     return(res)
   }
-  # For longitude wrap around - add right hand points to left hand end
-  if(Options$wrap.spherical) {
-    if(!is.null(previous)) {
-      w<-which((previous$lon-Options$lon.min)>360)
-      if(length(w)>0) previous$lon[w]<-previous$lon[w]-360
-    }
-  }
   # Run for all the odd slices
   res.odd<-mclapply(seq(1,length(slices$idx),2),bpf,mc.cores=Options$cores)
   # Update the previous positions with the new ones
@@ -408,15 +401,6 @@ WeatherMap.bridson.parallel<-function(Options,
     previous$status<-c(previous$status,res.odd[[s.count]]$status)
     s.count<-s.count+1
   }
-  # For longitude wrap around - copy left hand points to right hand end
-  if(Options$wrap.spherical) {
-      w<-which((Options$lon.max-previous$lon)>360)
-      if(length(w)>0) {
-        previous$lat<-c(previous$lat,previous$lat[w])
-        previous$lon<-c(previous$lon,previous$lon[w]+360)
-        previous$status<-c(previous$status,previous$status[w])
-      }
-  }
   # Run for all the even slices
   res.even<-mclapply(seq(2,length(slices$idx),2),bpf,mc.cores=Options$cores)
   # Update the previous positions with the new ones
@@ -434,11 +418,10 @@ WeatherMap.bridson.parallel<-function(Options,
     previous$status<-c(previous$status,res.even[[s.count]]$status)
     s.count<-s.count+1
   }
-
   # Scale-out for spherical case
     if(Options$wrap.spherical) {
       previous$lon<-previous$lon/cos(previous$lat*pi/180)
-      w<-which(previous$lon<Options$lon.max & previous$lon>=Options$lon.min)
+      w<-which(previous$lon<Options$vp.lon.max & previous$lon>=Options$vp.lon.min)
       previous$lon<-previous$lon[w]
       previous$lat<-previous$lat[w]
       previous$status<-previous$status[w]
@@ -536,6 +519,34 @@ WeatherMap.propagate.streamlines<-function(lat,lon,status,u,v,t,t.c,Options) {
     streamlets[['magnitude']][is.null(streamlets[['magnitude']])]<-0
     streamlets[['magnitude']]<-pmax(0,pmin(1,streamlets[['magnitude']]))
     streamlets[['status']]<-status
+    # Periodic boundary conditions
+    # Duplicate streamlets crossing the plottable boundary
+    if(Options$wrap.spherical) {
+      w<-which(streamlets[['x']][,1]<Options$vp.lon.max &
+               streamlets[['x']][,Options$wind.vector.points]>Options$vp.lon.max)
+      if(length(w)>0) {
+         for(var in c('status','t_anom','magnitude')) {
+           streamlets[[var]]<-c(streamlets[[var]],streamlets[[var]][w])
+         }
+         for(var in c('x','y','shape')) {
+           s2<-streamlets[[var]][w,]
+           if(var=='x') s2[]<-s2-360
+           streamlets[[var]]<-rbind(streamlets[[var]],s2)
+         }
+      }
+      w<-which(streamlets[['x']][,1]>Options$vp.lon.min &
+               streamlets[['x']][,Options$wind.vector.points]<Options$vp.lon.min)
+      if(length(w)>0) {
+         for(var in c('status','t_anom','magnitude')) {
+           streamlets[[var]]<-c(streamlets[[var]],streamlets[[var]][w])
+         }
+         for(var in c('x','y','shape')) {
+           s2<-streamlets[[var]][w,]
+           if(var=='x') s2[]<-s2+360
+           streamlets[[var]]<-rbind(streamlets[[var]],s2)
+         }
+      }
+    }
     return(streamlets)
 }
    
