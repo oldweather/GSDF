@@ -381,6 +381,13 @@ WeatherMap.bridson.parallel<-function(Options,
     res$status<-res$status[w]
     return(res)
   }
+  # For longitude wrap around - add right hand points to left hand end
+  if(Options$wrap.spherical) {
+    if(!is.null(previous)) {
+      w<-which((previous$lon-Options$lon.min)>360)
+      if(length(w)>0) previous$lon[w]<-previous$lon[w]-360
+    }
+  }
   # Run for all the odd slices
   res.odd<-mclapply(seq(1,length(slices$idx),2),bpf,mc.cores=Options$cores)
   # Update the previous positions with the new ones
@@ -400,6 +407,15 @@ WeatherMap.bridson.parallel<-function(Options,
     previous$lat<-c(previous$lat,res.odd[[s.count]]$lat)
     previous$status<-c(previous$status,res.odd[[s.count]]$status)
     s.count<-s.count+1
+  }
+  # For longitude wrap around - copy left hand points to right hand end
+  if(Options$wrap.spherical) {
+      w<-which((Options$lon.max-previous$lon)>360)
+      if(length(w)>0) {
+        previous$lat<-c(previous$lat,previous$lat[w])
+        previous$lon<-c(previous$lon,previous$lon[w]+360)
+        previous$status<-c(previous$status,previous$status[w])
+      }
   }
   # Run for all the even slices
   res.even<-mclapply(seq(2,length(slices$idx),2),bpf,mc.cores=Options$cores)
@@ -628,25 +644,6 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
    p<-WeatherMap.bridson.parallel(Options,previous=list(lat=lats,lon=longs,status=status),
                           scale.x=u,scale.y=v)
    s<-WeatherMap.propagate.streamlines(p$lat,p$lon,p$status,u,v,t,t.c,Options)
-   # Need periodic boundary conditions?
-   if(Options$lon.max-Options$lon.min>360) {
-      w<-which(s[['x']][,1]< Options$lon.max-360)
-      for(var in c('status','t_anom','magnitude')) {
-         s[[var]]<-s[[var]][-w]
-      }
-      for(var in c('x','y','shape')) {
-         s[[var]]<-s[[var]][-w,]
-      }
-      w<-which(s[['x']][,1]> Options$lon.min+360)
-      for(var in c('status','t_anom','magnitude')) {
-        s[[var]]<-c(s[[var]],s[[var]][w])
-      }
-      for(var in c('x','y','shape')) {
-        s2<-s[[var]][w,]
-        if(var=='x') s2[]<-s2-360
-        s[[var]]<-rbind(s[[var]],s2)
-      }
-  }
    return(s)
 }
 
