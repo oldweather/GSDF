@@ -6,7 +6,7 @@ data(WeatherMap.ice.shelves, envir=environment())
 
 # Plot is controlled by this set of options
 Defaults<-list(
-   cores=1,                             # Not currently used
+   cores=1,                             # How many cores to use in streamline allocation
    wrap.spherical=FALSE,                # For plotting on a sphere?
    region='global',
    pole.lat=90,pole.lon=180,            # Position of north pole
@@ -140,13 +140,13 @@ bridson.close.points<-function(index,n.x,n.y) {
   return(result)
 }
 
-# Calculate the minimum scaled distance, for each of n
+# Calculate the minimum distance, for each of n
 #  new points, from a set of m existing points.
-bridson.min.distance<-function(x.new,y.new,x.old,y.old,scale.x,scale.y) {
+bridson.min.distance<-function(x.new,y.new,x.old,y.old) {
   d<-rep(0,length(x.new))
   for(i in seq_along(x.new)) {
-    d[i]<-min(((x.new[i]-x.old)/scale.x)**2+
-              ((y.new[i]-y.old)/scale.y)**2)
+    d[i]<-min((x.new[i]-x.old)**2+
+              (y.new[i]-y.old)**2)
   }
   return(sqrt(d))
 }
@@ -162,16 +162,9 @@ bridson.min.distance<-function(x.new,y.new,x.old,y.old,scale.x,scale.y) {
 #' @param Options list of options - see \code{WeatherMap.set.option}
 #' @param previous list with elements 'lat' and lon' - set of points to
 #'  start from. Defaults to NULL - start from scratch.
-#' @param scale.x GSDF field with horizontal wind speeds - used to adjust
-#'  horizontal distance to allow for streamlines extending with the wind.
-#'  Defaults to NULL - no adjustment made.
-#' @param scale.y GSDF field with vertical wind speeds - used to adjust
-#'  vertical distance to allow for streamlines extending with the wind.
-#'  Defaults to NULL - no adjustment made.
 #' @return list with elements 'lats' and lons'
 WeatherMap.bridson<-function(Options,
-                             previous=NULL,
-                             scale.x=NULL,scale.y=NULL) {
+                             previous=NULL) {
 
     x.range<-c(Options$lon.min,Options$lon.max)
     y.range<-c(Options$lat.min,Options$lat.max)
@@ -191,22 +184,6 @@ WeatherMap.bridson<-function(Options,
     x<-rep(NA,n.x*n.y)
     y<-rep(NA,n.x*n.y)
     status<-rep(NA,n.x*n.y)
-
-    # Scale factors at each grid location
-    scalef.x<-rep(1,n.x*n.y)
-    scalef.y<-rep(1,n.x*n.y)
-    if(!is.null(scale.x) && !is.null(scale.y)) {
-        gp.x<-(seq(1,n.x)-0.5)*r.x+x.range[1]
-        gp.y<-(seq(1,n.y)-0.5)*r.y+y.range[1]
-        gp.x.full<-as.vector(matrix(data=rep(gp.x,n.y),ncol=n.x,byrow=F))
-        gp.y.full<-as.vector(matrix(data=rep(gp.y,n.x),ncol=n.y,byrow=T))
-        scalef.x<-abs(GSDF.interpolate.ll(scale.x,gp.y.full,gp.x.full,greedy=Options$greedy))
-        scalef.y<-abs(GSDF.interpolate.ll(scale.y,gp.y.full,gp.x.full,greedy=Options$greedy))
-       # There's something wrong here - the *0.1 below should not be there (should be 1.0)
-        v.scale<-view.scale*Options$wind.vector.scale*0.1
-        scalef.x<-(scalef.x*v.scale+r.min)/r.min
-        scalef.y<-(scalef.y*v.scale+r.min)/r.min
-    }
 
     # set of active points
     active<-integer(0)
@@ -248,8 +225,8 @@ WeatherMap.bridson<-function(Options,
             cp<-bridson.close.points(index.i,n.x,n.y)
             cp<-cp[!is.na(x[cp])]
             if(length(cp)>0) {
-                d.s<-(((previous$lon[i]-x[cp])/scalef.x[cp])**2+
-                      ((previous$lat[i]-y[cp])/scalef.y[cp])**2)
+                d.s<-((previous$lon[i]-x[cp])**2+
+                      (previous$lat[i]-y[cp])**2)
                 if(min(d.s,na.rm=TRUE)<r.min**2) {
                   # Cull points with low status
                   if(previous$status[i]<3) next
@@ -288,7 +265,7 @@ WeatherMap.bridson<-function(Options,
            ns$x<-ns$x[w]
            ns$y<-ns$y[w]
            if(length(cp)>0) { # At least one close point, so test necessary     
-              d<-bridson.min.distance(ns$x,ns$y,x[cp],y[cp],scalef.x[cp],scalef.y[cp])
+              d<-bridson.min.distance(ns$x,ns$y,x[cp],y[cp])
               w<-which(d>r.min)
            } else w<-1 # no test - just take first point
            if(length(w)>0) { # new point
@@ -330,16 +307,9 @@ WeatherMap.bridson<-function(Options,
 #' @param Options list of options - see \code{WeatherMap.set.option}
 #' @param previous list with elements 'lat' and lon' - set of points to
 #'  start from. Defaults to NULL - start from scratch.
-#' @param scale.x GSDF field with horizontal wind speeds - used to adjust
-#'  horizontal distance to allow for streamlines extending with the wind.
-#'  Defaults to NULL - no adjustment made.
-#' @param scale.y GSDF field with vertical wind speeds - used to adjust
-#'  vertical distance to allow for streamlines extending with the wind.
-#'  Defaults to NULL - no adjustment made.
 #' @return list with elements 'lats' and lons'
 WeatherMap.bridson.parallel<-function(Options,
-                             previous=NULL,
-                             scale.x=NULL,scale.y=NULL) {
+                             previous=NULL) {
   
     # For spherical layout scale down x locations according to latitude
     # use as normal on scaled locations, then scale up again and throw out
@@ -350,8 +320,7 @@ WeatherMap.bridson.parallel<-function(Options,
     }
 
   if(Options$cores==1) {
-    return(WeatherMap.bridson(Options,previous,
-                             scale.x=scale.x,scale.y=scale.y))
+    return(WeatherMap.bridson(Options,previous))
   }
   # Allocate the ranges for each core
   slices<-list()
@@ -373,8 +342,7 @@ WeatherMap.bridson.parallel<-function(Options,
       previous.slice$lat<-previous.slice$lat[w]
       previous.slice$status<-previous.slice$status[w]
     }
-    res<-WeatherMap.bridson(Options.slice,previous.slice,
-                             scale.x=scale.x,scale.y=scale.y)
+    res<-WeatherMap.bridson(Options.slice,previous.slice)
     w<-which(res$lon>=slices$x.min[idx] & res$lon<slices$x.max[idx])
     res$lon<-res$lon[w]
     res$lat<-res$lat[w]
@@ -641,6 +609,10 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
       move.scale<-move.scale*Options$wind.vector.move.scale*view.scale
       lats<-s[['y']][,1]<-s[['y']][,1]+(s[['y']][,2]-s[['y']][,1])*move.scale
       longs<-s[['x']][,1]<-s[['x']][,1]+(s[['x']][,2]-s[['x']][,1])*move.scale
+      if(Options$wrap.spherical) {
+         w<-which(longs>Options$vp.lon.max)
+	 if(length(w)>0) longs[w]<-longs[w]-360
+      }
       status<-s[['status']]+1
       # Update plot status and remove expired ones or those outside the frame
          w<-which(is.na(lats) | is.na(longs))
@@ -652,8 +624,7 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
   }
    # Update positions and Roll-out the streamlines
    if(!Options$jitter) set.seed(27)
-   p<-WeatherMap.bridson.parallel(Options,previous=list(lat=lats,lon=longs,status=status),
-                          scale.x=u,scale.y=v)
+   p<-WeatherMap.bridson.parallel(Options,previous=list(lat=lats,lon=longs,status=status))
    s<-WeatherMap.propagate.streamlines(p$lat,p$lon,p$status,u,v,t,t.c,Options)
    return(s)
 }
