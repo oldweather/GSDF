@@ -31,6 +31,7 @@ Defaults<-list(
    precip.max.opacity=1,
    wind.vector.density=1.5,             # Decrease for closer-packed streamlines
    bridson.max.attempt=5,               # Decrease=faster but less good streamline arrangement
+   bridson.subsample=7,                 # Decrease=faster but less good streamline arrangement
    wind.vector.arrow=NULL,              # See ?arrow
    wind.vector.points=3,                # Bigger -> smoother curves and slower
    wind.vector.scale=0.25,              # Bigger -> longer vectors
@@ -162,9 +163,18 @@ bridson.min.distance<-function(x.new,y.new,x.old,y.old) {
 #' @param Options list of options - see \code{WeatherMap.set.option}
 #' @param previous list with elements 'lat' and lon' - set of points to
 #'  start from. Defaults to NULL - start from scratch.
+<<<<<<< HEAD
 #' @return list with elements 'lats' and lons'
 WeatherMap.bridson<-function(Options,
                              previous=NULL) {
+=======
+#' @param downstream list with elements 'lat' and lon' - downstream points from
+#'  seeds in previous. Defaults to NULL - start from scratch.
+#' @return list with elements 'lats' and lons'
+WeatherMap.bridson<-function(Options,
+                             previous=NULL,
+			     downstream=NULL) {
+>>>>>>> 881ef62c3094565d125631fba7800e16f3e6add0
 
     x.range<-c(Options$lon.min,Options$lon.max)
     y.range<-c(Options$lat.min,Options$lat.max)
@@ -235,13 +245,34 @@ WeatherMap.bridson<-function(Options,
                   previous$status[i]<-previous$status[i]-2
                 }
             }
+	    # Add seed point for this streamline
             x[index.i]<-previous$lon[i]
             y[index.i]<-previous$lat[i]
             status[index.i]<-previous$status[i]
             order.added<-c(order.added,index.i)
             # Ideally we'd set all points to active, but try
             #  only a subset - faster
-            if(index.i%%7==0) active<-c(active,index.i)
+            if(index.i%%Options$bridson.subsample==0) active<-c(active,index.i)
+	    # Add downstream points for this streamline
+	    # with status=0 to mark them as non-seed points
+	    if(!is.null(downstream)) {
+	       ds.lat<-downstream$lat[i,]
+	       ds.lon<-downstream$lon[i,]
+	       ds.indices<-as.integer((ds.lat-min(y.range))/r.y)*n.x+
+                           as.integer((ds.lon-min(x.range))/r.x)+1
+               ds.indices<-na.omit(ds.indices)
+               if(length(ds.indices)>0) {
+                   w<-which(is.na(x[ds.indices]))
+                   if(length(w)>0) {
+                      x[ds.indices[w]]<-ds.lon[w]
+                      y[ds.indices[w]]<-ds.lat[w]
+                      status[ds.indices[w]]<-0
+                      order.added<-c(order.added,ds.indices[w])
+                      w2<-which(ds.indices[w]%%Options$bridson.subsample==0)
+                      if(length(w2)>0) active<-c(active,ds.indices[w][w2])
+                   }
+               }
+	    }
          }
       }
     
@@ -282,12 +313,17 @@ WeatherMap.bridson<-function(Options,
          active<-active[-w]
    }
 
-    #w<-which(is.na(x))
-    #x<-x[-w]
-    #y<-y[-w]
     x<-x[order.added]
     y<-y[order.added]
     status<-status[order.added]
+
+    # Prune the downstream points - not seeds for streamlines
+    w<-which(status==0)
+    if(length(w)>0) {
+      x<-x[-w]
+      y<-y[-w]
+      status<-status[-w]
+    }
 
     return(list(lon=x,lat=y,status=status))
   }
@@ -307,9 +343,18 @@ WeatherMap.bridson<-function(Options,
 #' @param Options list of options - see \code{WeatherMap.set.option}
 #' @param previous list with elements 'lat' and lon' - set of points to
 #'  start from. Defaults to NULL - start from scratch.
+<<<<<<< HEAD
 #' @return list with elements 'lats' and lons'
 WeatherMap.bridson.parallel<-function(Options,
                              previous=NULL) {
+=======
+#' @param downstream list with elements 'lat' and lon' - downstream points from
+#'  seeds in previous. Defaults to NULL - start from scratch.
+#' @return list with elements 'lats' and lons'
+WeatherMap.bridson.parallel<-function(Options,
+                                      previous=NULL,
+				      downstream=NULL) {
+>>>>>>> 881ef62c3094565d125631fba7800e16f3e6add0
   
     # For spherical layout scale down x locations according to latitude
     # use as normal on scaled locations, then scale up again and throw out
@@ -320,7 +365,11 @@ WeatherMap.bridson.parallel<-function(Options,
     }
 
   if(Options$cores==1) {
+<<<<<<< HEAD
     return(WeatherMap.bridson(Options,previous))
+=======
+    return(WeatherMap.bridson(Options,previous,downstream))
+>>>>>>> 881ef62c3094565d125631fba7800e16f3e6add0
   }
   # Allocate the ranges for each core
   slices<-list()
@@ -335,14 +384,21 @@ WeatherMap.bridson.parallel<-function(Options,
     Options.slice$lon.min<-max(Options$lon.min,slices$x.min[idx]-slices$x.pad)
     Options.slice$lon.max<-min(Options$lon.max,slices$x.max[idx]+slices$x.pad)
     previous.slice<-previous
+    downstream.slice<-downstream
     if(!is.null(previous.slice)) {
       w<-which(previous$lon>=Options.slice$lon.min &
                previous$lon<Options.slice$lon.max)
       previous.slice$lon<-previous.slice$lon[w]
+      downstream.slice$lon<-downstream.slice$lon[w,]
       previous.slice$lat<-previous.slice$lat[w]
+      downstream.slice$lat<-downstream.slice$lat[w,]
       previous.slice$status<-previous.slice$status[w]
     }
+<<<<<<< HEAD
     res<-WeatherMap.bridson(Options.slice,previous.slice)
+=======
+    res<-WeatherMap.bridson(Options.slice,previous.slice,downstream.slice)
+>>>>>>> 881ef62c3094565d125631fba7800e16f3e6add0
     w<-which(res$lon>=slices$x.min[idx] & res$lon<slices$x.max[idx])
     res$lon<-res$lon[w]
     res$lat<-res$lat[w]
@@ -600,6 +656,8 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
    lats<-numeric(0)
    longs<-numeric(0)
    status<-numeric(0)
+   ds.lat<-numeric(0)
+   ds.lon<-numeric(0)
    initial=FALSE # starting from scratch
    if(is.null(s)) initial=TRUE
    if(!is.null(s)) {
@@ -607,8 +665,15 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
       # Assumes frames are hourly (0.033 converts m/s to degrees/hr)
       move.scale<-0.033*Options$wind.vector.points/Options$wind.vector.scale
       move.scale<-move.scale*Options$wind.vector.move.scale*view.scale
+<<<<<<< HEAD
       lats<-s[['y']][,1]<-s[['y']][,1]+(s[['y']][,2]-s[['y']][,1])*move.scale
       longs<-s[['x']][,1]<-s[['x']][,1]+(s[['x']][,2]-s[['x']][,1])*move.scale
+=======
+      lats<-s[['y']][,1]+(s[['y']][,2]-s[['y']][,1])*move.scale
+      ds.lat<-(s[['y']]+(s[['y']][,2]-s[['y']][,1])*move.scale)[,2:Options$wind.vector.points]
+      longs<-s[['x']][,1]+(s[['x']][,2]-s[['x']][,1])*move.scale
+      ds.lon<-(s[['x']]+(s[['x']][,2]-s[['x']][,1])*move.scale)[,2:Options$wind.vector.points]
+>>>>>>> 881ef62c3094565d125631fba7800e16f3e6add0
       if(Options$wrap.spherical) {
          w<-which(longs>Options$vp.lon.max)
 	 if(length(w)>0) longs[w]<-longs[w]-360
@@ -620,11 +685,33 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
            lats<-lats[-w]
            longs<-longs[-w]
            status<-status[-w]
-       }
+           ds.lat<-ds.lat[-w,]
+           ds.lon<-ds.lon[-w,]
+         }
+         w<-which(ds.lat>Options$lat.max | ds.lat<Options$lat.min |
+                  ds.lon>Options$lon.max | ds.lon<Options$lon.min)
+         if(length(w)>0) {
+            is.na(ds.lat[w])<-TRUE
+            is.na(ds.lon[w])<-TRUE
+         }
   }
    # Update positions and Roll-out the streamlines
    if(!Options$jitter) set.seed(27)
+<<<<<<< HEAD
    p<-WeatherMap.bridson.parallel(Options,previous=list(lat=lats,lon=longs,status=status))
+=======
+   s<-WeatherMap.propagate.streamlines(lats,longs,status,u,v,t,t.c,Options)
+   ds.lat<-s$y[,2:Options$wind.vector.points]
+   ds.lon<-s$x[,2:Options$wind.vector.points]
+         w<-which(ds.lat>Options$lat.max | ds.lat<Options$lat.min |
+                  ds.lon>Options$lon.max | ds.lon<Options$lon.min)
+         if(length(w)>0) {
+            is.na(ds.lat[w])<-TRUE
+            is.na(ds.lon[w])<-TRUE
+         }   
+   p<-WeatherMap.bridson.parallel(Options,previous=list(lat=s$y[,1],lon=s$x[,1],status=s$status),
+                                          downstream=list(lat=ds.lat,lon=ds.lon))
+>>>>>>> 881ef62c3094565d125631fba7800e16f3e6add0
    s<-WeatherMap.propagate.streamlines(p$lat,p$lon,p$status,u,v,t,t.c,Options)
    return(s)
 }
