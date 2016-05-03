@@ -250,12 +250,13 @@ MERRA.get.interpolation.times<-function(variable,year,month,day,hour,type='mean'
 		stop("Internal interpolation failure")
 	}
 	ct<-chron(dates=sprintf("%04d/%02d/%02d",year,month,day),
-	          times=sprintf("%02d:00:00",hour),
+	          times=sprintf("%02d:%02d:00",as.integer(hour),
+                                      as.integer(hour%%1*60)),
 	          format=c(dates='y/m/d',times='h:m:s'))
 	t.previous<-list()
         back.hours=1
 	while(back.hours<24) {
-		p.hour<-hour-back.hours
+		p.hour<-as.integer(hour-back.hours)
                 p.year<-year
                 p.month<-month
                 p.day<-day
@@ -280,7 +281,7 @@ MERRA.get.interpolation.times<-function(variable,year,month,day,hour,type='mean'
 	t.next<-list()
 	forward.hours<-1
 	while(forward.hours<24) {
-		n.hour<-hour+forward.hours
+		n.hour<-as.integer(hour+forward.hours)
                 n.year<-year
                 n.month<-month
                 n.day<-day
@@ -350,20 +351,21 @@ MERRA.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,opend
 
 MERRA.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,
                                                    height=NULL,opendap=TRUE,type='mean') {
-	dstring<-sprintf("%04d-%02d-%02d:%02d",year,month,day,hour)
+	#dstring<-sprintf("%04d-%02d-%02d:%02d",year,month,day,hour)
 	# Is it from an analysis time (no need to interpolate)?
 	if(MERRA.is.in.file(variable,year,month,day,hour,type=type)) {
-        file.name<-MERRA.hourly.get.file.name(variable,year,month,day,hour,opendap=opendap,type=type)
-           t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
-                    format=c(dates='y/m/d',times='h:m:s'))
-        offset<-3 # gap between dumps
-        group<-MERRA.get.variable.group(variable)
-        if(group=='MAT1NXSLV' || group=='MAI1NXINT' || group=='MAT1NXFLX' ||
-           group=='MAT1NXINT' || group=='MAT1NXLND' || group=='MAT1NXRAD') offset=1
-        
-           v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(-180,180),
-                             height.range=c(height,height+0.05),time.range=c(t,t+offset/24-0.001))
-	   return(v)
+            hour<-as.integer(hour)
+            file.name<-MERRA.hourly.get.file.name(variable,year,month,day,hour,opendap=opendap,type=type)
+               t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
+                        format=c(dates='y/m/d',times='h:m:s'))
+            offset<-3 # gap between dumps
+            group<-MERRA.get.variable.group(variable)
+            if(group=='MAT1NXSLV' || group=='MAI1NXINT' || group=='MAT1NXFLX' ||
+               group=='MAT1NXINT' || group=='MAT1NXLND' || group=='MAT1NXRAD') offset=1
+
+               v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(-180,180),
+                                 height.range=c(height,height+0.05),time.range=c(t,t+offset/24-0.001))
+               return(v)
 	}
 	# Interpolate from the previous and subsequent analysis times
 	interpolation.times<-MERRA.get.interpolation.times(variable,year,month,day,hour,type=type)
@@ -388,7 +390,7 @@ MERRA.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,
 	          times=sprintf("%02d:00:00",interpolation.times[[2]]$hour),
 	          format=c(dates='y/m/d',times='h:m:s'))
 	c3<-chron(dates=sprintf("%04d/%02d/%02d",year,month,day),
-	          times=sprintf("%02d:00:00",hour),
+	          times=sprintf("%02d:%02d:00",as.integer(hour),as.integer((hour%%1)*60)),
 	          format=c(dates='y/m/d',times='h:m:s'))
     if(c2==c1) stop("Zero interval in time interpolation")
     weight<-as.numeric((c2-c3)/(c2-c1))
