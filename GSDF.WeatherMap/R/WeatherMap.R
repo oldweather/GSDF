@@ -1000,9 +1000,8 @@ WeatherMap.draw.pressure<-function(mslp,Options) {
              lwd<-1
          }
          gp<-gpar(col=rgb(0,0,0,tp),lwd=Options$mslp.lwd*lwd,lty=lt)
-         grid.xspline(x=unit(lines[[i]]$x,'native'),
+         grid.lines(x=unit(lines[[i]]$x,'native'),
                     y=unit(lines[[i]]$y,'native'),
-                    shape=1, 
                     gp=gp)
      }
   }
