@@ -206,6 +206,9 @@ MERRA.hourly.get.file.name<-function(variable,year,month,day,hour,opendap=TRUE,t
           fn<-sprintf("/data/cr2/hadpb//MERRA/hourly/normals/%s/%02d-%02d.nc",
 	              variable,month,day)
           if(file.exists(fn) && file.info(fn)$size>0) return(fn)
+          fn<-sprintf("/Users/philip/LocalData/MERRA/hourly/normals/%s/%02d-%02d.nc",
+	              variable,month,day)
+          if(file.exists(fn) && file.info(fn)$size>0) return(fn)
           stop("Selected normal not available on this system")
         }
         if(type=='standard.deviation') {

@@ -350,6 +350,7 @@ WeatherMap.bridson.parallel<-function(Options,
     # Inefficient, but simple.
     if(Options$wrap.spherical && !is.null(previous)) {
       previous$lon<-previous$lon*cos(previous$lat*pi/180)
+      if(!is.null(downstream)) downstream$lon<-downstream$lon*cos(downstream$lat*pi/180)
     }
 
   if(Options$cores==1) {
@@ -1000,9 +1001,8 @@ WeatherMap.draw.pressure<-function(mslp,Options) {
              lwd<-1
          }
          gp<-gpar(col=rgb(0,0,0,tp),lwd=Options$mslp.lwd*lwd,lty=lt)
-         grid.xspline(x=unit(lines[[i]]$x,'native'),
+         grid.lines(x=unit(lines[[i]]$x,'native'),
                     y=unit(lines[[i]]$y,'native'),
-                    shape=1, 
                     gp=gp)
      }
   }
