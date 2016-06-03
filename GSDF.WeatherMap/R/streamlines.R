@@ -6,11 +6,13 @@
 #'  number - both set in options
 #'
 #' @export
+#' @param u - x wind field (GSDF structure)
+#' @param v - y wind field (GSDF structure)
 #' @param Options list of options - see \code{WeatherMap.set.option}
 #' @param previous streamlines data structure (see \code{WeatherMap.make.streamlines})
 #'  from previous calculation. Defaults to NULL - start from scratch.
 #' @return streamlines data structure (see \code{WeatherMap.make.streamlines})
-WeatherMap.allocate.streamlines<-function(Options,previous=NULL) {
+WeatherMap.allocate.streamlines<-function(u,v,Options,previous=NULL) {
 
     x.range<-c(Options$lon.min,Options$lon.max)
     y.range<-c(Options$lat.min,Options$lat.max)
@@ -33,138 +35,54 @@ WeatherMap.allocate.streamlines<-function(Options,previous=NULL) {
                 data=rep(rows.y,n.x),
 		nrow=n.x,ncol=n.y,byrow=TRUE))
 		
-    # Which grid cells are available - not too close to an existing streamline
-    grid.ok<-rep(1,n.x*n.y)
+    # Which grid cells are unavailable - too close to an existing streamline
+    filled<-integer(0)
     
-    # set of active streamlines
-    active<-integer(0)
+    # set of seed points
+    seed<-integer(0)
 
     # Order of addition
-    order.added<-integer(0)
+    order.added<-rep(NA,Options$wind.vector.max.number)
     
-    # start at top left
-    x.c<-min(x.range) + 2*r.min
-    y.c<-max(y.range) - 2*r.min
-    index.c<-as.integer((y.c-min(y.range))/r.y)*n.x+
-             as.integer((x.c-min(x.range))/r.x)+1
-    active<-index.c
-    x[index.c]<-x.c
-    y[index.c]<-y.c
-    status[index.c]<-1
-    order.added<-c(order.added,index.c)
+    # Allocate streamlines - start at top left
+    x.c<-min(x.range) + 2*r.x
+    y.c<-max(y.range) - 2*r.y
 
-    # If starting from a pre-existing set of points, load them
-    # in decreasing order of status, culling any too close to one already loaded.
-    if(!is.null(previous)) {
-        w<-which(previous$lat<min(y.range) |
-                 previous$lat>max(y.range) |
-                 previous$lon<min(x.range) |
-                 previous$lon>max(x.range))
-        if(length(w)>0) {
-            previous$lat<-previous$lat[-w]
-            previous$lon<-previous$lon[-w]
-            previous$status<-previous$status[-w]
+    seed<-as.integer(((y.c-Options$lat.min)/r.y)*n.x+(x.c-Options$lon.min)/r.x)
+
+    streamlines<-list(x=array(dim=c(Options$wind.vector.max.number,Options$wind.vector.points)),
+                      y=array(dim=c(Options$wind.vector.max.number,Options$wind.vector.points)),
+                      status=rep(NA,Options$wind.vector.max.number))
+
+    streamlines.count<-0                           
+    while(length(seed)>0) {
+
+      new.s<-WeatherMap.add.streamline(grid.x[seed[1]],grid.y[seed[1]],u,v,r.x,r.y,n.x,n.y,Options)
+      if(length(intersect(filled,new.s$filled))==0) { # No overlaps, accept
+        streamlines.count<-streamlines.count+1
+        if(streamlines.count>Options$wind.vector.max.number) {
+          stop(sprintf("Exceeded max. number of streamlines %d",Options$wind.vector.max.number))
         }
-        pts.order<-order(previous$status,decreasing=TRUE)
-        for(i in pts.order) {
-            index.i<-as.integer((previous$lat[i]-min(y.range))/r.y)*n.x+
-                     as.integer((previous$lon[i]-min(x.range))/r.x)+1
-            if(!is.na(x[index.i])) next
-            cp<-bridson.close.points(index.i,n.x,n.y)
-            cp<-cp[!is.na(x[cp])]
-            if(length(cp)>0) {
-                d.s<-((previous$lon[i]-x[cp])**2+
-                      (previous$lat[i]-y[cp])**2)
-                if(min(d.s,na.rm=TRUE)<r.min**2) {
-                  # Cull points with low status
-                  if(previous$status[i]<3) next
-                  # fade out other points by reducing their status
-                  if(previous$status[i]>4) previous$status[i]<-5
-                  previous$status[i]<-previous$status[i]-2
-                }
-            }
-	    # Add seed point for this streamline
-            x[index.i]<-previous$lon[i]
-            y[index.i]<-previous$lat[i]
-            status[index.i]<-previous$status[i]
-            order.added<-c(order.added,index.i)
-            # Ideally we'd set all points to active, but try
-            #  only a subset - faster
-            if(index.i%%Options$bridson.subsample==0) active<-c(active,index.i)
-	    # Add downstream points for this streamline
-	    # with status=0 to mark them as non-seed points
-	    if(!is.null(downstream)) {
-	       ds.lat<-downstream$lat[i,]
-	       ds.lon<-downstream$lon[i,]
-	       ds.indices<-as.integer((ds.lat-min(y.range))/r.y)*n.x+
-                           as.integer((ds.lon-min(x.range))/r.x)+1
-               ds.indices<-na.omit(ds.indices)
-               if(length(ds.indices)>0) {
-                   w<-which(is.na(x[ds.indices]))
-                   if(length(w)>0) {
-                      x[ds.indices[w]]<-ds.lon[w]
-                      y[ds.indices[w]]<-ds.lat[w]
-                      status[ds.indices[w]]<-0
-                      order.added<-c(order.added,ds.indices[w])
-                      w2<-which(ds.indices[w]%%Options$bridson.subsample==0)
-                      if(length(w2)>0) active<-c(active,ds.indices[w][w2])
-                   }
-               }
-	    }
-         }
+        streamlines$x[streamlines.count,]<-new.s$s$x[1,]
+        streamlines$y[streamlines.count,]<-new.s$s$y[1,]
+        streamlines$status[streamlines.count]<-1
+        filled<-unique(c(filled,new.s$filled))
+        seed<-unique(c(seed,new.s$seed))
+        w<-which(seed %in% filled)
+        seed<-seed[-w]
       }
-    
-    # Allocate more points to fill gaps
-    while(length(active)>0) {
-      c<-active[sample.int(length(active),1)] # Choose random active point
-      cp<-bridson.close.points(c,n.x,n.y)
-      cp<-cp[!is.na(x[cp])]
-         ns<-bridson.annular.sample(n=max.attempt,x=x[c],y=y[c],r=r.min)
-         w<-which(ns$y<y.range[1] | ns$y>y.range[2] |
-            ns$x<x.range[1] | ns$x>x.range[2])
-         if(length(w)>0) {
-           ns$x<-ns$x[-w]
-           ns$y<-ns$y[-w]
-         }
-         index.s<-as.integer((ns$y-y.range[1])/r.y)*n.x+
-                     as.integer((ns$x-x.range[1])/r.x)+1
-         w<-which(is.na(ns$x[index.s]))
-         if(length(w)>0) { # At least one sample not in occupied box
-           index.s<-index.s[w]
-           ns$x<-ns$x[w]
-           ns$y<-ns$y[w]
-           if(length(cp)>0) { # At least one close point, so test necessary     
-              d<-bridson.min.distance(ns$x,ns$y,x[cp],y[cp])
-              w<-which(d>r.min)
-           } else w<-1 # no test - just take first point
-           if(length(w)>0) { # new point
-               x[index.s[w[1]]]<-ns$x[w[1]]
-               y[index.s[w[1]]]<-ns$y[w[1]]
-               status[index.s[w[1]]]<-1
-               active<-c(active,index.s[w[1]])
-               order.added<-c(order.added,index.s[w[1]])
-               next
-           }
-         }
-         # All failed - remove current point from active list
-         w<-which(active==c)
-         active<-active[-w]
-   }
-
-    x<-x[order.added]
-    y<-y[order.added]
-    status<-status[order.added]
-
-    # Prune the downstream points - not seeds for streamlines
-    w<-which(status==0)
-    if(length(w)>0) {
-      x<-x[-w]
-      y<-y[-w]
-      status<-status[-w]
+      else {
+        seed<-seed[-1] # Remove seed point
+      }
+      #if(streamlines.count>1000) break
     }
 
-    return(list(lon=x,lat=y,status=status))
-  }
+    streamlines$x<-streamlines$x[1:streamlines.count,] 
+    streamlines$y<-streamlines$y[1:streamlines.count,] 
+    streamlines$status<-streamlines$status[1:streamlines.count] 
+
+    return(streamlines)
+}
 
 #' Try and add another streamline 
 #'
@@ -186,33 +104,37 @@ WeatherMap.allocate.streamlines<-function(Options,previous=NULL) {
 #'   activation grid indices now filled & seed - vector of activation
 #'   grid indices to make seed points.
 WeatherMap.add.streamline<-function(x,y,u,v,r.x,r.y,n.x,n.y,Options) {
-  new.s<-WeatherMap.propagate.streamlines(x,y,u,v,Options)
+  new.s<-WeatherMap.propagate.streamlines(y,x,u,v,Options)
   
   filled<-numeric(0)
   for(i in seq(1,Options$wind.vector.points-1)) {
-    x0<-as.integer((s[['x']][1,i]-Options$lon.min)/r.x)
-    x1<-as.integer((s[['x']][1,i+1]-Options$lon.min)/r.x)
-    y0<-as.integer((s[['y']][1,i]-Options$lat.min)/r.y)
-    y1<-as.integer((s[['y']][1,i+1]-Options$lat.min)/r.y)
-    filled<-unique(c(filled,WeatherMap.raytrace(x0,y0,x1,y1,nx,ny)))
+    x0<-as.integer((new.s[['x']][1,i]-Options$lon.min)/r.x)
+    x1<-as.integer((new.s[['x']][1,i+1]-Options$lon.min)/r.x)
+    y0<-as.integer((new.s[['y']][1,i]-Options$lat.min)/r.y)
+    y1<-as.integer((new.s[['y']][1,i+1]-Options$lat.min)/r.y)
+    filled<-unique(c(filled,WeatherMap.raytrace(x0,y0,x1,y1,n.x,n.y)))
   }
   # Add some padding around the lines
   for(i in seq(1,Options$wind.vector.padding)) {
     filled<-unique(c(filled,filled+1,filled-1,
-                     filled+nx,filled-nx))
+                     filled+n.x,filled-n.x))
   }
+  w<-which(filled>0 & filled<=n.x*n.y)
+  filled<-filled[w]
   # Seed points go around the padding
   seed<-filled
   for(i in seq(1,Options$wind.vector.seed.width)) {
     seed<-unique(c(seed,seed+1,seed--1,
-                     seed+nx,seed-nx))
+                     seed+n.x,seed-n.x))
   }
+  w<-which(seed>0 & seed<=n.x*n.y)
+  seed<-seed[w]
   w<-which(seed %in% filled)
   seed<-seed[-w]
   # Decimate for speed
   w<-seq(1,length(seed),Options$wind.vector.seed.decimate)
   seed<-seed[w]
-  return(list(s=new.s,filled=filled,seed=seed)
+  return(list(s=new.s,filled=filled,seed=seed))
 
 }
   
