@@ -461,9 +461,9 @@ TWCR.get.interpolation.times<-function(variable,year,month,day,hour,type='mean')
                 p.month<-month
                 p.day<-day
                 if(p.hour<0) {
-                  p.year<-as.numeric(as.character(years(ct-1)))
-                  p.month<-as.integer(months(ct-1))
-                  p.day<-as.integer(days(ct-1))
+                  p.year<-as.numeric(as.character(chron::years(ct-1)))
+                  p.month<-as.integer(base::months(ct-1))
+                  p.day<-as.integer(chron::days(ct-1))
                   p.hour<-p.hour+24
                 }
 		if(TWCR.is.in.file(variable,p.year,p.month,p.day,p.hour,type=type)) {
@@ -486,9 +486,9 @@ TWCR.get.interpolation.times<-function(variable,year,month,day,hour,type='mean')
                 n.month<-month
                 n.day<-day
                 if(n.hour>23) {
-                  n.year<-as.numeric(as.character(years(ct+1)))
-                  n.month<-as.integer(months(ct+1))
-                  n.day<-as.integer(days(ct+1))
+                  n.year<-as.numeric(as.character(chron::years(ct+1)))
+                  n.month<-as.integer(base::months(ct+1))
+                  n.day<-as.integer(chron::days(ct+1))
                   n.hour<-n.hour-24
                 }
 		if(TWCR.is.in.file(variable,n.year,n.month,n.day,n.hour,type=type)) {
