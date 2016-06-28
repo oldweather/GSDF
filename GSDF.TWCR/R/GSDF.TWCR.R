@@ -387,14 +387,15 @@ TWCR.get.obs<-function(year,month,day,hour,version=2,range=0.5) {
           format=c(dates='y/m/d',times='h:m:s'))
     result<-NULL
     for(hour2 in seq(today-range,today+range,1/24)) {
+       hour2<-as.chron(hour2)
        of.name<-sprintf(
                 "%s/observations/%04d/prepbufrobs_assim_%04d%02d%02d%02d.txt",base.dir,
-                 as.integer(as.character(years(hour2))),
-                 as.integer(as.character(years(hour2))),
-                 months(hour2),days(hour2),as.integer(hours(hour2)))
+                 as.integer(as.character(chron::years(hour2))),
+                 as.integer(as.character(chron::years(hour2))),
+                 months(hour2),chron::days(hour2),as.integer(chron::hours(hour2)))
         if(!file.exists(of.name)) next
-        o<-TWCR.get.obs.1file(as.integer(as.character(years(hour2))),
-                               months(hour2),days(hour2),as.integer(hours(hour2)),version)
+        o<-TWCR.get.obs.1file(as.integer(as.character(chron::years(hour2))),
+                               base::months(hour2),chron::days(hour2),as.integer(chron::hours(hour2)),version)
         odates<-chron(dates=sprintf("%04d/%02d/%02d",as.integer(substr(o$UID,1,4)),
                                                      as.integer(substr(o$UID,5,6)),
                                                      as.integer(substr(o$UID,7,8))),
