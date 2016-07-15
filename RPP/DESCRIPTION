@@ -1,0 +1,10 @@
+Package: RPP
+Title: Handle PP fields and files - native R version
+Version: 0.2
+Date: 2011-01-12
+Author: Philip Brohan
+Description: A class and methods for PP data: reading and writing data,
+             some processing functions
+Depends: R (>= 1.7.0), methods, iterators
+License: Met Office & personal use
+Maintainer: Philip Brohan <philip.brohan@metoffice.gov.uk>
