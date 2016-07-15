@@ -1,5 +1,5 @@
 # Define an R class encapsulating a PP field
-# And a set of methods for reading and writing PP data
+# And a set of methods for reading PP data
 
 # Define the class
 setClass("PP",
