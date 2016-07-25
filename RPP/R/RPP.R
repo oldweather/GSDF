@@ -375,7 +375,82 @@ pp.read <- function(pp.file.id) {
 # Function to write a (list of) PP field(s) to an (already opened) file
 #  returns count of fields written.
 pp.write <- function(pps,pp.file.id) {
-  stop('Writing PP files not supported')
+# pp.file.id is an integer returned by pp_open_file (with mode='w' or 'a')
+  if(!is.list(pps)) {
+    pps<-list(pps)
+  }
+  written<-0
+  for(pp in pps) {
+      if(!inherits(pp,'PP')) {
+       stop("non-PP-field passed to pp.write")
+      }
+      # Write out the header
+    writeBin(256,      pp.file.id,'integer',endian ='big') # Fortran padding
+    writeBin(pp@lbyr,  pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbmon, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbdat, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbhr,  pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbmi,  pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbday, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbyrd, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbmond,pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbdatd,pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbhrd, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbmind,pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbdayd,pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbtim, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbft,  pp.file.id,'integer',endian ='big')
+    writeBin(pp@lblrec,pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbcode,pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbhem, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbrow, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbnpt, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbext, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbpack,pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbrel, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbfc,  pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbcfc, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbproc,pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbvc,  pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbrvc, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbexp, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbegin,pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbnrec,pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbproj,pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbtyp, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lblev, pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbrsvd,pp.file.id,'integer',endian ='big')# n=4
+    writeBin(pp@lbsrce,pp.file.id,'integer',endian ='big')
+    writeBin(pp@lbuser,pp.file.id,'integer',endian ='big')# n=7
+      
+    writeBin(pp@brsvd, pp.file.id,'numeric',size=4,endian ='big')# n=4
+    writeBin(pp@bdatum,pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(pp@bacc,  pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(pp@blev,  pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(pp@brlev, pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(pp@bhlev, pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(pp@bhrlev,pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(pp@bplat, pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(pp@bplon, pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(pp@bgor,  pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(pp@bzy,   pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(pp@bdy,   pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(pp@bzx,   pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(pp@bdx,   pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(pp@bmdi,  pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(pp@bmks,  pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(256,      pp.file.id,'integer',endian ='big') # Fortran padding
+
+    # Write the data array
+    writeBin(256,    pp.file.id,'integer',endian ='big') # Fortran padding
+    writeBin(pp@data,pp.file.id,'numeric',size=4,endian ='big')
+    writeBin(256,    pp.file.id,'integer',endian ='big') # Fortran padding
+
+    # Can't be bothered with Extra data at the moment
+    if(pp@lbext>0) stop('Writing PP files with extra data not supported')
+    written<-written+1
+  }
+  return(written)
 }
 # Get an array of PP fields - all those from a file where the header
 #  matches a set of conditions
@@ -433,7 +508,26 @@ pp.ppa.iter<-function(filename,where=NULL,max=NULL) {
 # Output a set of PP fields - all those where the header
 #  matches a set of conditions. Returns the number of fields output.
 pp.ppw<-function(ppl,filename,where=NULL,max=NULL, mode='w') {
- stop('Writing PP files not supported')
+ # ppl is a (list of) pp fields, filename the name of the file to write to
+ # (overwritten by default - set mode to 'a' to append).
+
+ # if ppl is a single field, convert it to a list
+    if(!is.list(ppl)) ppl<-list(ppl)
+ 
+ # Convert the conditionals into a function testing them on a PP field
+    check<-pp.internal.checkfn(where=where)
+ # For each field in the list, storing those that pass the conditional test
+   f<-pp.open.file(filename,mode=mode)
+   n_written=0
+   for (pp in ppl) {
+      if(check(pp)==1) { 
+        pp.write(pp,f)
+        n_written<-n_written+1
+      }
+      if(!is.null(max) && n_written>=max) { break }
+   }
+   pp.close.file(f)
+   return(n_written)
 }
 
 # Utility function for ppa and ppw - convert a list of conditionals into a function
