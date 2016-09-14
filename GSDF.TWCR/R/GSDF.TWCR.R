@@ -122,7 +122,9 @@ TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
             if(!is.null(opendap) && opendap==FALSE) stop(sprintf("No local file %s",name))
           }
       }
-    if(version!=2 && version!='3.2.1') stop('Opendap only available for version 2')
+    if(version!=2 && version!='3.2.1') {
+      stop(sprintf("No data accessible for %s %d %d %d %d",variable,year,month,day,hour))
+    }
     base.dir<-'http://www.esrl.noaa.gov/psd/thredds/dodsC/Datasets/20thC_ReanV2/'
     if(type=='mean') {
         if(TWCR.get.variable.group(variable)=='monolevel') {
