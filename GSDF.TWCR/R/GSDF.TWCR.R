@@ -430,7 +430,9 @@ TWCR.get.fixed.field<-function(variable) {
                            variable)
    fn.local<-sprintf("/project/projectdirs/m958/netCDF.data/20CR_v3.5.1/fixed/%s.nc",variable)
    if(file.exists(fn.local)) fn<-fn.local
-   
+   fn.local<-sprintf("/scratch/hadpb/20CR/version_3.5.1/fixed/%s.nc",variable)
+   if(file.exists(fn.local)) fn<-fn.local
+  
    if(variable=='lsmask') variable<-'land' # Wrong name in file
    v<-GSDF.ncdf.load(fn,variable,lat.range=c(-90,90),lon.range=c(0,360))
    return(v)  
