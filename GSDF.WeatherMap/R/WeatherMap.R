@@ -38,7 +38,7 @@ Defaults<-list(
    wind.vector.move.scale=1,            # Bigger -> faster moving vectors
    wind.vector.lwd=4,                   # Line width
    jitter=TRUE,                         # Jitter vector seed points?
-   wind.palette=diverge_hcl(70, c = 50,
+   wind.palette=colorspace::diverge_hcl(70, c = 50,
                     l = 25, power = 1), # Interpolated blue red
    wind.palette.bias=1,                 # ?colorRamp
    wind.palette.opacity=1,              # 
@@ -777,7 +777,8 @@ WeatherMap.get.land<-function(Options) {
 	
   if(Options$background.resolution=='high') {
      if(Options$pole.lon!=180 || Options$pole.lat!=90) {
-        land<-GSDF.field.to.pole(WeatherMap.land.mask,Options$pole.lat,Options$pole.lon)
+        #land<-GSDF.field.to.pole(WeatherMap.land.mask,Options$pole.lat,Options$pole.lon)
+        land<-WeatherMap.rotate.pole(WeatherMap.land.mask,Options)
       } else land<-WeatherMap.land.mask
      return(land)
    }
@@ -861,7 +862,7 @@ WeatherMap.draw.land<-function(land,Options,height=NULL) {
       # flip the data order up<->down to be right for an image
       m<-apply(m,2,rev)
       grid.raster(m,
-                   x=unit(0,'native'),
+                   x=unit(min(lons)+180,'native'),
                    y=unit(0,'native'),
                    width=unit(360,'native'),
                    height=unit(180,'native'))
@@ -886,7 +887,9 @@ WeatherMap.draw.land<-function(land,Options,height=NULL) {
                        y=unit(WeatherMap.ice.shelves$y,'native'),
                        gp=gp.ice)
         }
-      } 
+      }
+
+      # 
 
         gp.land<-gpar(col=Options$land.colour,
                       fill=Options$land.colour)
@@ -1136,7 +1139,15 @@ WeatherMap.draw.obs<-function(obs,Options) {
 	   obs$Longitude<-l2$lon
 	   obs$Latitude<-l2$lat
   }
-  if(length(obs$Latitude)<1) return()	
+  if(length(obs$Latitude)<1) return()
+  lon.m<-Options$lon.min
+  if(!is.null(Options$vp.lon.min)) lon.m<-Options$vp.lon.min
+  w<-which(obs$Longitude<lon.m)
+  if(length(w)>0) obs$Longitude[w]<-obs$Longitude[w]+360
+  lon.m<-Options$lon.max
+  if(!is.null(Options$vp.lon.max)) lon.m<-Options$vp.lon.max
+  w<-which(obs$Longitude>lon.m)
+  if(length(w)>0) obs$Longitude[w]<-obs$Longitude[w]-360
   gp<-gpar(col=Options$obs.colour,fill=Options$obs.colour)
   grid.points(x=unit(obs$Longitude,'native'),
               y=unit(obs$Latitude,'native'),
@@ -1176,6 +1187,26 @@ WeatherMap.draw.label<-function(Options) {
 WeatherMap.rotate.pole<-function(field,Options) {
   
   W<-GSDF.field.to.pole(field,Options$pole.lat,Options$pole.lon,greedy=Options$greedy)
+  # Shift the field so it lines up as much as possible with the
+  #   viewport longitude range
+  ld<-GSDF.find.dimension(W,'lon')
+  mfl<-min(W$dimensions[[ld]]$values)
+  mvl<-Options$lon.min
+  if(!is.null(Options$vp.lon.min)) mvl<-Options$vp.lon.min 
+  if(mfl<mvl) { # rotate field right to match viewport
+    w2<-W
+    w2$dimensions[[ld]]$values<-w2$dimensions[[ld]]$values+mvl-mfl
+    W<-GSDF.regrid.2d(W,w2)
+  }
+  mfl<-max(W$dimensions[[ld]]$values)
+  mvl<-Options$lon.max
+  if(!is.null(Options$vp.lon.max)) mvl<-Options$vp.lon.max 
+  if(mfl>mvl) { # rotate field left to match viewport
+    w2<-W
+    w2$dimensions[[ld]]$values<-w2$dimensions[[ld]]$values-(mfl-mvl)
+    W<-GSDF.regrid.2d(W,w2)
+  }
+  
   return(W)
 }
 
