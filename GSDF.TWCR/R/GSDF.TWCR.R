@@ -122,7 +122,9 @@ TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
             if(!is.null(opendap) && opendap==FALSE) stop(sprintf("No local file %s",name))
           }
       }
-    if(version!=2 && version!='3.2.1') stop('Opendap only available for version 2')
+    if(version!=2 && version!='3.2.1') {
+      stop(sprintf("No data accessible for %s %d %d %d %d",variable,year,month,day,hour))
+    }
     base.dir<-'http://www.esrl.noaa.gov/psd/thredds/dodsC/Datasets/20thC_ReanV2/'
     if(type=='mean') {
         if(TWCR.get.variable.group(variable)=='monolevel') {
@@ -387,14 +389,15 @@ TWCR.get.obs<-function(year,month,day,hour,version=2,range=0.5) {
           format=c(dates='y/m/d',times='h:m:s'))
     result<-NULL
     for(hour2 in seq(today-range,today+range,1/24)) {
+       hour2<-as.chron(hour2)
        of.name<-sprintf(
                 "%s/observations/%04d/prepbufrobs_assim_%04d%02d%02d%02d.txt",base.dir,
-                 as.integer(as.character(years(hour2))),
-                 as.integer(as.character(years(hour2))),
-                 months(hour2),days(hour2),as.integer(hours(hour2)))
+                 as.integer(as.character(chron::years(hour2))),
+                 as.integer(as.character(chron::years(hour2))),
+                 months(hour2),chron::days(hour2),as.integer(chron::hours(hour2)))
         if(!file.exists(of.name)) next
-        o<-TWCR.get.obs.1file(as.integer(as.character(years(hour2))),
-                               months(hour2),days(hour2),as.integer(hours(hour2)),version)
+        o<-TWCR.get.obs.1file(as.integer(as.character(chron::years(hour2))),
+                               base::months(hour2),chron::days(hour2),as.integer(chron::hours(hour2)),version)
         odates<-chron(dates=sprintf("%04d/%02d/%02d",as.integer(substr(o$UID,1,4)),
                                                      as.integer(substr(o$UID,5,6)),
                                                      as.integer(substr(o$UID,7,8))),
@@ -429,7 +432,9 @@ TWCR.get.fixed.field<-function(variable) {
                            variable)
    fn.local<-sprintf("/project/projectdirs/m958/netCDF.data/20CR_v3.5.1/fixed/%s.nc",variable)
    if(file.exists(fn.local)) fn<-fn.local
-   
+   fn.local<-sprintf("/scratch/hadpb/20CR/version_3.5.1/fixed/%s.nc",variable)
+   if(file.exists(fn.local)) fn<-fn.local
+  
    if(variable=='lsmask') variable<-'land' # Wrong name in file
    v<-GSDF.ncdf.load(fn,variable,lat.range=c(-90,90),lon.range=c(0,360))
    return(v)  
@@ -461,9 +466,9 @@ TWCR.get.interpolation.times<-function(variable,year,month,day,hour,type='mean')
                 p.month<-month
                 p.day<-day
                 if(p.hour<0) {
-                  p.year<-as.numeric(as.character(years(ct-1)))
-                  p.month<-as.integer(months(ct-1))
-                  p.day<-as.integer(days(ct-1))
+                  p.year<-as.numeric(as.character(chron::years(ct-1)))
+                  p.month<-as.integer(base::months(ct-1))
+                  p.day<-as.integer(chron::days(ct-1))
                   p.hour<-p.hour+24
                 }
 		if(TWCR.is.in.file(variable,p.year,p.month,p.day,p.hour,type=type)) {
@@ -486,9 +491,9 @@ TWCR.get.interpolation.times<-function(variable,year,month,day,hour,type='mean')
                 n.month<-month
                 n.day<-day
                 if(n.hour>23) {
-                  n.year<-as.numeric(as.character(years(ct+1)))
-                  n.month<-as.integer(months(ct+1))
-                  n.day<-as.integer(days(ct+1))
+                  n.year<-as.numeric(as.character(chron::years(ct+1)))
+                  n.month<-as.integer(base::months(ct+1))
+                  n.day<-as.integer(chron::days(ct+1))
                   n.hour<-n.hour-24
                 }
 		if(TWCR.is.in.file(variable,n.year,n.month,n.day,n.hour,type=type)) {

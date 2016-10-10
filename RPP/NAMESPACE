@@ -1,0 +1,22 @@
+# Externally-visible S4 class
+exportClasses(PP)
+exportMethods(show)
+
+# Externally-visible functions
+export(
+   pp.ppa.iter,
+   pp.ppa,
+   pp.ppw,
+   pp.open.file,
+   pp.close.file,
+   pp.read,
+   pp.write,
+   pp.strip.extra,
+   pp.get.longs,
+   pp.get.lats,
+   pp.get.longs.short,
+   pp.get.lats.short,
+   pp.get.longs.noshift,
+   pp.get.lats.noshift
+)
+
