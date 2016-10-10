@@ -50,14 +50,9 @@ TWCR.show.variables<-function() {
 #' @export
 #' @return Base directory name (or NULL is no local files)
 TWCR.get.data.dir<-function(version=2) {
-    if(file.exists(sprintf("/Volumes/DataDir/20CR/version_%s/",version))) {
-            return(sprintf("/Volumes/DataDir/20CR/version_%s/",version))
-    }	
-    if(file.exists(sprintf("/scratch/hadpb/20CR/version_%s/",version))) {
-            return(sprintf("/scratch/hadpb/20CR/version_%s/",version))
-    }	
-    if(file.exists(sprintf("/data/cr2/hadpb/20CR/version_%s/",version))) {
-            return(sprintf("/data/cr2/hadpb/20CR/version_%s/",version))
+
+    if(file.exists(sprintf("%s/20CR/version_%s/",Sys.getenv('SCRATCH'),version))) {
+            return(sprintf("%s/20CR/version_%s/",Sys.getenv('SCRATCH'),version))
     }	
     if(file.exists(sprintf("/project/projectdirs/m958/netCDF.data/20CR_v%s/",version))) {
             return(sprintf("/project/projectdirs/m958/netCDF.data/20CR_v%s/",version))
