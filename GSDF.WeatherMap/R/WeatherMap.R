@@ -677,6 +677,7 @@ WeatherMap.make.streamlines<-function(s,u,v,t,t.c,Options) {
 	 if(length(w)>0) longs[w]<-longs[w]-360
       }
       status<-s[['status']]+1
+      id<-s[['id']]
       # Update plot status and remove expired ones or those outside the frame
          w<-which(is.na(lats) | is.na(longs))
          if(length(w)>0) {
