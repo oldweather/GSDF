@@ -366,81 +366,82 @@ WeatherMap.bridson.parallel<-function(Options,
     }
 
   if(Options$cores==1) {
-    return(WeatherMap.bridson(Options,previous,downstream))
-  }
-  # Allocate the ranges for each core
-  slices<-list()
-  slices$idx<-seq(1,Options$cores*2)
-  slices$width<-(Options$lon.max-Options$lon.min)/length(slices$idx)
-  slices$x.min<-Options$lon.min+(slices$idx-1)*slices$width
-  slices$x.max<-Options$lon.min+slices$idx*slices$width
-  slices$x.pad<-slices$width/4
-  # Set up a function to be called in parallel for each slice
-  bpf<-function(idx) {
-    Options.slice<-Options
-    Options.slice$lon.min<-max(Options$lon.min,slices$x.min[idx]-slices$x.pad)
-    Options.slice$lon.max<-min(Options$lon.max,slices$x.max[idx]+slices$x.pad)
-    previous.slice<-previous
-    downstream.slice<-downstream
-    if(!is.null(previous.slice)) {
-      w<-which(previous$lon>=Options.slice$lon.min &
-               previous$lon<Options.slice$lon.max)
-      previous.slice$lon<-previous.slice$lon[w]
-      downstream.slice$lon<-downstream.slice$lon[w,]
-      previous.slice$lat<-previous.slice$lat[w]
-      downstream.slice$lat<-downstream.slice$lat[w,]
-      previous.slice$status<-previous.slice$status[w]
-      previous.slice$id<-previous.slice$id[w]
-    }
-    res<-WeatherMap.bridson(Options.slice,previous.slice,downstream.slice)
-    w<-which(res$lon>=slices$x.min[idx] & res$lon<slices$x.max[idx])
-    res$lon<-res$lon[w]
-    res$lat<-res$lat[w]
-    res$status<-res$status[w]
-    res$id<-res$id[w]
-    return(res)
-  }
-  # Run for all the odd slices
-  res.odd<-mclapply(seq(1,length(slices$idx),2),bpf,mc.cores=Options$cores)
-  # Update the previous positions with the new ones
-  if(is.null(previous)) {
-    previous<-list(lat=numeric(0),lon=numeric(0),status=numeric(0),id=numeric(0))
-  }
-  s.count<-1
-  for(slice in seq(1,length(slices$idx),2)) {
-    w<-which(previous$lon>=slices$x.min[slice] &
-             previous$lon<slices$x.max[slice])
-    if(length(w)>0) {
-      previous$lon<-previous$lon[-w]
-      previous$lat<-previous$lat[-w]
-      previous$status<-previous$status[-w]
-      previous$id<-previous$id[-w]
-    }
-    previous$lon<-c(previous$lon,res.odd[[s.count]]$lon)
-    previous$lat<-c(previous$lat,res.odd[[s.count]]$lat)
-    previous$status<-c(previous$status,res.odd[[s.count]]$status)
-    previous$id<-c(previous$id,res.odd[[s.count]]$id)
-    s.count<-s.count+1
-  }
-  # Run for all the even slices
-  res.even<-mclapply(seq(2,length(slices$idx),2),bpf,mc.cores=Options$cores)
-  # Update the previous positions with the new ones
-  s.count<-1
-  for(slice in seq(2,length(slices$idx),2)) {
-    w<-which(previous$lon>=slices$x.min[slice] &
-             previous$lon<slices$x.max[slice])
-    if(length(w)>0) {
-      previous$lon<-previous$lon[-w]
-      previous$lat<-previous$lat[-w]
-      previous$status<-previous$status[-w]
-      previous$id<-previous$id[-w]
-    }
-    previous$lon<-c(previous$lon,res.even[[s.count]]$lon)
-    previous$lat<-c(previous$lat,res.even[[s.count]]$lat)
-    previous$status<-c(previous$status,res.even[[s.count]]$status)
-    previous$id<-c(previous$id,res.even[[s.count]]$id)
-    s.count<-s.count+1
-  }
+    previous<-(WeatherMap.bridson(Options,previous,downstream))
+  } else {
+      # Allocate the ranges for each core
+      slices<-list()
+      slices$idx<-seq(1,Options$cores*2)
+      slices$width<-(Options$lon.max-Options$lon.min)/length(slices$idx)
+      slices$x.min<-Options$lon.min+(slices$idx-1)*slices$width
+      slices$x.max<-Options$lon.min+slices$idx*slices$width
+      slices$x.pad<-slices$width/4
+      # Set up a function to be called in parallel for each slice
+      bpf<-function(idx) {
+        Options.slice<-Options
+        Options.slice$lon.min<-max(Options$lon.min,slices$x.min[idx]-slices$x.pad)
+        Options.slice$lon.max<-min(Options$lon.max,slices$x.max[idx]+slices$x.pad)
+        previous.slice<-previous
+        downstream.slice<-downstream
+        if(!is.null(previous.slice)) {
+          w<-which(previous$lon>=Options.slice$lon.min &
+                   previous$lon<Options.slice$lon.max)
+          previous.slice$lon<-previous.slice$lon[w]
+          downstream.slice$lon<-downstream.slice$lon[w,]
+          previous.slice$lat<-previous.slice$lat[w]
+          downstream.slice$lat<-downstream.slice$lat[w,]
+          previous.slice$status<-previous.slice$status[w]
+          previous.slice$id<-previous.slice$id[w]
+        }
+        res<-WeatherMap.bridson(Options.slice,previous.slice,downstream.slice)
+        w<-which(res$lon>=slices$x.min[idx] & res$lon<slices$x.max[idx])
+        res$lon<-res$lon[w]
+        res$lat<-res$lat[w]
+        res$status<-res$status[w]
+        res$id<-res$id[w]
+        return(res)
+      }
+      # Run for all the odd slices
+      res.odd<-mclapply(seq(1,length(slices$idx),2),bpf,mc.cores=Options$cores)
+      # Update the previous positions with the new ones
+      if(is.null(previous)) {
+        previous<-list(lat=numeric(0),lon=numeric(0),status=numeric(0),id=numeric(0))
+      }
+      s.count<-1
+      for(slice in seq(1,length(slices$idx),2)) {
+        w<-which(previous$lon>=slices$x.min[slice] &
+                 previous$lon<slices$x.max[slice])
+        if(length(w)>0) {
+          previous$lon<-previous$lon[-w]
+          previous$lat<-previous$lat[-w]
+          previous$status<-previous$status[-w]
+          previous$id<-previous$id[-w]
+        }
+        previous$lon<-c(previous$lon,res.odd[[s.count]]$lon)
+        previous$lat<-c(previous$lat,res.odd[[s.count]]$lat)
+        previous$status<-c(previous$status,res.odd[[s.count]]$status)
+        previous$id<-c(previous$id,res.odd[[s.count]]$id)
+        s.count<-s.count+1
+      }
+      # Run for all the even slices
+      res.even<-mclapply(seq(2,length(slices$idx),2),bpf,mc.cores=Options$cores)
+      # Update the previous positions with the new ones
+      s.count<-1
+      for(slice in seq(2,length(slices$idx),2)) {
+        w<-which(previous$lon>=slices$x.min[slice] &
+                 previous$lon<slices$x.max[slice])
+        if(length(w)>0) {
+          previous$lon<-previous$lon[-w]
+          previous$lat<-previous$lat[-w]
+          previous$status<-previous$status[-w]
+          previous$id<-previous$id[-w]
+        }
+        previous$lon<-c(previous$lon,res.even[[s.count]]$lon)
+        previous$lat<-c(previous$lat,res.even[[s.count]]$lat)
+        previous$status<-c(previous$status,res.even[[s.count]]$status)
+        previous$id<-c(previous$id,res.even[[s.count]]$id)
+        s.count<-s.count+1
+      }
+   }
   # Scale-out for spherical case
     if(Options$wrap.spherical) {
       previous$lon<-previous$lon/cos(previous$lat*pi/180)
