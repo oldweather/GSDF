@@ -436,7 +436,7 @@ TWCR.get.fixed.field<-function(variable) {
 }
 
 TWCR.is.in.file<-function(variable,year,month,day,hour,type='mean') {
-                if(variable=='prate' && hour%%3==0) return(TRUE)
+                #if(variable=='prate' && hour%%3==0) return(TRUE)
 		if(hour%%6==0) return(TRUE)
 		return(FALSE)
 }
