@@ -804,7 +804,8 @@ WeatherMap.get.land<-function(Options) {
   if(Options$background.resolution=='high') {
      if(Options$pole.lon!=180 || Options$pole.lat!=90) {
         #land<-GSDF.field.to.pole(WeatherMap.land.mask,Options$pole.lat,Options$pole.lon)
-        land<-WeatherMap.rotate.pole(WeatherMap.land.mask,Options)
+        land<-WeatherMap.rotate.pole(GSDF:::GSDF.pad.longitude(WeatherMap.land.mask),Options)
+        #land<-GSDF:::GSDF.pad.longitude(land)
       } else land<-WeatherMap.land.mask
      return(land)
    }
@@ -1215,24 +1216,12 @@ WeatherMap.rotate.pole<-function(field,Options) {
   W<-GSDF.field.to.pole(field,Options$pole.lat,Options$pole.lon,greedy=Options$greedy)
   # Shift the field so it lines up as much as possible with the
   #   viewport longitude range
-  ld<-GSDF.find.dimension(W,'lon')
-  mfl<-min(W$dimensions[[ld]]$values)
-  mvl<-Options$lon.min
-  if(!is.null(Options$vp.lon.min)) mvl<-Options$vp.lon.min 
-  if(mfl<mvl) { # rotate field right to match viewport
-    w2<-W
-    w2$dimensions[[ld]]$values<-w2$dimensions[[ld]]$values+mvl-mfl
-    W<-GSDF.regrid.2d(W,w2)
-  }
-  mfl<-max(W$dimensions[[ld]]$values)
-  mvl<-Options$lon.max
-  if(!is.null(Options$vp.lon.max)) mvl<-Options$vp.lon.max 
-  if(mfl>mvl) { # rotate field left to match viewport
-    w2<-W
-    w2$dimensions[[ld]]$values<-w2$dimensions[[ld]]$values-(mfl-mvl)
-    W<-GSDF.regrid.2d(W,w2)
-  }
-  
+  mnvl<-Options$lon.min
+  if(!is.null(Options$vp.lon.min)) mnvl<-Options$vp.lon.min 
+  mxvl<-Options$lon.max
+  if(!is.null(Options$vp.lon.max)) mxvl<-Options$vp.lon.max
+  W<-GSDF:::GSDF.rotate.longitude(W,lon.range=c(mnvl,mxvl))
+
   return(W)
 }
 

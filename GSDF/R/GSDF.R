@@ -733,6 +733,67 @@ GSDF.select.from.1d<-function(d,dimn,idx,...) {
   return(result)
 }
 
+# Sometimes longitudes are on 0 to 360, sometimes -180 to 180, occasionally
+#  even outside these ranges
+# This function rotates a field in longitude to put it in a specified range
+# Field to be rotated must have only 2 extended dimensions.
+# Assumes longitudes are in ascending order.
+GSDF.rotate.longitude<-function(g,lon.range=c(0,360)) {
+  result<-g
+  d<-GSDF.get.extended.dimensions(g)
+  if(length(d)!=2) stop('Wrong dimensions in rotate.longitude')
+  a<-array(data<-as.vector(g$data),dim=c(length(g$dimensions[[d[1]]]$values),
+                                         length(g$dimensions[[d[2]]]$values)))
+  if(g$dimensions[[d[1]]]$type=='lon') {
+    while(min(g$dimensions[[d[1]]]$values)>=max(lon.range)) {
+      g$dimensions[[d[1]]]$values<-g$dimensions[[d[1]]]$values-360
+    }
+    w<-which(g$dimensions[[d[1]]]$values>max(lon.range))
+    if(length(w)>0) {
+      a<-rbind(a[w,],a[-w,])
+      result$data<-a
+      result$dimensions[[d[1]]]$values<-c(g$dimensions[[d[1]]]$values[w]-360,
+                                          g$dimensions[[d[1]]]$values[-w])
+    }
+    while(max(g$dimensions[[d[1]]]$values)<=min(lon.range)) {
+      g$dimensions[[d[1]]]$values<-g$dimensions[[d[1]]]$values+360
+    }
+    w<-which(g$dimensions[[d[1]]]$values<min(lon.range))
+    if(length(w)>0) {
+      a<-rbind(a[-w,],a[w,])
+      result$data<-a
+      result$dimensions[[d[1]]]$values<-c(g$dimensions[[d[1]]]$values[-w],
+                                          g$dimensions[[d[1]]]$values[w]+360)
+    }
+    return(result)
+  }
+  if(g$dimensions[[d[2]]]$type=='lon') {
+    while(min(g$dimensions[[d[2]]]$values)>=max(lon.range)) {
+      g$dimensions[[d[2]]]$values<-g$dimensions[[d[2]]]$values-360
+    }
+    w<-which(g$dimensions[[d[1]]]$values>max(lon.range))
+    if(length(w)>0) {
+      a<-rbind(a[,w],a[,-w])
+      result$data<-a
+      result$dimensions[[d[2]]]$values<-c(g$dimensions[[d[2]]]$values[w]-360,
+                                          g$dimensions[[d[2]]]$values[-w])
+    }
+    while(max(g$dimensions[[d[2]]]$values)<=min(lon.range)) {
+      g$dimensions[[d[2]]]$values<-g$dimensions[[d[2]]]$values+360
+    }
+    w<-which(g$dimensions[[d[2]]]$values<min(lon.range))
+    if(length(w)>0) {
+      a<-rbind(a[,-w],a[,w])
+      result$data<-a
+      result$dimensions[[d[2]]]$values<-c(g$dimensions[[d[2]]]$values[-w],
+                                          g$dimensions[[d[2]]]$values[w]+360)
+    }
+    return(result)
+  }
+  stop('Field has no longitudes to rotate')
+}
+
+
 # Expand a field in longitude - copying the first column to the end
 #  and the last column to the beginning (or rows, if apropriate)
 # Allows correct interpolation of points beyond the last row or before
@@ -740,7 +801,7 @@ GSDF.select.from.1d<-function(d,dimn,idx,...) {
 # Internal function, needed by interpolate.ll
 # Field to be expanded must have only 2 extended dimensions.
 # Assumes longitudes are in ascending order.
-GSDF.pad.longitude<-function(g) {
+GSDF.pad.longitude<-function(g,pad=1) {
   result<-g
   d<-GSDF.get.extended.dimensions(g)
   if(length(d)!=2) stop('Wrong dimensions in pad.longitude')
@@ -748,24 +809,28 @@ GSDF.pad.longitude<-function(g) {
                                          length(g$dimensions[[d[2]]]$values)))
   if(g$dimensions[[d[1]]]$type=='lon') {
     l<-length(g$dimensions[[d[1]]]$values)
-    a<-rbind(a[l,],a,a[1,])
+    top<-seq(l-pad+1,l)
+    bot<-seq(1,pad)
+    a<-rbind(a[top,],a,a[bot,])
     nd<-dim(g$data)
-    nd[d]<-nd[d]+2
+    nd[d]<-nd[d]+2*pad
     result$data<-array(data<-as.vector(a),dim=nd)
-    result$dimensions[[d[1]]]$values<-c(g$dimensions[[d[1]]]$values[l]-360,
+    result$dimensions[[d[1]]]$values<-c(g$dimensions[[d[1]]]$values[top]-360,
                                         g$dimensions[[d[1]]]$values,
-                                        g$dimensions[[d[1]]]$values[1]+360)
+                                        g$dimensions[[d[1]]]$values[bot]+360)
     return(result)
   }
   if(g$dimensions[[d[2]]]$type=='lon') {
     l<-length(g$dimensions[[d[2]]]$values)
-    a<-cbind(a[,l],a,a[,1])
+    top<-seq(l-pad+1,l)
+    bot<-seq(1,pad)
+    a<-cbind(a[,top],a,a[,bot])
     nd<-dim(g$data)
-    nd[d]<-nd[d]+2
+    nd[d]<-nd[d]+2*pad
     result$data<-array(data<-as.vector(a),dim=nd)
-    result$dimensions[[d[2]]]$values<-c(g$dimensions[[d[2]]]$values[l]-360,
+    result$dimensions[[d[2]]]$values<-c(g$dimensions[[d[2]]]$values[top]-360,
                                         g$dimensions[[d[2]]]$values,
-                                        g$dimensions[[d[2]]]$values[1]+360)
+                                        g$dimensions[[d[2]]]$values[bot]+360)
     return(result)
   }
   stop('Field has no longitudes to pad')
