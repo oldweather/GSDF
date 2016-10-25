@@ -361,8 +361,9 @@ WeatherMap.bridson.parallel<-function(Options,
     # any positions outside the lon.range.
     # Inefficient, but simple.
     if(Options$wrap.spherical && !is.null(previous)) {
-      previous$lon<-previous$lon*cos(previous$lat*pi/180)
-      if(!is.null(downstream)) downstream$lon<-downstream$lon*cos(downstream$lat*pi/180)
+      lon.mean<-(Options$vp.lon.min+Options$vp.lon.max)/2
+      previous$lon<-(previous$lon-lon.mean)*cos(previous$lat*pi/180)+lon.mean
+      if(!is.null(downstream)) downstream$lon<-(downstream$lon-lon.mean)*cos(downstream$lat*pi/180)+lon.mean
     }
 
   if(Options$cores==1) {
@@ -444,8 +445,9 @@ WeatherMap.bridson.parallel<-function(Options,
    }
   # Scale-out for spherical case
     if(Options$wrap.spherical) {
-      previous$lon<-previous$lon/cos(previous$lat*pi/180)
-      w<-which(previous$lon<Options$vp.lon.max & previous$lon>=Options$vp.lon.min)
+      lon.mean<-(Options$vp.lon.min+Options$vp.lon.max)/2
+      previous$lon<-(previous$lon-lon.mean)/cos(previous$lat*pi/180)+lon.mean
+      w<-which(previous$lon<Options$lon.max & previous$lon>=Options$lon.min)
       previous$lon<-previous$lon[w]
       previous$lat<-previous$lat[w]
       previous$status<-previous$status[w]
