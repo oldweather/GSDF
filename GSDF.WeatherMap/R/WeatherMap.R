@@ -890,10 +890,12 @@ WeatherMap.draw.land<-function(land,Options,height=NULL) {
       m<-matrix(plot.colours, ncol=length(lons), byrow=T)
       # flip the data order up<->down to be right for an image
       m<-apply(m,2,rev)
+      r.w<-max(lons)-min(lons)+(lons[2]-lons[1])
+      r.c<-(max(lons)+min(lons))/2
       grid.raster(m,
-                   x=unit(min(lons)+180,'native'),
+                   x=unit(r.c,'native'),
                    y=unit(0,'native'),
-                   width=unit(360,'native'),
+                   width=unit(r.w,'native'),
                    height=unit(180,'native'))
    } else {
     # land will be a list of polygons from MapData
