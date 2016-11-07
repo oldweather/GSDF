@@ -32,6 +32,7 @@ Defaults<-list(
    wind.vector.density=1.5,             # Decrease for closer-packed streamlines
    bridson.max.attempt=5,               # Decrease=faster but less good streamline arrangement
    bridson.subsample=7,                 # Decrease=faster but less good streamline arrangement
+   bridson.slack=1,                     # 1-2 Increase to favour pre-existing points over new ones
    wind.vector.arrow=NULL,              # See ?arrow
    wind.vector.points=3,                # Bigger -> smoother curves and slower
    wind.vector.scale=0.25,              # Bigger -> longer vectors
@@ -217,6 +218,7 @@ WeatherMap.bridson<-function(Options,
     # If starting from a pre-existing set of points, load them
     # in decreasing order of status, culling any too close to one already loaded.
     if(!is.null(previous)) {
+        r.min<-r.min/Options$bridson.slack
         w<-which(previous$lat<min(y.range) |
                  previous$lat>max(y.range) |
                  previous$lon<min(x.range) |
@@ -276,6 +278,7 @@ WeatherMap.bridson<-function(Options,
                }
 	    }
          }
+	 r.min<-r.min*Options$bridson.slack
       }
     
     # Allocate more points to fill gaps
