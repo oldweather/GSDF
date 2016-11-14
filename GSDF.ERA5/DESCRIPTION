@@ -1,0 +1,13 @@
+Package: GSDF.ERA5
+Type: Package
+Title: Get data from the ERA5 Reanalysis
+Version: 0.2
+Date: 2016-11-14
+Author: Philip Brohan
+Maintainer: Philip Brohan <philip@brohan.org>
+Description: field<-ERA5.get.slice.at.hour('air.2m','mean',2016,1,3)
+Depends:
+    R (>= 1.7.0),
+    GSDF,
+    lubridate
+License: Apache.
