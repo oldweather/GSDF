@@ -198,13 +198,13 @@ ERA5.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
                                                     interpolation.times[[2]]$month,
                                                     interpolation.times[[2]]$day,
                                                     interpolation.times[[2]]$hour))
-    c3<-ymd_hms(sprintf("%04d/%02d/%02d:%02d:%02d:00",interpolation.times[[2]]$year,
-                                                      interpolation.times[[2]]$month,
-                                                      interpolation.times[[2]]$day,
-                                                      interpolation.times[[2]]$hour,
+    c3<-ymd_hms(sprintf("%04d/%02d/%02d:%02d:%02d:00",year,
+                                                      month,
+                                                      day,
+                                                      as.integer(hour),
                                                       as.integer((hour%%1)*60)))
     if(c2==c1) stop("Zero interval in time interpolation")
-    weight<-as.numeric((c2-c3)/(c2-c1))
+    weight<-as.duration(c2-c3)/as.duration(c2-c1)
     v<-v1
     idx.t<-GSDF.find.dimension(v,'time')
     v$dimensions[[idx.t]]$value<-v1$dimensions[[idx.t]]$value+
@@ -277,13 +277,13 @@ ERA5.get.members.slice.at.level.at.hour<-function(variable,year,month,day,hour,h
                                                     interpolation.times[[2]]$month,
                                                     interpolation.times[[2]]$day,
                                                     interpolation.times[[2]]$hour))
-    c3<-ymd_hms(sprintf("%04d/%02d/%02d:%02d:%02d:00",interpolation.times[[2]]$year,
-                                                      interpolation.times[[2]]$month,
-                                                      interpolation.times[[2]]$day,
-                                                      interpolation.times[[2]]$hour,
+    c3<-ymd_hms(sprintf("%04d/%02d/%02d:%02d:%02d:00",year,
+                                                      month,
+                                                      day,
+                                                      as.integer(hour),
                                                       as.integer((hour%%1)*60)))
-    if(c2==c1) stop("Zero interval in time interpolation")
-    weight<-as.numeric((c2-c3)/(c2-c1))
+   if(c2==c1) stop("Zero interval in time interpolation")
+    weight<-as.duration(c2-c3)/as.duration(c2-c1)
     v<-v1
     idx.t<-GSDF.find.dimension(v,'time')
     v$dimensions[[idx.t]]$value<-v1$dimensions[[idx.t]]$value+
