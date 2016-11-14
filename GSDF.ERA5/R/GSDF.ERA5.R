@@ -105,22 +105,35 @@ ERA5.hourly.get.file.name<-function(variable,year,month,day,hour,stream='oper') 
     stop(sprintf("No local data file %s",file.name))
 }
 
-ERA5.is.in.file<-function(variable,year,month,day,hour) {
-		if(hour==as.integer(hour)) return(TRUE)
-		return(FALSE)
+ERA5.is.in.file<-function(variable,year,month,day,hour,stream='oper') {
+     if(stream=='oper' && hour==as.integer(hour)) return(TRUE)
+     if(stream=='enda' && hour%%3==0) return(TRUE)
+     return(FALSE)
 }
 
 # Go backward and forward in hours to find previous and subsequent
 #  hours at an analysis time.
-ERA5.get.interpolation.times<-function(variable,year,month,day,hour) {
-	if(ERA5.is.in.file(variable,year,month,day,hour)) {
-		stop("Internal interpolation failure")
-	}
+ERA5.get.interpolation.times<-function(variable,year,month,day,hour,stream='oper') {
+    if(ERA5.is.in.file(variable,year,month,day,hour,stream=stream)) {
+            stop("Internal interpolation failure")
+    }
+    if(stream=='oper') {
         t.previous<-list(year=year,month=month,day=day,hour=as.integer(hour))
         nd<-ymd_hms(sprintf("%04d-%02d-%02d:%02d:00:00",year,month,day,
                             as.integer(hour)))+hours(1)
         t.next<-list(year=year(nd),month=month(nd),day=day(nd),hour=hour(nd))
-	return(list(t.previous,t.next))
+        return(list(t.previous,t.next))
+    }
+    if(stream=='enda') {
+        hour<-as.integer(hour)
+        pd<-ymd_hms(sprintf("%04d-%02d-%02d:%02d:00:00",year,month,day,hour))
+                            -lubridate::hours(hour%%3)
+        t.next<-list(year=year(pd),month=month(pd),day=day(pd),hour=hour(pd))
+        nd<-pd+lubridate::hours(3)
+        t.next<-list(year=year(nd),month=month(nd),day=day(nd),hour=hour(nd))
+        return(list(t.previous,t.next))
+    }
+    stop(sprintf("Unsupported stream %s",stream))
 }
 
 # This is the function users will call.
@@ -172,7 +185,7 @@ ERA5.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
            return(v)
     }
     # Interpolate from the previous and subsequent analysis times
-    interpolation.times<-ERA5.get.interpolation.times(variable,year,month,day,hour,type=type)
+    interpolation.times<-ERA5.get.interpolation.times(variable,year,month,day,hour)
     v1<-ERA5.get.slice.at.level.at.hour(variable,interpolation.times[[1]]$year,interpolation.times[[1]]$month,
                                            interpolation.times[[1]]$day,interpolation.times[[1]]$hour)
     v2<-ERA5.get.slice.at.level.at.hour(variable,interpolation.times[[2]]$year,interpolation.times[[2]]$month,
@@ -201,3 +214,80 @@ ERA5.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
 }
 
 
+
+#' Get slice at hour for each ensemble member
+#'
+#' Get a 2D horizontal slice of a selected variable (as a GSDF field) for a given hour.
+#'
+#' Interpolates to the selected hour when the data available are less than hourly.
+#' Interpolates to the selected height when the selected height is not that of a ERA5 level.
+#'
+#' @export
+#' @param variable 'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any supported variable.
+#' @param height Height in hPa - leave NULL for monolevel
+#' @return A GSDF field with lat and long as extended dimensions
+ERA5.get.members.slice.at.hour<-function(variable,year,month,day,hour,height=NULL) {
+  if(ERA5.get.variable.group(variable)=='monolevel.analysis' ||
+     ERA5.get.variable.group(variable)=='monolevel.forecast') {
+    if(!is.null(height)) warning("Ignoring height specification for monolevel variable")
+    return(ERA5.get.members.slice.at.level.at.hour(variable,year,month,day,hour))
+  }
+  # Find levels above and below selected height, and interpolate between them
+  if(is.null(height)) stop(sprintf("No height specified for pressure variable %s",variable))
+  if(height>1000 || height<10) stop("Height must be between 10 and 1000 hPa")
+  level.below<-max(which(ERA5.heights>=height))
+  if(height==ERA5.heights[level.below]) {
+    return(ERA5.get.members.slice.at.level.at.hour(variable,year,month,day,hour,height=ERA5.heights[level.below]))
+  }
+  below<-ERA5.get.members.slice.at.level.at.hour(variable,year,month,day,hour,height=ERA5.heights[level.below])
+  above<-ERA5.get.members.slice.at.level.at.hour(variable,year,month,day,hour,height=ERA5.heights[level.below+1])
+  above.weight<-(ERA5.heights[level.below]-height)/(ERA5.heights[level.below]-ERA5.heights[level.below+1])
+  below$data[]<-below$data*(1-above.weight)+above$data*above.weight
+  idx.h<-GSDF.find.dimension(below,'height')
+  below$dimensions[[idx.h]]$value<-height
+  return(below)
+}
+
+ERA5.get.members.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NULL) {
+    # Is it from an analysis time (no need to interpolate)?
+    if(ERA5.is.in.file(variable,year,month,day,hour,stream='enda')) {
+        hour<-as.integer(hour)
+        file.name<-ERA5.hourly.get.file.name(variable,year,month,day,hour,stream='enda')
+           t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
+                        format=c(dates='y/m/d',times='h:m:s'))-1/48
+           t2<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
+                        format=c(dates='y/m/d',times='h:m:s'))+1/48
+           v<-GSDF.ncdf.load(file.name,ERA5.translate.for.variable.names(variable),
+                             lat.range=c(-90,90),lon.range=c(0,360),
+                             height.range=rep(height,2),time.range=c(t,t2),
+                             ens.name='number',ens.range=c(0,9))
+           return(v)
+    }
+    # Interpolate from the previous and subsequent analysis times
+    interpolation.times<-ERA5.get.interpolation.times(variable,year,month,day,hour,stream='enda')
+    v1<-ERA5.get.members.slice.at.level.at.hour(variable,interpolation.times[[1]]$year,interpolation.times[[1]]$month,
+                                           interpolation.times[[1]]$day,interpolation.times[[1]]$hour)
+    v2<-ERA5.get.members.slice.at.level.at.hour(variable,interpolation.times[[2]]$year,interpolation.times[[2]]$month,
+                                           interpolation.times[[2]]$day,interpolation.times[[2]]$hour)
+    c1<-ymd_hms(sprintf("%04d/%02d/%02d:%02d:00:00",interpolation.times[[1]]$year,
+                                                    interpolation.times[[1]]$month,
+                                                    interpolation.times[[1]]$day,
+                                                    interpolation.times[[1]]$hour))
+    c2<-ymd_hms(sprintf("%04d/%02d/%02d:%02d:00:00",interpolation.times[[2]]$year,
+                                                    interpolation.times[[2]]$month,
+                                                    interpolation.times[[2]]$day,
+                                                    interpolation.times[[2]]$hour))
+    c3<-ymd_hms(sprintf("%04d/%02d/%02d:%02d:%02d:00",interpolation.times[[2]]$year,
+                                                      interpolation.times[[2]]$month,
+                                                      interpolation.times[[2]]$day,
+                                                      interpolation.times[[2]]$hour,
+                                                      as.integer((hour%%1)*60)))
+    if(c2==c1) stop("Zero interval in time interpolation")
+    weight<-as.numeric((c2-c3)/(c2-c1))
+    v<-v1
+    idx.t<-GSDF.find.dimension(v,'time')
+    v$dimensions[[idx.t]]$value<-v1$dimensions[[idx.t]]$value+
+                                 as.numeric(v2$dimensions[[idx.t]]$value-v1$dimensions[[idx.t]]$value)*(1-weight)
+    v$data[]<-v1$data*weight+v2$data*(1-weight)
+    return(v)
+}
