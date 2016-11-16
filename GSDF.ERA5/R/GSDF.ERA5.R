@@ -95,7 +95,7 @@ ERA5.hourly.get.file.name<-function(variable,year,month,day,hour,stream='oper') 
                         year,month,day)
     # Forecast data starts at 6am, so it's 6 hours out in the files
     if(ERA5.get.variable.group(variable) == 'monolevel.forecast' &&
-          hour<6) { # look in previous day's file instead
+          hour<7) { # look in previous day's file instead
       dte<-ymd(sprintf("%04d-%02d-%02d",year,month,day))-days(1)
          dir.name<-sprintf("%s/%s/hourly/%04d/%02d/%02d",base.dir,stream,
                         year(dte),month(dte),day(dte))
