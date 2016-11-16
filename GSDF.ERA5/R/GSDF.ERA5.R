@@ -126,9 +126,9 @@ ERA5.get.interpolation.times<-function(variable,year,month,day,hour,stream='oper
     }
     if(stream=='enda') {
         hour<-as.integer(hour)
-        pd<-ymd_hms(sprintf("%04d-%02d-%02d:%02d:00:00",year,month,day,hour))
-                            -lubridate::hours(hour%%3)
-        t.next<-list(year=year(pd),month=month(pd),day=day(pd),hour=hour(pd))
+        pd<-ymd_hms(sprintf("%04d-%02d-%02d:%02d:00:00",year,month,day,hour))-
+                            lubridate::hours(hour%%3)
+        t.previous<-list(year=year(pd),month=month(pd),day=day(pd),hour=hour(pd))
         nd<-pd+lubridate::hours(3)
         t.next<-list(year=year(nd),month=month(nd),day=day(nd),hour=hour(nd))
         return(list(t.previous,t.next))
@@ -265,8 +265,14 @@ ERA5.get.members.slice.at.level.at.hour<-function(variable,year,month,day,hour,h
     }
     # Interpolate from the previous and subsequent analysis times
     interpolation.times<-ERA5.get.interpolation.times(variable,year,month,day,hour,stream='enda')
+    if(!ERA5.is.in.file(variable,interpolation.times[[1]]$year,interpolation.times[[1]]$month,
+                                           interpolation.times[[1]]$day,interpolation.times[[1]]$hour,stream='enda'))
+					   stop(interpolation.times)
     v1<-ERA5.get.members.slice.at.level.at.hour(variable,interpolation.times[[1]]$year,interpolation.times[[1]]$month,
                                            interpolation.times[[1]]$day,interpolation.times[[1]]$hour)
+    if(!ERA5.is.in.file(variable,interpolation.times[[2]]$year,interpolation.times[[2]]$month,
+                                           interpolation.times[[2]]$day,interpolation.times[[2]]$hour,stream='enda'))
+					   stop(interpolation.times)
     v2<-ERA5.get.members.slice.at.level.at.hour(variable,interpolation.times[[2]]$year,interpolation.times[[2]]$month,
                                            interpolation.times[[2]]$day,interpolation.times[[2]]$hour)
     c1<-ymd_hms(sprintf("%04d/%02d/%02d:%02d:00:00",interpolation.times[[1]]$year,
