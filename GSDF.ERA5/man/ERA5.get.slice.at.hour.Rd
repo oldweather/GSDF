@@ -4,12 +4,16 @@
 \alias{ERA5.get.slice.at.hour}
 \title{Get slice at hour.}
 \usage{
-ERA5.get.slice.at.hour(variable, year, month, day, hour, height = NULL)
+ERA5.get.slice.at.hour(variable, year, month, day, hour, height = NULL,
+  fc.init = NULL)
 }
 \arguments{
 \item{variable}{'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any supported variable.}
 
 \item{height}{Height in hPa - leave NULL for monolevel}
+
+\item{fc.init}{- which forecast initialisation hour to use: 6, 18, blend (gives combination
+of both with a smooth transition), or NULL (default, uses whichever has shortest lag time).}
 }
 \value{
 A GSDF field with lat and long as extended dimensions

@@ -87,20 +87,37 @@ ERA5.get.variable.group<-function(variable) {
 #'
 #' @export
 #' @param variable 'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any supported variable
-#' @param stream - 'oper', 'eda' or other ERA5 stream. - must be 'oper' at present'
+#' @param stream - 'oper', 'eda' or other ERA5 stream.
+#' @param fc.init - hour at which the forecast run was initialised (6 or 18) - if NULL
+#'  default, uses whicever gives the shortest lead time (ignored for analysis variables).
 #' @return File containing the requested data 
-ERA5.hourly.get.file.name<-function(variable,year,month,day,hour,stream='oper') {
+ERA5.hourly.get.file.name<-function(variable,year,month,day,hour,
+                                    stream='oper',fc.init=NULL) {
     base.dir<-ERA5.get.data.dir()
     dir.name<-sprintf("%s/%s/hourly/%04d/%02d/%02d",base.dir,stream,
                         year,month,day)
-    # Forecast data starts at 6am, so it's 6 hours out in the files
-    if(ERA5.get.variable.group(variable) == 'monolevel.forecast' &&
-          hour<7) { # look in previous day's file instead
-      dte<-ymd(sprintf("%04d-%02d-%02d",year,month,day))-days(1)
+    file.name<-sprintf("%s/%s.nc",dir.name,ERA5.translate.for.files(variable))
+    if(ERA5.get.variable.group(variable) == 'monolevel.forecast') {
+      if(is.null(fc.init)) {
+        fc.init<-18
+        if(hour>=6 && hour<18) fc.init<-6
+      }
+      if(fc.init!=6 && fc.init!=18) {
+        stop("Forcast initialisation time must be 6 or 18")
+      }
+      if(fc.init==6 && hour<6 && hour>0) {
+        stop("Hour more than 18 hours after forecast initialisation")
+      }
+      if(fc.init==18 && hour<18 && hour>12) {
+        stop("Hour more than 18 hours after forecast initialisation")
+      }
+      if(hour<fc.init) {
+         dte<-ymd(sprintf("%04d-%02d-%02d",year,month,day))-days(1)
          dir.name<-sprintf("%s/%s/hourly/%04d/%02d/%02d",base.dir,stream,
                         year(dte),month(dte),day(dte))
+       }
+       file.name<-sprintf("%s/%s.%02d.nc",dir.name,ERA5.translate.for.files(variable),fc.init)
     }
-    file.name<-sprintf("%s/%s.nc",dir.name,ERA5.translate.for.files(variable))
     if(file.exists(file.name)) return(file.name)
     stop(sprintf("No local data file %s",file.name))
 }
@@ -147,22 +164,55 @@ ERA5.get.interpolation.times<-function(variable,year,month,day,hour,stream='oper
 #' @export
 #' @param variable 'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any supported variable.
 #' @param height Height in hPa - leave NULL for monolevel
+#' @param fc.init - which forecast initialisation hour to use: 6, 18, blend (gives combination
+#'   of both with a smooth transition), or NULL (default, uses whichever has shortest lag time).
 #' @return A GSDF field with lat and long as extended dimensions
-ERA5.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL) {
+ERA5.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,fc.init=NULL) {
+  if(!is.null(fc.init) && fc.init=='blend') {
+    if(hour<7) {
+      return(ERA5.get.slice.at.hour(variable,year,month,day,hour,
+                                    height=height,fc.init=18))
+    }
+    if(hour>=7 && hour<=12) {
+      r1<-ERA5.get.slice.at.hour(variable,year,month,day,hour,
+                                    height=height,fc.init=6)
+      r2<-ERA5.get.slice.at.hour(variable,year,month,day,hour,
+                                    height=height,fc.init=18)
+      blend<-(hour-6)/6
+      r1$data[]<-r1$data*blend+r2$data*(1-blend)
+      return(r1)
+    }
+    if(hour>12 && hour<19) {
+      return(ERA5.get.slice.at.hour(variable,year,month,day,hour,
+                                    height=height,fc.init=6))
+    }
+    if(hour>=19) {
+      r1<-ERA5.get.slice.at.hour(variable,year,month,day,hour,
+                                    height=height,fc.init=18)
+      r2<-ERA5.get.slice.at.hour(variable,year,month,day,hour,
+                                    height=height,fc.init=6)
+      blend<-(hour-18)/6
+      r1$data[]<-r1$data*blend+r2$data*(1-blend)
+      return(r1)
+    }    
+  }
   if(ERA5.get.variable.group(variable)=='monolevel.analysis' ||
      ERA5.get.variable.group(variable)=='monolevel.forecast') {
     if(!is.null(height)) warning("Ignoring height specification for monolevel variable")
-    return(ERA5.get.slice.at.level.at.hour(variable,year,month,day,hour))
+    return(ERA5.get.slice.at.level.at.hour(variable,year,month,day,hour,fc.init=fc.init))
   }
   # Find levels above and below selected height, and interpolate between them
   if(is.null(height)) stop(sprintf("No height specified for pressure variable %s",variable))
   if(height>1000 || height<10) stop("Height must be between 10 and 1000 hPa")
   level.below<-max(which(ERA5.heights>=height))
   if(height==ERA5.heights[level.below]) {
-    return(ERA5.get.slice.at.level.at.hour(variable,year,month,day,hour,height=ERA5.heights[level.below]))
+    return(ERA5.get.slice.at.level.at.hour(variable,year,month,day,hour,
+                                           height=ERA5.heights[level.below],fc.init=fc.init))
   }
-  below<-ERA5.get.slice.at.level.at.hour(variable,year,month,day,hour,height=ERA5.heights[level.below])
-  above<-ERA5.get.slice.at.level.at.hour(variable,year,month,day,hour,height=ERA5.heights[level.below+1])
+  below<-ERA5.get.slice.at.level.at.hour(variable,year,month,day,hour,
+                                         height=ERA5.heights[level.below],fc.init=fc.init)
+  above<-ERA5.get.slice.at.level.at.hour(variable,year,month,day,hour,
+                                         height=ERA5.heights[level.below+1],fc.init=fc.init)
   above.weight<-(ERA5.heights[level.below]-height)/(ERA5.heights[level.below]-ERA5.heights[level.below+1])
   below$data[]<-below$data*(1-above.weight)+above$data*above.weight
   idx.h<-GSDF.find.dimension(below,'height')
@@ -170,11 +220,11 @@ ERA5.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL) {
   return(below)
 }
 
-ERA5.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NULL) {
-    # Is it from an analysis time (no need to interpolate)?
+ERA5.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NULL,fc.init=NULL) {
+  # Is it from an analysis time (no need to interpolate)?
     if(ERA5.is.in.file(variable,year,month,day,hour)) {
         hour<-as.integer(hour)
-        file.name<-ERA5.hourly.get.file.name(variable,year,month,day,hour)
+        file.name<-ERA5.hourly.get.file.name(variable,year,month,day,hour,stream='oper',fc.init=fc.init)
            t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                         format=c(dates='y/m/d',times='h:m:s'))-1/48
            t2<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
@@ -187,9 +237,11 @@ ERA5.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
     # Interpolate from the previous and subsequent analysis times
     interpolation.times<-ERA5.get.interpolation.times(variable,year,month,day,hour)
     v1<-ERA5.get.slice.at.level.at.hour(variable,interpolation.times[[1]]$year,interpolation.times[[1]]$month,
-                                           interpolation.times[[1]]$day,interpolation.times[[1]]$hour)
+                                           interpolation.times[[1]]$day,interpolation.times[[1]]$hour,
+                                           fc.init=fc.init)
     v2<-ERA5.get.slice.at.level.at.hour(variable,interpolation.times[[2]]$year,interpolation.times[[2]]$month,
-                                           interpolation.times[[2]]$day,interpolation.times[[2]]$hour)
+                                           interpolation.times[[2]]$day,interpolation.times[[2]]$hour,
+                                           fc.init=fc.init)
     c1<-ymd_hms(sprintf("%04d/%02d/%02d:%02d:00:00",interpolation.times[[1]]$year,
                                                     interpolation.times[[1]]$month,
                                                     interpolation.times[[1]]$day,

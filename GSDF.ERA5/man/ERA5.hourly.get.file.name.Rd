@@ -4,12 +4,16 @@
 \alias{ERA5.hourly.get.file.name}
 \title{ERA5 get file name (hourly)}
 \usage{
-ERA5.hourly.get.file.name(variable, year, month, day, hour, stream = "oper")
+ERA5.hourly.get.file.name(variable, year, month, day, hour, stream = "oper",
+  fc.init = NULL)
 }
 \arguments{
 \item{variable}{'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any supported variable}
 
-\item{stream}{- 'oper', 'eda' or other ERA5 stream. - must be 'oper' at present'}
+\item{stream}{- 'oper', 'eda' or other ERA5 stream.}
+
+\item{fc.init}{- hour at which the forecast run was initialised (6 or 18) - if NULL
+default, uses whicever gives the shortest lead time (ignored for analysis variables).}
 }
 \value{
 File containing the requested data
