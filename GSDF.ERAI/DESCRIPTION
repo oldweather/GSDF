@@ -1,0 +1,14 @@
+Package: GSDF.ERAI
+Type: Package
+Title: Get data from the ERA Interim Reanalysis
+Version: 0.2
+Date: 2016-11-19
+Author: Philip Brohan
+Maintainer: Philip Brohan <philip@brohan.org>
+Description: field<-ERAI.get.slice.at.hour('air.2m','mean',2016,1,3)
+Depends:
+    R (>= 1.7.0),
+    GSDF,
+    lubridate
+License: Apache.
+RoxygenNote: 5.0.1
