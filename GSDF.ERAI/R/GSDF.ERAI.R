@@ -60,18 +60,33 @@ ERAI.get.variable.group<-function(variable) {
 #'
 #' @export
 #' @param variable 'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any supported variable
+#' @param fc.init - hour at which the forecast run was initialised (0 or 12) - if NULL
+#'  (default), uses whicever gives the shortest lead time (ignored for analysis variables).
 #' @return File containing the requested data 
-ERAI.hourly.get.file.name<-function(variable,year,month,day,hour) {
+ERAI.hourly.get.file.name<-function(variable,year,month,day,hour,fc.init=NULL) {
     base.dir<-ERAI.get.data.dir()
     dir.name<-sprintf("%s/hourly/%04d/%02d",base.dir,year,month)
     file.name<-sprintf("%s/%s.nc",dir.name,variable)
     if(ERAI.get.variable.group(variable) == 'monolevel.forecast') {
-       if(day==1 && hour==1) { # Forecast variables are offset by 3 hours in the files
-         dte<-ymd(sprintf("%04d-%02d-%02d",year,month,day))-days(1)
+      if(is.null(fc.init)) {
+        fc.init<-12
+        if(hour>=3 && hour<15) fc.init<-0
+      }
+      if(fc.init!=0 && fc.init!=12) {
+        stop("Forcast initialisation time must be 0 or 12")
+      }
+      if(fc.init==0 && hour<3 && hour>18) {
+        stop("Hour not 3-18 hours after forecast initialisation")
+      }
+      if(fc.init==12 && hour<15 && hour>6) {
+        stop("Hour not 3-18 hours after forecast initialisation")
+      }
+       if(day==1 && hour<fc.init) { # Forecast variables are in the file of their initialisation time
+         dte<-ymd(sprintf("%04d-%02d-%02d",year,month,day))-months(1)
          dir.name<-sprintf("%s/hourly/%04d/%02d",base.dir,
                         year(dte),month(dte))
        }
-       file.name<-sprintf("%s/%s.nc",dir.name,variable)
+       file.name<-sprintf("%s/%s.%02d.nc",dir.name,variable,fc.init)
     }
     if(file.exists(file.name)) return(file.name)
     stop(sprintf("No local data file %s",file.name))
@@ -122,11 +137,43 @@ ERAI.get.interpolation.times<-function(variable,year,month,day,hour,stream='oper
 #' @param variable 'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any supported variable.
 #' @param height Height in hPa - leave NULL for monolevel
 #' @return A GSDF field with lat and long as extended dimensions
-ERAI.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL) {
+ERAI.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,fc.init=NULL) {
+  if(!is.null(fc.init) && fc.init=='blend') {
+    if(hour<3) {
+      return(ERAI.get.slice.at.hour(variable,year,month,day,hour,
+                                    height=height,fc.init=12))
+    }
+    if(hour>=3 && hour<=6) {
+      r1<-ERAI.get.slice.at.hour(variable,year,month,day,hour,
+                                    height=height,fc.init=0)
+      r2<-ERAI.get.slice.at.hour(variable,year,month,day,hour,
+                                    height=height,fc.init=12)
+      blend<-(hour-3)/3
+      r1$data[]<-r1$data*blend+r2$data*(1-blend)
+      return(r1)
+    }
+    if(hour>6 && hour<15) {
+      return(ERAI.get.slice.at.hour(variable,year,month,day,hour,
+                                    height=height,fc.init=0))
+    }
+    if(hour>=15 && hour<=18) {
+      r1<-ERAI.get.slice.at.hour(variable,year,month,day,hour,
+                                    height=height,fc.init=12)
+      r2<-ERAI.get.slice.at.hour(variable,year,month,day,hour,
+                                    height=height,fc.init=0)
+      blend<-(hour-15)/3
+      r1$data[]<-r1$data*blend+r2$data*(1-blend)
+      return(r1)
+    }    
+    if(hour>18) {
+      return(ERAI.get.slice.at.hour(variable,year,month,day,hour,
+                                    height=height,fc.init=12))
+    }
+  }
   if(ERAI.get.variable.group(variable)=='monolevel.analysis' ||
      ERAI.get.variable.group(variable)=='monolevel.forecast') {
     if(!is.null(height)) warning("Ignoring height specification for monolevel variable")
-    return(ERAI.get.slice.at.level.at.hour(variable,year,month,day,hour))
+    return(ERAI.get.slice.at.level.at.hour(variable,year,month,day,hour,fc.init=fc.init))
   }
   # Find levels above and below selected height, and interpolate between them
   if(is.null(height)) stop(sprintf("No height specified for pressure variable %s",variable))
@@ -147,11 +194,26 @@ ERAI.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL) {
   return(below)
 }
 
-ERAI.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NULL) {
+ERAI.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NULL,fc.init=fc.init) {
   # Is it from an analysis time (no need to interpolate)?
     if(ERAI.is.in.file(variable,year,month,day,hour)) {
         hour<-as.integer(hour)
-        file.name<-ERAI.hourly.get.file.name(variable,year,month,day,hour)
+        file.name<-ERAI.hourly.get.file.name(variable,year,month,day,hour,fc.init=fc.init)
+	if(variable=='prate' && (hour!=3 && hour!=15)) { # un-accumulate the precip
+           t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
+                        format=c(dates='y/m/d',times='h:m:s'))-(1/48)
+           t2<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
+                        format=c(dates='y/m/d',times='h:m:s'))+1/48
+           v<-GSDF.ncdf.load(file.name,ERAI.translate.for.variable.names(variable),
+                             lat.range=c(-90,90),lon.range=c(0,360),
+                             height.range=rep(height,2),time.range=c(t,t2))
+	   t<-t-3/24
+	   t2<-t2-3/24
+           v2<-GSDF.ncdf.load(file.name,ERAI.translate.for.variable.names(variable),
+                             lat.range=c(-90,90),lon.range=c(0,360),
+                             height.range=rep(height,2),time.range=c(t,t2))
+	   v$data[]<-v$data-v2$data	
+	} else {
            t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                         format=c(dates='y/m/d',times='h:m:s'))-1/48
            t2<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
@@ -159,14 +221,18 @@ ERAI.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
            v<-GSDF.ncdf.load(file.name,ERAI.translate.for.variable.names(variable),
                              lat.range=c(-90,90),lon.range=c(0,360),
                              height.range=rep(height,2),time.range=c(t,t2))
-           return(v)
+	}
+	if(variable=='prate') v$data[]<-v$data/3 # 3-hour accumulations to 1 hour rate
+        return(v)
     }
     # Interpolate from the previous and subsequent analysis times
     interpolation.times<-ERAI.get.interpolation.times(variable,year,month,day,hour)
     v1<-ERAI.get.slice.at.level.at.hour(variable,interpolation.times[[1]]$year,interpolation.times[[1]]$month,
-                                           interpolation.times[[1]]$day,interpolation.times[[1]]$hour)
+                                           interpolation.times[[1]]$day,interpolation.times[[1]]$hour,
+					   fc.init=fc.init)
     v2<-ERAI.get.slice.at.level.at.hour(variable,interpolation.times[[2]]$year,interpolation.times[[2]]$month,
-                                           interpolation.times[[2]]$day,interpolation.times[[2]]$hour)
+                                           interpolation.times[[2]]$day,interpolation.times[[2]]$hour,
+					   fc.init=fc.init)
     c1<-ymd_hms(sprintf("%04d/%02d/%02d:%02d:00:00",interpolation.times[[1]]$year,
                                                     interpolation.times[[1]]$month,
                                                     interpolation.times[[1]]$day,
