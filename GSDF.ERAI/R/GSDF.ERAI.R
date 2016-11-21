@@ -199,7 +199,8 @@ ERAI.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
     if(ERAI.is.in.file(variable,year,month,day,hour)) {
         hour<-as.integer(hour)
         file.name<-ERAI.hourly.get.file.name(variable,year,month,day,hour,fc.init=fc.init)
-	if(variable=='prate' && hour-fc.init!=3) { # un-accumulate the precip
+	if(variable=='prate' && ((!is.null(fc.init) && hour-fc.init!=3) ||
+                                 (is.null(fc.init) && hour!=3 && hour!=15))) { # un-accumulate the precip
            t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                         format=c(dates='y/m/d',times='h:m:s'))-(1/48)
            t2<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
