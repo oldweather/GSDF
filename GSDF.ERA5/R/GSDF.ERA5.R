@@ -296,7 +296,7 @@ ERA5.get.members.slice.at.hour<-function(variable,year,month,day,hour,height=NUL
       return(r1)
     }
     if(hour>12 && hour<19) {
-      return(ERA5.members.get.slice.at.hour(variable,year,month,day,hour,
+      return(ERA5.get.members.slice.at.hour(variable,year,month,day,hour,
                                     height=height,fc.init=6))
     }
     if(hour>=19) {
