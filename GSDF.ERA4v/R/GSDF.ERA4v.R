@@ -50,15 +50,15 @@ ERA4v.hourly.get.file.name<-function(variable,year,month,day,hour,
     if(ERA4v.get.variable.group(variable) == 'monolevel.forecast') {
       if(is.null(fc.init)) {
         fc.init<-21
-        if(hour>=9 && hour<21) fc.init<-9
+        if(hour>=10 && hour<22) fc.init<-9
       }
       if(fc.init!=9 && fc.init!=21) {
         stop("Forcast initialisation time must be 9 or 21")
       }
-      if(fc.init==9 && hour>21) {
+      if(fc.init==9 && hour>22) {
         stop("Hour more than 12 hours after forecast initialisation")
       }
-      if(fc.init==21 && hour<21 && hour>9) {
+      if(fc.init==21 && hour<22 && hour>10) {
         stop("Hour more than 12 hours after forecast initialisation")
       }
       # In file according to fc.init date, so can be in last month's file
@@ -115,24 +115,10 @@ ERA4v.get.interpolation.times<-function(variable,year,month,day,hour,stream='ope
 #' @export
 #' @param variable 'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any supported variable.
 #' @param height Height in hPa - leave NULL for monolevel
-#' @param fc.init - which forecast initialisation hour to use: 9, 21, blend (gives combination
-#'   of both with a smooth transition), or NULL (default, uses whichever has shortest lag time).
+#' @param fc.init - which forecast initialisation hour to use: 9, 21, or NULL
+#'            (default, uses whichever has shortest lag time).
 #' @return A GSDF field with lat and long as extended dimensions
 ERA4v.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,fc.init=NULL) {
-  if(!is.null(fc.init) && fc.init=='blend') {
-    if(hour==9 || hour==21) {
-      r1<-ERA4v.get.slice.at.hour(variable,year,month,day,hour,
-                                    height=height,fc.init=9)
-      r2<-ERA4v.get.slice.at.hour(variable,year,month,day,hour,
-                                    height=height,fc.init=21)
-      blend<-0.5
-      r1$data[]<-r1$data*blend+r2$data*(1-blend)
-      return(r1)
-    } else {
-      return(ERA4v.get.slice.at.hour(variable,year,month,day,hour,
-                                    height=height,fc.init=NULL))
-    }
-  }
   if(ERA4v.get.variable.group(variable)=='monolevel.forecast') {
     if(!is.null(height)) warning("Ignoring height specification for monolevel variable")
     return(ERA4v.get.slice.at.level.at.hour(variable,year,month,day,hour,fc.init=fc.init))
@@ -213,24 +199,10 @@ ERA4v.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=N
 #' @export
 #' @param variable 'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any supported variable.
 #' @param height Height in hPa - leave NULL for monolevel
-#' @param fc.init - which forecast initialisation hour to use: 9, 21, blend (gives combination
-#'   of both with a smooth transition), or NULL (default, uses whichever has shortest lag time).
+#' @param fc.init - which forecast initialisation hour to use: 9, 21, or NULL
+#'    (default, uses whichever has shortest lag time).
 #' @return A GSDF field with lat and long as extended dimensions
 ERA4v.get.members.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,fc.init=NULL) {
-  if(!is.null(fc.init) && fc.init=='blend') {
-    if(hour==9 || hour==21) {
-      r1<-ERA4v.get.members.slice.at.hour(variable,year,month,day,hour,
-                                    height=height,fc.init=9)
-      r2<-ERA4v.get.members.slice.at.hour(variable,year,month,day,hour,
-                                    height=height,fc.init=21)
-      blend<-0.5
-      r1$data[]<-r1$data*blend+r2$data*(1-blend)
-      return(r1)
-    } else {
-      return(ERA4v.get.members.slice.at.hour(variable,year,month,day,hour,
-                                    height=height,fc.init=NULL))
-    }
-  }
   if(ERA4v.get.variable.group(variable)=='monolevel.forecast') {
     if(!is.null(height)) warning("Ignoring height specification for monolevel variable")
     return(ERA4v.get.members.slice.at.level.at.hour(variable,year,month,day,hour,fc.init=fc.init))
