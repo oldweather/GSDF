@@ -138,39 +138,7 @@ ERAI.get.interpolation.times<-function(variable,year,month,day,hour,stream='oper
 #' @param height Height in hPa - leave NULL for monolevel
 #' @return A GSDF field with lat and long as extended dimensions
 ERAI.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,fc.init=NULL) {
-  if(!is.null(fc.init) && fc.init=='blend') {
-    if(hour<3) {
-      return(ERAI.get.slice.at.hour(variable,year,month,day,hour,
-                                    height=height,fc.init=12))
-    }
-    if(hour>=3 && hour<=6) {
-      r1<-ERAI.get.slice.at.hour(variable,year,month,day,hour,
-                                    height=height,fc.init=0)
-      r2<-ERAI.get.slice.at.hour(variable,year,month,day,hour,
-                                    height=height,fc.init=12)
-      blend<-(hour-3)/3
-      r1$data[]<-r1$data*blend+r2$data*(1-blend)
-      return(r1)
-    }
-    if(hour>6 && hour<15) {
-      return(ERAI.get.slice.at.hour(variable,year,month,day,hour,
-                                    height=height,fc.init=0))
-    }
-    if(hour>=15 && hour<=18) {
-      r1<-ERAI.get.slice.at.hour(variable,year,month,day,hour,
-                                    height=height,fc.init=12)
-      r2<-ERAI.get.slice.at.hour(variable,year,month,day,hour,
-                                    height=height,fc.init=0)
-      blend<-(hour-15)/3
-      r1$data[]<-r1$data*blend+r2$data*(1-blend)
-      return(r1)
-    }    
-    if(hour>18) {
-      return(ERAI.get.slice.at.hour(variable,year,month,day,hour,
-                                    height=height,fc.init=12))
-    }
-  }
-  if(ERAI.get.variable.group(variable)=='monolevel.analysis' ||
+ if(ERAI.get.variable.group(variable)=='monolevel.analysis' ||
      ERAI.get.variable.group(variable)=='monolevel.forecast') {
     if(!is.null(height)) warning("Ignoring height specification for monolevel variable")
     return(ERAI.get.slice.at.level.at.hour(variable,year,month,day,hour,fc.init=fc.init))
@@ -197,7 +165,37 @@ ERAI.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,fc.ini
 ERAI.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NULL,fc.init=fc.init) {
   # Is it from an analysis time (no need to interpolate)?
     if(ERAI.is.in.file(variable,year,month,day,hour)) {
-        hour<-as.integer(hour)
+         hour<-as.integer(hour)
+      if(!is.null(fc.init) && fc.init=='blend') {
+        if(hour<3) {
+          return(ERAI.get.slice.at.level.at.hour(variable,year,month,day,hour,
+                                        height=height,fc.init=12))
+        }
+        if(hour==3 || hour==18) {
+          r1<-ERAI.get.slice.at.level.at.hour(variable,year,month,day,hour,
+                                        height=height,fc.init=0)
+          r2<-ERAI.get.slice.at.level.at.hour(variable,year,month,day,hour,
+                                        height=height,fc.init=12)
+          r1$data[]<-r1$data*0.33+r2$data*0.67
+          return(r1)
+        }
+        if(hour==6 || hour==15) {
+          r1<-ERAI.get.slice.at.level.at.hour(variable,year,month,day,hour,
+                                        height=height,fc.init=0)
+          r2<-ERAI.get.slice.at.level.at.hour(variable,year,month,day,hour,
+                                        height=height,fc.init=12)
+          r1$data[]<-r1$data*0.67+r2$data*0.33
+          return(r1)
+        }
+        if(hour>6 && hour<15) {
+          return(ERAI.get.slice.at.level.at.hour(variable,year,month,day,hour,
+                                        height=height,fc.init=0))
+        }
+        if(hour>18) {
+          return(ERAI.get.slice.at.level.at.hour(variable,year,month,day,hour,
+                                        height=height,fc.init=12))
+        }
+      }
         file.name<-ERAI.hourly.get.file.name(variable,year,month,day,hour,fc.init=fc.init)
 	if(variable=='prate' && ((!is.null(fc.init) && hour-fc.init!=3) ||
                                  (is.null(fc.init) && hour!=3 && hour!=15))) { # un-accumulate the precip
