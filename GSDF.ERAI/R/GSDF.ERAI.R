@@ -243,10 +243,10 @@ ERAI.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
     interpolation.times<-ERAI.get.interpolation.times(variable,year,month,day,hour)
     v1<-ERAI.get.slice.at.level.at.hour(variable,interpolation.times[[1]]$year,interpolation.times[[1]]$month,
                                            interpolation.times[[1]]$day,interpolation.times[[1]]$hour,
-					   fc.init=fc.init)
+					   fc.init=fc.init,type=type)
     v2<-ERAI.get.slice.at.level.at.hour(variable,interpolation.times[[2]]$year,interpolation.times[[2]]$month,
                                            interpolation.times[[2]]$day,interpolation.times[[2]]$hour,
-					   fc.init=fc.init)
+					   fc.init=fc.init,type=type)
     c1<-ymd_hms(sprintf("%04d/%02d/%02d:%02d:00:00",interpolation.times[[1]]$year,
                                                     interpolation.times[[1]]$month,
                                                     interpolation.times[[1]]$day,
