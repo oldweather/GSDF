@@ -193,7 +193,7 @@ ERAI.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
           r1<-ERAI.get.slice.at.level.at.hour(variable,year,month,day,hour,
                                         height=height,fc.init=0,type=type)
           r2<-ERAI.get.slice.at.level.at.hour(variable,year,month,day,hour,
-                                        height=height,fc.init=12,typew=type)
+                                        height=height,fc.init=12,type=type)
           r1$data[]<-r1$data*0.67+r2$data*0.33
           return(r1)
         }
