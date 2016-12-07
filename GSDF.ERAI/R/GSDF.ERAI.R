@@ -66,6 +66,7 @@ ERAI.get.variable.group<-function(variable) {
 ERAI.hourly.get.file.name<-function(variable,year,month,day,hour,fc.init=NULL,type='mean') {
     base.dir<-ERAI.get.data.dir()
     if(type=='normal') {
+      if(month==2 && day==29) day<-28
       file.name<-sprintf("%s/climtologies.1981-2010/%s.%02d.%02d.%02d.Rdata",base.dir,variable,month,day,hour)
       if(file.exists(file.name)) return(file.name)
       stop(sprintf("No local data file %s",file.name))
