@@ -416,7 +416,9 @@ GSDF.ncdf.offset.to.date<-function(offset,start,calendar) {
     minute<-as.integer(in.hours*60)
     in.hours<-in.hours-minute/60
     second<-as.integer(in.hours*60*60)
-    return(chron(sprintf("%02/%02d/%04d %02d:%02d:%02d",
+    print(sprintf("%02d/%02d/%04d %02d:%02d:%02d",
+                   month,day,year,hour,minute,second))
+    return(chron(sprintf("%02d/%02d/%04d %02d:%02d:%02d",
                    month,day,year,hour,minute,second)))    
   }
   if(calendar=='noleap' || calendar=='365_day') {
