@@ -16,3 +16,4 @@ Depends:
     grid,
     abind
 License: Apache
+RoxygenNote: 6.0.1
