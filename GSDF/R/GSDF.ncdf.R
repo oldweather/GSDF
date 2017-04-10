@@ -1,12 +1,189 @@
 #' Load a GSDF field from a netCDF file or URL
 #'
 #' Loads a specified hyperslab (range of lat, lon, height and time)
+#'  from a NetCDF file (or an openDAP server).
+#' New version with GSDF.time dates
+#'
+#' This works only for some netCDF files (netCDF is a very flexible file 
+#'  format and it's necessary to make assumptions about how the data is stored);
+#'  Does work on most CMIP5 data and reanalyses.
+#' 
+#' @export
+#' @param file Text name of file or URI.
+#' @param variable Text name of variable (in file).
+#' @param lat.range Two-element vector with max and min latitudes to retrieve.
+#'  Leave NULL only if variable has no latitude dimension.
+#' @param lon.range Two-element vector with max and min longitudes to retrieve.
+#'  Leave NULL only if variable has no longitude dimension.
+#' @param height.range Two-element vector with max and min heights to retrieve.
+#'  Leave NULL only if variable has no height dimension.
+#' @param ens.range Two-element vector with max and min ensemble members to retrieve.
+#'  Leave NULL only if variable has no ensemble dimension.
+#' @param time.range GSDF.time with max and min times to retrieve.
+#'  Leave NULL only if variable has no time dimension.
+#' @param default.calendar What calendar does file use (if not specified in file)? 
+#'  Supported values are those in GSDF.time.
+#' @param lat.name Text name used by file as label of latitude variable. If NULL, will
+#'  try to guess it.
+#' @param lon.name Text name used by file as label of longitude variable. If NULL, will
+#'  try to guess it.
+#' @param height.name Text name used by file as label of height variable. If NULL, will
+#'  try to guess it.
+#' @param ens.name Text name used by file as label of ensemble number variable. If NULL, will
+#'  try to guess it.
+#' @param time.name Text name used by file as label of time variable. If NULL, will
+#'  try to guess it.
+#' @param use.cache Unless FALSE, use a cached version of the data if available (requires
+#'   GSDF.cache.dir set and the exact data available in that directory).
+#' @return GSDF field with selected subset of file data.
+GSDF.ncdf.load2<-function(file,variable,lat.range=NULL,lon.range=NULL,
+                         height.range=NULL,time.range=NULL,
+                         ens.range=NULL,custom.range=NULL,
+                         default.calendar='gregorian',
+                         lat.name=NULL,lon.name=NULL,
+                         height.name=NULL,time.name=NULL,
+                         ens.name=NULL,use.cache=TRUE) {
+   # Use cached version if possible
+   cache.file.name<-NULL
+   if(use.cache && exists('GSDF.cache.dir') && !is.null(GSDF.cache.dir) &&
+                                               file.info(GSDF.cache.dir)$isdir) {
+      cache.file.name<-sprintf("%s.%s",file,variable)
+      if(!is.null(lat.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
+                                          as.character(lat.range[1]),as.character(lat.range[2]))
+      if(!is.null(lon.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
+                                          as.character(lon.range[1]),as.character(lon.range[2]))
+      if(!is.null(height.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
+                                          as.character(height.range[1]),as.character(height.range[2]))
+      if(!is.null(time.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
+                                          as.character(time.range[1]),as.character(time.range[2]))
+      if(!is.null(ens.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
+                                          as.character(ens.range[1]),as.character(ens.range[2]))
+      if(!is.null(custom.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
+                                          as.character(custom.range[1]),as.character(custom.range[2]))
+      cache.file.name<-sprintf("%s/%s.Rd",GSDF.cache.dir,gsub('/','.',cache.file.name))
+      if(file.exists(cache.file.name) && file.info(cache.file.name)$size>0) {
+         load(cache.file.name)
+         return(result)
+       }
+    }
+   # No cache- fetch from file
+   f<-nc_open(file)
+   v<-GSDF.ncdf.get.var(f,variable)
+   lat.i<-GSDF.ncdf.get.lat(v,lat.name)
+   if(is.null(lat.range) && !is.null(lat.i)) {
+      stop('Latitude range required (lat.range=c(-90,90)')
+   } 
+   lon.i<-GSDF.ncdf.get.lon(v,lon.name)
+   if(is.null(lon.range) && !is.null(lon.i)) {
+     if(length(v$dim[[lon.i]]$vals)==1) {
+      lon.range<-rep(v$dim[[lon.i]]$vals,2)
+     } else stop('Longitude range required (lon.range=c(-180,180)')
+   } 
+   height.i<-GSDF.ncdf.get.height(v,height.name)
+   if(is.null(height.range) && !is.null(height.i)) {
+     if(length(v$dim[[height.i]]$vals)==1) {
+      height.range<-rep(v$dim[[height.i]]$vals,2)
+     } else stop('Height range required (height.range=c(850,850)')
+   } 
+   ens.i<-GSDF.ncdf.get.ens(v,ens.name)
+   if(is.null(ens.range) && !is.null(ens.i)) {
+     if(length(v$dim[[ens.i]]$vals)==1) {
+      ens.range<-rep(v$dim[[ens.i]]$vals,2)
+     } else stop('Ensemble range required (ensemble.range=c(1,1)')
+   } 
+   time.i<-GSDF.ncdf.get.time(v,time.name)
+   if(is.null(time.range) && !is.null(time.i)) {
+     if(length(v$dim[[time.i]]$vals)==1) {
+      time.range<-rep(v$dim[[time.i]]$vals,2)
+      default.calendar<-'raw'
+     } else stop('Time range required (time.range=c(chron.1,chron.2)')
+   }
+   result<-GSDF()
+   result$meta<-ncatt_get(f,v)
+   start<-rep(NA,v$ndim)
+   count<-rep(NA,v$ndim)
+   for(d in seq(1,v$ndim)) {
+      if(!is.null(lat.i) && lat.i==d) {
+         start[d]<-min(which(v$dim[[d]]$vals>=min(lat.range) &
+                             v$dim[[d]]$vals<=max(lat.range)))
+         count[d]<-max(which(v$dim[[d]]$vals>=min(lat.range) &
+                             v$dim[[d]]$vals<=max(lat.range)))-start[d]+1
+         result$dimensions[[d]]<-list('type'='lat',
+                    'values'=v$dim[[d]]$vals[seq(start[d],start[d]+count[d]-1)])
+         next
+      }
+      if(!is.null(lon.i) && lon.i==d) {
+         start[d]<-min(which(v$dim[[d]]$vals>=min(lon.range) &
+                             v$dim[[d]]$vals<=max(lon.range)))
+         count[d]<-max(which(v$dim[[d]]$vals>=min(lon.range) &
+                             v$dim[[d]]$vals<=max(lon.range)))-start[d]+1
+         result$dimensions[[d]]<-list('type'='lon',
+                    'values'=v$dim[[d]]$vals[seq(start[d],start[d]+count[d]-1)])
+         next
+      }
+      if(!is.null(height.i) && height.i==d) {
+         start[d]<-min(which(v$dim[[d]]$vals>=min(height.range) &
+                             v$dim[[d]]$vals<=max(height.range)))
+         count[d]<-max(which(v$dim[[d]]$vals>=min(height.range) &
+                             v$dim[[d]]$vals<=max(height.range)))-start[d]+1
+         result$dimensions[[d]]<-list('type'='height',
+                    'values'=v$dim[[d]]$vals[seq(start[d],start[d]+count[d]-1)])
+         next
+      }
+      if(!is.null(ens.i) && ens.i==d) {
+         start[d]<-min(which(v$dim[[d]]$vals>=min(ens.range) &
+                             v$dim[[d]]$vals<=max(ens.range)))
+         count[d]<-max(which(v$dim[[d]]$vals>=min(ens.range) &
+                             v$dim[[d]]$vals<=max(ens.range)))-start[d]+1
+         result$dimensions[[d]]<-list('type'='ensemble',
+                    'values'=v$dim[[d]]$vals[seq(start[d],start[d]+count[d]-1)])
+         next
+      }
+      if(!is.null(height.i) && height.i==d) {
+         start[d]<-min(which(v$dim[[d]]$vals>=min(height.range) &
+                             v$dim[[d]]$vals<=max(height.range)))
+         count[d]<-max(which(v$dim[[d]]$vals>=min(height.range) &
+                             v$dim[[d]]$vals<=max(height.range)))-start[d]+1
+         result$dimensions[[d]]<-list('type'='height',
+                    'values'=v$dim[[d]]$vals[seq(start[d],start[d]+count[d]-1)])
+         next
+      }
+      if(!is.null(time.i) && time.i==d) {
+         time.values<-GSDF.ncdf.convert.time2(v$dim[[d]],
+                            default.calendar=default.calendar)
+         start[d]<-min(which(time.values>=min(time.range$date) &
+                             time.values<=max(time.range$date)))
+         count[d]<-max(which(time.values>=min(time.range$date) &
+                             time.values<=max(time.range$date)))-start[d]+1
+         result$dimensions[[d]]<-list('type'='time',
+                     'values'=time.values[seq(start[d],start[d]+count[d]-1)])
+         if(!is.null(v$dim[[d]]$calendar)) {
+           result$meta$calendar<-v$dim[[d]]$calendar
+         } else {
+           result$meta$calendar<-default.calendar
+         }
+         next
+      }
+      if(v$dim[[d]]$name=='nbnds') next # TWCR normals fudge
+      stop('Custom dimensions not yet supported')
+   }
+   slab<-ncvar_get(f,v,start,count)
+   result$data<-array(data=slab,dim=count)
+   f<-nc_close(f)
+   if(!is.null(cache.file.name)) save(result,file=cache.file.name)
+   return(result)
+}
+
+#' Load a GSDF field from a netCDF file or URL
+#'
+#' Loads a specified hyperslab (range of lat, lon, height and time)
 #'  from a NetCDF file (or an openDAP server)
 #'
 #' This works only for some netCDF files (netCDF is a very flexible file 
 #'  format and it's necessary to make assumptions about how the data is stored);
-#'  currently known to work are the 20CR and MERRA reanalyses.
-#' Writing is not yet supported.
+#'  Does work on most CMIP5 data and reanalyses.
+#' Original version with chron dates.
+#' 
 #' @export
 #' @param file Text name of file or URI.
 #' @param variable Text name of variable (in file).
@@ -382,6 +559,31 @@ GSDF.ncdf.convert.time <- function(dim,default.calendar) {
        return(GSDF.ncdf.offset.to.date(dim$vals,dim$units,
 				       default.calendar))	
     }
+}
+# Convert the time to GSDF.time
+GSDF.ncdf.convert.time2 <- function(dim,default.calendar) {
+    if(default.calendar=='raw') {
+      return(dim$vals) # Special case - no conversion
+    }
+    units<-dim$units
+    if(!is.null(dim$calendar)) {
+       return(GSDF.ncdf.offset.to.date2(dim$vals,dim$units,
+				       dim$calendar))
+    } else {
+       return(GSDF.ncdf.offset.to.date2(dim$vals,dim$units,
+				       default.calendar))	
+    }
+}  
+
+# Turn a date offset, start point and calendar choice into a GSDF date
+GSDF.ncdf.offset.to.date2<-function(offset,start,calendar) {
+  step<-NA
+  if(regexpr('hours since',start,ignore.case = T)>0) step<-'hours'
+  if(regexpr('days* since',start,ignore.case = T)>0) step<-'days'
+  if(regexpr('minutes* since',start,ignore.case = T)>0) step<-'minutes'
+  if(is.na(step)) stop(paste("Unsupported date step",start))
+  result<-GSDF.time.from.base.and.offset(offset,start,step,calendar)
+  return(result$date)
 }
 
 # Turn a date offset, start point and calendar choice into a chron date

@@ -61,6 +61,6 @@ Loads a specified hyperslab (range of lat, lon, height and time)
 \details{
 This works only for some netCDF files (netCDF is a very flexible file 
  format and it's necessary to make assumptions about how the data is stored);
- currently known to work are the 20CR and MERRA reanalyses.
-Writing is not yet supported.
+ Does work on most CMIP5 data and reanalyses.
+Original version with chron dates.
 }
