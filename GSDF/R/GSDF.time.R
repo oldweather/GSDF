@@ -20,7 +20,7 @@ GSDF.time<-function(string,calendar) {
   result<-list()
   result$date<-string
   result$calendar<-GSDF.time.check.calendar(calendar)
-  ck<-GSDF.time.check.time(result)
+  result<-GSDF.time.check.time(result)
   return(result)
 }
 
@@ -38,7 +38,7 @@ GSDF.time.check.calendar<-function(calendar) {
 
   calendar<-tolower(calendar)
   if(calendar=='standard' ||
-     calendar=='preleptic_gregorian') {
+     calendar=='proleptic_gregorian') {
     calendar<-'gregorian'
   }
   if(calendar=='noleap') {
@@ -72,8 +72,17 @@ GSDF.time.check.time<-function(date) {
     stop(sprintf("%s and %d others are not in format YYYY-MM-DD:HH:MM",
                  date$date[w[1]],length(w)-1))
   }
+  m<-stringr::str_match(date$date,
+            "(\\d\\d\\d\\d)-(\\d\\d)-(\\d\\d):(\\d\\d):(\\d\\d)")
+  years   <- as.integer(m[,2])
+  months  <- as.integer(m[,3])
+  days    <- as.integer(m[,4])
+  hours   <- as.integer(m[,5])
+  minutes <- as.integer(m[,6])
+  date$date<-sprintf("%04d-%02d-%02d:%02d:%02d",
+                      years,months,days,hours,minutes)
   if(date$calendar=='gregorian') {
-    l<-lubridate::ymd_hms(sprintf("%s:00",date$date))
+    l<-lubridate::ymd_hms(sprintf("%s:00",date$date),quiet=TRUE)
     w<-which(is.na(l))
     if(length(w)==1) {
     stop(sprintf("%s is not a valid gregorian date",
@@ -84,13 +93,6 @@ GSDF.time.check.time<-function(date) {
                    date$date[w[1]],length(w)-1))
     }
   }
-  m<-stringr::str_match(date$date,
-            "(\\d\\d\\d\\d)-(\\d\\d)-(\\d\\d):(\\d\\d):(\\d\\d)")
-  years   <- as.integer(m[,2])
-  months  <- as.integer(m[,3])
-  days    <- as.integer(m[,4])
-  hours   <- as.integer(m[,5])
-  minutes <- as.integer(m[,6])
   if(date$calendar=='360_day') {
      w<-which(months<1   | months>12 |
               days<1     | days>30   |
@@ -121,7 +123,7 @@ GSDF.time.check.time<-function(date) {
     }
   }
   
-  return(TRUE)   
+  return(date)   
 
 }
 
@@ -234,16 +236,16 @@ GSDF.time.increment<-function(date,offset,units) {
     }
      if(units=='minutes') {
         minute<-minute+as.integer(offset)
-        hour<-as.integer(minute/60)
+        hour<-hour+floor(minute/60)
         minute<-minute%%60
-        day<-as.integer(hour/24)
+        day<-day+floor(hour/24)
         hour<-hour%%24
-        month<-month+as.integer((day-1)/30)
+        month<-month+floor((day-1)/30)
         day<-day%%30
         w<-which(day==0)
         if(length(w)>0) day[w]<-30
-        year<-year+as.integer((month-1)/12)
-        month<-month%%12+1
+        year<-year+floor((month-1)/12)
+        month<-month%%12
         w<-which(month==0)
         if(length(w)>0) month[w]<-12
  
@@ -270,10 +272,12 @@ GSDF.time.increment<-function(date,offset,units) {
        }
        month<-month+offset
        year<-year+as.integer((month-1)/12)
-       month<-month%%12+1
+       month<-month%%12
+       w<-which(month==0)
+       if(length(w)>0) month[w]<-12
      }
      if(units=='days') {
-       ofset<-offset*24*60
+       offset<-offset*24*60
         units<-'minutes'
      }
      if(units=='hours') {
@@ -283,7 +287,8 @@ GSDF.time.increment<-function(date,offset,units) {
      month.lengths<-c(31,28,31,30,31,30,31,31,30,31,30,31)
      month.tostart<-c(0,31,59,90,120,151,181,212,243,273,304,334,365)
      if(units=='minutes') {
-        julian<-month.tostart[month]*24*60+day*24*60+as.integer(offset)
+        julian<-month.tostart[month]*24*60+(day-1)*24*60+
+                   hour*60+minute+as.integer(offset)
         year<-year+as.integer(julian/(365*24*60))
         julian<-julian%%(365*24*60)
         for(m in seq(1,12)) {
@@ -330,17 +335,18 @@ GSDF.time.from.base.and.offset<-function(offset,base,units,calendar) {
 
   # Assign base time components from the string
   m<-stringr::str_match(base,"(\\d\\d\\d\\d)-(\\d\\d)-(\\d\\d)")
-  year<-m[,2]
-  month<-m[,3]
-  day<-m[,4]
+  year   <- as.integer(m[,2])
+  month  <- as.integer(m[,3])
+  day    <- as.integer(m[,4])
   if(is.na(year) | is.na(month) | is.na(day)) {
     stop(sprintf("%s is not a valid base time (expected YYYY-MM-DD + optional:HH:MM)",
                  base))
   }
   m<-stringr::str_match(base,"(\\d\\d\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)")
-  hour<-m[,5]
+  hour   <- as.integer(m[,5])
   if(is.na(hour)) hour<-0
-  minute<-m[,6]
+  m<-stringr::str_match(base,"(\\d\\d\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)")
+  minute <- as.integer(m[,6])
   if(is.na(minute)) minute<-0
   base<-GSDF.time(sprintf("%04d-%02d-%02d:%02d:%02d:00",
                              year,month,day,hour,minute),calendar)
