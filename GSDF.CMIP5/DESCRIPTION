@@ -1,0 +1,24 @@
+Package: GSDF.CMIP5
+Type: Package
+Title: Get data from the CMIP5 data cache
+Version: 0.2
+Date: 2017-04-04
+Author: Philip Brohan
+Maintainer: Philip Brohan <philip@brohan.org>
+Description: field<-CMIP5.get.slice.at.hour(model=GFDL-ESM2G,
+                                            experiment='historical',
+                                            variable='t2m',
+                                            ensemble='r1i1p1',
+                                            realm='atmos',
+                                            table='Amon',
+                                            frequency='3hr',
+                                            year=1956,
+                                            month=3,
+                                            day=12,
+                                            hour=7)
+Depends:
+    R (>= 1.7.0),
+    GSDF,
+    lubridate
+License: Apache.
+RoxygenNote: 6.0.1
