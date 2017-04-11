@@ -391,22 +391,21 @@ GSDF.time.difference<-function(first,second) {
       return(result)
     }
     if(first$calendar=='360_day') {
-      result<-(as.integer(second.c[,2])-as.integer(first.c[2]))*60*24*30*12 +
-              (as.integer(second.c[,3])-as.integer(first.c[3]))*60*24*30    +
-              (as.integer(second.c[,4])-as.integer(first.c[4]))*60*24       +
-              (as.integer(second.c[,5])-as.integer(first.c[5]))*60          +
-              (as.integer(second.c[,6])-as.integer(first.c[6]))
+      result<-(as.integer(second.c[,2])-as.integer(first.c[,2]))*60*24*30*12 +
+              (as.integer(second.c[,3])-as.integer(first.c[,3]))*60*24*30    +
+              (as.integer(second.c[,4])-as.integer(first.c[,4]))*60*24       +
+              (as.integer(second.c[,5])-as.integer(first.c[,5]))*60          +
+              (as.integer(second.c[,6])-as.integer(first.c[,6]))
       return(result)
     }
     if(first$calendar=='365_day') {
       month.tostart<-c(0,31,59,90,120,151,181,212,243,273,304,334)
-      result<-(as.integer(second.c[,2])-as.integer(first.c[2]))*60*24*365   +
+      result<-(as.integer(second.c[,2])-as.integer(first.c[,2]))*60*24*365   +
               (month.tostart[as.integer(second.c[,3])]-
                month.tostart[as.integer(first.c[3])])*60*24                 +
-              (as.integer(second.c[,4])-as.integer(first.c[4]))*60*24       +
-              (as.integer(second.c[,5])-as.integer(first.c[5]))*60          +
-              (as.integer(second.c[,6])-as.integer(first.c[6]))
-    
+              (as.integer(second.c[,4])-as.integer(first.c[,4]))*60*24       +
+              (as.integer(second.c[,5])-as.integer(first.c[,5]))*60          +
+              (as.integer(second.c[,6])-as.integer(first.c[,6]))    
       return(result)
     }
     stop(sprintf("Unsupported calendar %s",first$calendar))

@@ -20,14 +20,15 @@ CMIP5.institutes<-c(
    "MIROC-ESM"      = "MIROC",
    "MIROC5"         = "MIROC",
    "MPI-ESM-LR"     = "MPI-M",
-   "MRI-CGCM3"      = "MRI",   "NorESM1-M"      = "NCC",
+   "MRI-CGCM3"      = "MRI",
+   "NorESM1-M"      = "NCC",
    "BCC-CSM1-1"     = "BCC",
    "INM-CM4"        = "INM")
 
 #' CMIP5 get Institute from model
 #'
 #' It's redundant to specify the institude, just the model is sufficient.
-#' But we need the istitute to find the data - get it from the model.
+#' But we need the institute to find the data - get it from the model.
 #' 
 #' Requires a table relating institutes and models but this doesn't
 #'  change often.
@@ -303,7 +304,7 @@ CMIP5.get.slab<-function(model=NULL,
 #' @param realm - 'atmos' (default), 'ocean', 'land', etc.
 #' @param table - see http://cmip-pcmdi.llnl.gov/cmip5/docs/standard_output.pdf, defaults to '3hr'.
 #' @param frequency '3hr' (default), 'mon', 'yr', 'fx', etc.
-#' @param variable 20CR variable name, only 2d variables will work.
+#' @param variable Cmip5 short variable name 'tas', 'pr', uas, 'ps' etc.
 #' @param date Target date as a string. In format '1981-02-05:12'
 #' @param height.range Bottom and top heights in hPa - leave NULL for monolevel
 #' @param lat.range Min and max latitude in degrees - defaults to c(-90,90)

@@ -370,10 +370,13 @@ GSDF.ncdf.write<-function(f,file.name,name='variable',
    nc.dims<-list()
    for(i in seq_along(f$dimensions)) {
       if(f$dimensions[[i]]$type=='time') {
-         origin<-attr(f$dimensions[[i]]$values[1],'origin')
+         # convert into minutes from first value to store
+         origin<-f$dimensions[[i]]$values[1]
+         offsets<-GSDF.time.difference(GSDF.time(origin,f$meta$calendar),
+                     GSDF.time(f$dimensions[[i]]$values,f$meta$calendar))
          nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
-            sprintf("hours since %04d-%02d-%02d 00:00",origin[3],origin[1],origin[2]),
-            as.numeric(f$dimensions[[i]]$values)*24)
+            sprintf("minutes since %s",origin),
+            offsets)
       }
       if(f$dimensions[[i]]$type=='lat') {
          nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
@@ -435,8 +438,11 @@ GSDF.ncdf.write<-function(f,file.name,name='variable',
       })
   # Add the metadata
    for(i in names(f$meta)) {
+       # A couple of these cause horrible problems - I don't know why
+       #if(i=='missing_value') next
+       #if(i=='_FillValue') next
        np<-tryCatch({
-	  ncatt_put(nf,v,i,f$meta[[i]])},
+	  ncatt_put(nf,0,i,f$meta[[i]])},
 	  warning=function(w) {
 	     warning('Problem writing attribute to netCDF file',file.name,w)
 	  },
