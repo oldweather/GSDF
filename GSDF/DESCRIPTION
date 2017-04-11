@@ -14,6 +14,7 @@ Depends:
     mapdata,
     lattice,
     grid,
-    abind
+    abind,
+    stringr
 License: Apache
 RoxygenNote: 6.0.1

@@ -204,3 +204,86 @@ test_that("NetCDF base and increments are converted correctly", {
 
 })
  
+context("Time differences: Gregorian")
+
+test_that("Gregorian time differences are calculated correctly", {
+
+   expect_identical(0,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'gregorian'),
+                          GSDF.time("0000-01-01:00:00",'gregorian')))
+   expect_identical(25,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'gregorian'),
+                          GSDF.time("0000-01-01:00:25",'gregorian')))
+   expect_identical(-25,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:25",'gregorian'),
+                          GSDF.time("0000-01-01:00:00",'gregorian')))
+   expect_identical(325,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'gregorian'),
+                          GSDF.time("0000-01-01:05:25",'gregorian')))
+   expect_identical(6085,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'gregorian'),
+                          GSDF.time("0000-01-05:05:25",'gregorian')))
+   expect_identical(180325,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'gregorian'),
+                          GSDF.time("0000-05-05:05:25",'gregorian')))
+   expect_identical(2809765,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'gregorian'),
+                          GSDF.time("0005-05-05:05:25",'gregorian')))
+
+})
+                                                        
+context("Time differences: 360_day")
+
+test_that("Gregorian time differences are calculated correctly", {
+
+   expect_identical(0,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'360_day'),
+                          GSDF.time("0000-01-01:00:00",'360_day')))
+   expect_identical(25,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'360_day'),
+                          GSDF.time("0000-01-01:00:25",'360_day')))
+   expect_identical(-25,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:25",'360_day'),
+                          GSDF.time("0000-01-01:00:00",'360_day')))
+   expect_identical(325,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'360_day'),
+                          GSDF.time("0000-01-01:05:25",'360_day')))
+   expect_identical(6085,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'360_day'),
+                          GSDF.time("0000-01-05:05:25",'360_day')))
+   expect_identical(178885,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'360_day'),
+                          GSDF.time("0000-05-05:05:25",'360_day')))
+   expect_identical(2770885,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'360_day'),
+                          GSDF.time("0005-05-05:05:25",'360_day')))
+
+})
+                                                        
+context("Time differences: 365_day")
+
+test_that("Gregorian time differences are calculated correctly", {
+
+   expect_identical(0,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'365_day'),
+                          GSDF.time("0000-01-01:00:00",'365_day')))
+   expect_identical(25,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'365_day'),
+                          GSDF.time("0000-01-01:00:25",'365_day')))
+   expect_identical(-25,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:25",'365_day'),
+                          GSDF.time("0000-01-01:00:00",'365_day')))
+   expect_identical(325,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'365_day'),
+                          GSDF.time("0000-01-01:05:25",'365_day')))
+   expect_identical(6085,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'365_day'),
+                          GSDF.time("0000-01-05:05:25",'365_day')))
+   expect_identical(178885,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'365_day'),
+                          GSDF.time("0000-05-05:05:25",'365_day')))
+   expect_identical(2806885,GSDF.time.difference(
+                          GSDF.time("0000-01-01:00:00",'365_day'),
+                          GSDF.time("0005-05-05:05:25",'365_day')))
+
+})
