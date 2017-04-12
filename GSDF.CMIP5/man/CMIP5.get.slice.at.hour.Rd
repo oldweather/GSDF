@@ -7,7 +7,7 @@
 CMIP5.get.slice.at.hour(model = NULL, experiment = NULL, variable = NULL,
   ensemble = "r1i1p1", realm = "atmos", table = "3hr",
   frequency = "3hr", date, calendar = "360_day", height.range = NULL,
-  lat.range = c(-90, 90), lon.range = c(-180, 360))
+  lat.range = c(-90, 90), lon.range = c(-180, 360), type = NULL)
 }
 \arguments{
 \item{model}{- 'HadGEM2-A','CCSM4'  - or any model name}
@@ -26,13 +26,17 @@ CMIP5.get.slice.at.hour(model = NULL, experiment = NULL, variable = NULL,
 
 \item{date}{Target date as a string. In format '1981-02-05:12'}
 
+\item{calendar}{Calendar used by data - 'gregorian', '365_day', or '360_day'}
+
 \item{height.range}{Bottom and top heights in hPa - leave NULL for monolevel}
 
 \item{lat.range}{Min and max latitude in degrees - defaults to c(-90,90)}
 
 \item{lon.range}{Min and max longitude in degrees - defaults to c(0,360)}
 
-\item{variable}{20CR variable name, only 2d variables will work.}
+\item{type}{'mean' or NULL (default) - get the data, 'normal' gets a climatology.}
+
+\item{variable}{short variable name 'tas', 'pr', uas, 'ps' etc.}
 }
 \value{
 A GSDF field with the selected multidimensional data

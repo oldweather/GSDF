@@ -6,8 +6,9 @@
 \usage{
 CMIP5.get.slab(model = NULL, experiment = NULL, variable = NULL,
   ensemble = "r1i1p1", realm = "atmos", table = "3hr",
-  frequency = "3hr", date.range, height.range = NULL, lat.range = c(-90,
-  90), lon.range = c(-180, 360))
+  frequency = "3hr", date.range, calendar = "gregorian",
+  height.range = NULL, lat.range = c(-90, 90), lon.range = c(-180, 360),
+  type = NULL)
 }
 \arguments{
 \item{model}{- 'HadGEM2-A','CCSM4'  - or any model name}
@@ -26,11 +27,15 @@ CMIP5.get.slab(model = NULL, experiment = NULL, variable = NULL,
 
 \item{date.range}{A pair of date strings, e.g. c('1981-02-05:12','1981-03-27:18') - inclusive.}
 
+\item{calendar}{Calendar used by data - 'gregorian' (default), '360_day' or '365_day'.}
+
 \item{height.range}{Bottom and top heights in hPa - leave NULL for monolevel}
 
 \item{lat.range}{Min and max latitude in degrees - defaults to c(-90,90)}
 
 \item{lon.range}{Min and max longitude in degrees - defaults to c(0,360)}
+
+\item{type}{'mean' or NULL (default) - get the data, 'normal' gets a climatology.}
 
 \item{variable}{20CR variable name, only 2d variables will work.}
 }

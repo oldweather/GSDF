@@ -333,6 +333,7 @@ GSDF.time.increment<-function(date,offset,units) {
 #' @Result A list containing two components
 GSDF.time.from.base.and.offset<-function(offset,base,units,calendar) {
 
+  calendar<-GSDF.time.check.calendar(calendar)
   # Assign base time components from the string
   m<-stringr::str_match(base,"(\\d\\d\\d\\d)-(\\d\\d)-(\\d\\d)")
   year   <- as.integer(m[,2])
@@ -402,7 +403,7 @@ GSDF.time.difference<-function(first,second) {
       month.tostart<-c(0,31,59,90,120,151,181,212,243,273,304,334)
       result<-(as.integer(second.c[,2])-as.integer(first.c[,2]))*60*24*365   +
               (month.tostart[as.integer(second.c[,3])]-
-               month.tostart[as.integer(first.c[3])])*60*24                 +
+               month.tostart[as.integer(first.c[3])])*60*24                  +
               (as.integer(second.c[,4])-as.integer(first.c[,4]))*60*24       +
               (as.integer(second.c[,5])-as.integer(first.c[,5]))*60          +
               (as.integer(second.c[,6])-as.integer(first.c[,6]))    
@@ -410,3 +411,60 @@ GSDF.time.difference<-function(first,second) {
     }
     stop(sprintf("Unsupported calendar %s",first$calendar))
 }
+
+#' Adjust time values for change in calendar
+#'
+#' Sometimes we want to specify a time range, but we don't know the calendar
+#' e.g. a year is -01-01:00:00 to -12-31:23:59 in Gregorian and
+#'                -01-01:00:00 to -12:30:23:59 in 360_day.
+#' So it's useful to give the spec in gregorian and auto-shrink it if the
+#'  data turns out to have a 360_day calendar when we open the file.
+#'
+#' Assumes that you are going for the full month or year - use
+#'  with caution.
+#'
+#' @export
+#' @param first GSDF date
+#' @param second GSDF date (same no. of dates as first)
+#' @Result Vector of numeric differences (in minutes)
+GSDF.time.recalendar<-function(date,new.calendar) {
+
+  new.calendar<-GSDF.time.check.calendar(new.calendar)
+  if(date$calendar==new.calendar) return(date)
+  if(new.calendar=='gregorian') {
+    stop("Can't recalendar to gregorian")
+  }
+  if(new.calendar=='365_day' && date$calendar=='360_day') {
+    stop("Can't recalendar 360_day to 365_day")
+  }
+  # Move dates at the end of the month in the source calendar,
+  #  to the last day of the month in the new calendar.
+  if(new.calendar=='360_day') {
+    m<-stringr::str_match(date$date,
+               "(\\d\\d\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)")
+    days<-as.integer(m[,4])
+    months<-as.integer(m[,3])
+    w<-which(days>30                |
+             (months==2 & days==29) |
+             (months==2 & days==28))
+    if(length(w)>0) days[w]<-30
+    date$date<-sprintf("%s-%s-%02d:%s:%s",m[,2],m[,3],days,m[,5],m[,6])
+    date$calendar<-'360_day'
+    return(date)
+  }
+   if(new.calendar=='365_day') {
+    m<-stringr::str_match(date$date,
+               "(\\d\\d\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)")
+    days<-as.integer(m[,4])
+    months<-as.integer(m[,3])
+    w<-which(months==2 & days==29)
+    if(length(w)>0) days[w]<-28
+    date$date<-sprintf("%s-%s-%02d:%s:%s",m[,2],m[,3],days,m[,5],m[,6])
+    date$calendar<-'365_day'
+    return(date)
+  }
+  stop(sprintf("SNH error - unsupported calendar %s",new.calendar))
+}
+        
+  
+  

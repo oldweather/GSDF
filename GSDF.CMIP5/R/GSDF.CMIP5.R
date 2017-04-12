@@ -246,9 +246,11 @@ CMIP5.files.for.timeslice<-function(candidates,start,end) {
 #' @param frequency '3hr' (default), 'mon', 'yr', 'fx', etc.
 #' @param variable 20CR variable name, only 2d variables will work.
 #' @param date.range A pair of date strings, e.g. c('1981-02-05:12','1981-03-27:18') - inclusive.
+#' @param calendar Calendar used by data - 'gregorian' (default), '360_day' or '365_day'.
 #' @param height.range Bottom and top heights in hPa - leave NULL for monolevel
 #' @param lat.range Min and max latitude in degrees - defaults to c(-90,90)
 #' @param lon.range Min and max longitude in degrees - defaults to c(0,360)
+#' @param type 'mean' or NULL (default) - get the data, 'normal' gets a climatology.
 #' @return A GSDF field with the selected multidimensional data
 CMIP5.get.slab<-function(model=NULL,
                          experiment=NULL,
@@ -258,10 +260,35 @@ CMIP5.get.slab<-function(model=NULL,
                          table='3hr',
                          frequency='3hr',
                          date.range,
+                         calendar='gregorian',
                          height.range=NULL,
                          lat.range=c(-90,90),
-                         lon.range=c(-180,360)) {
+                         lon.range=c(-180,360),
+                         type=NULL) {
 
+  if(!is.null(type) && type=='normal') {
+     result<-CMIP5.get.slab.climatology(
+                         model=model,
+                         experiment=experiment,
+                         variable=variable,
+                         ensemble=ensemble,
+                         realm=realm,
+                         table=table,
+                         frequency=frequency,
+                         date.range=date.range,
+                         calendar=calendar,
+                         height.range=height.range,
+                         lat.range=lat.range,
+                         lon.range=lon.range)
+     if(is.null(result)) {
+       stop(sprintf("No climatology on disc for %s",paste(c(
+           model,experiment,variable,ensemble,realm,table,
+           frequency,date.range[1],date.range[2]),collapse=" ")))
+     }
+     return(result)
+  }
+       
+  # Not a climatology request - get the original data
   source.files<-CMIP5.get.file.name(model=model,
                                     experiment=experiment,
                                     variable=variable,
@@ -280,13 +307,112 @@ CMIP5.get.slab<-function(model=NULL,
   slab<-NULL
   for(file.name in source.files) {
       v<-GSDF.ncdf.load2(file.name,variable,lat.range=lat.range,lon.range=lon.range,
-			 height.range=height.range,time.range=GSDF.time(date.range,'gregorian'))
+			 height.range=height.range,time.range=GSDF.time(date.range,calendar),
+                         default.calendar=calendar)
       if(!is.null(slab)) slab<-GSDF.concatenate(slab,v,'time')
       else slab<-v
    }
   return(slab)
 }
-   
+ 
+#' Extract a hyperslab of climatology
+#'
+#' Up to 4d (lat, lon, height, time).
+#'
+#' Don't call this directly - called from CMIP5.get.slab
+#' 
+#' @param model  - 'HadGEM2-A','CCSM4'  - or any model name
+#' @param variable  - 'tas', 'pr', 'uas', 'vas' - or any short name
+#' @param experiment - 'historical', 'rcp85', '1pctCO2' etc..
+#' @param ensemble -  r<N>i<M>p<L> - defaults to 'r1i1p1'.
+#' @param realm - 'atmos' (default), 'ocean', 'land', etc.
+#' @param table - see http://cmip-pcmdi.llnl.gov/cmip5/docs/standard_output.pdf, defaults to '3hr'.
+#' @param frequency '3hr' (default), 'mon', 'yr', 'fx', etc.
+#' @param variable 20CR variable name, only 2d variables will work.
+#' @param date.range A pair of date strings, e.g. c('1981-02-05:12','1981-03-27:18') - inclusive.
+#' @param calendar Calendar used by data - 'gregorian' (default), '360_day' or '365_day'.
+#' @param height.range Bottom and top heights in hPa - leave NULL for monolevel
+#' @param lat.range Min and max latitude in degrees - defaults to c(-90,90)
+#' @param lon.range Min and max longitude in degrees - defaults to c(0,360)
+#' @return A GSDF field with the selected multidimensional data
+CMIP5.get.slab.climatology<-function(
+                         model=NULL,
+                         experiment=NULL,
+                         variable=NULL,
+                         ensemble='r1i1p1',
+                         realm='atmos',
+                         table='3hr',
+                         frequency='3hr',
+                         date.range,
+                         calendar='gregorian',
+                         height.range=NULL,
+                         lat.range=c(-90,90),
+                         lon.range=c(-180,360)) {
+
+  file.name<-CMIP5.get.climatology.file.name(
+                                    model=model,
+                                    experiment=experiment,
+                                    variable=variable,
+                                    ensemble=ensemble,
+                                    realm=realm,
+                                    table=table,
+                                    frequency=frequency)
+  if(!file.exists(file.name)) {
+    return(NULL)
+  }
+  
+  # The complication is that if the slab covers a year boundary
+  #  we need to patch together multiple calls
+  # Also need to reset the year on the returned data
+  m<-stringr::str_match(date.range,
+               "(\\d\\d\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)")
+  years<-as.integer(m[,2])
+  slab<-NULL
+  if(years[1]==years[2]) {
+    start.date<-sprintf("1981-%s-%s:%s:%s",m[1,3],m[1,4],m[1,5],m[1,6])
+    end.date<-sprintf("1981-%s-%s:%s:%s",m[2,3],m[2,4],m[2,5],m[2,6])
+    slab<-GSDF.ncdf.load2(file.name,variable,lat.range=lat.range,lon.range=lon.range,
+			 height.range=height.range,time.range=GSDF.time(
+                                              c(start.date,end.date),calendar),
+                         default.calendar=calendar)
+    t.i<-GSDF.find.dimension(slab,'time')
+    m2<-stringr::str_match(slab$dimensions[[t.i]]$values,
+               "(\\d\\d\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)")
+  
+    slab$dimensions[[t.i]]$values<-sprintf("%04d-%s-%s:%s:%s",years[1],
+                                           m2[,3],m2[,4],m2[,5],m2[,6])
+  } else {  
+      for(year in years) {
+        if(year>years[1]) {
+          start.date<-"1981-01-01:00:00"
+        } else {
+          start.date<-sprintf("1981-%s-%s:%s:%s",m[1,3],m[1,4],m[1,5],m[1,6])
+        }
+        if(year<years[2]) {
+          end.date<-"1981-12-31:23:59"
+          if(calendar=='360_day') end.date<-"1981-12-30:23:59"
+        } else {
+          end.date<-sprintf("1981-%s-%s:%s:%s",m[2,3],m[2,4],m[2,5],m[2,6])
+        }
+        v<-GSDF.ncdf.load2(file.name,variable,lat.range=lat.range,lon.range=lon.range,
+                             height.range=height.range,time.range=GSDF.time(
+                                       c(start.date,end.date),calendar),
+                             default.calendar=calendar)
+        if(is.null(v)) next # No data
+        # set the year 
+        t.i<-GSDF.find.dimension(v,'time')
+        m2<-stringr::str_match(v$dimensions[[t.i]]$values,
+                   "(\\d\\d\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)")
+
+        v$dimensions[[t.i]]$values<-sprintf("%04d-%s-%s:%s:%s",year,
+                                               m2[,3],m2[,4],m2[,5],m2[,6])
+        if(!is.null(slab)) slab<-GSDF.concatenate(slab,v,'time')
+        else slab<-v
+      }
+    }
+  return(slab)
+}
+  
 
 #' Extract a hyperslab of data interplolated to a given time
 #'
@@ -304,11 +430,13 @@ CMIP5.get.slab<-function(model=NULL,
 #' @param realm - 'atmos' (default), 'ocean', 'land', etc.
 #' @param table - see http://cmip-pcmdi.llnl.gov/cmip5/docs/standard_output.pdf, defaults to '3hr'.
 #' @param frequency '3hr' (default), 'mon', 'yr', 'fx', etc.
-#' @param variable Cmip5 short variable name 'tas', 'pr', uas, 'ps' etc.
+#' @param variable  short variable name 'tas', 'pr', uas, 'ps' etc.
 #' @param date Target date as a string. In format '1981-02-05:12'
+#' @param calendar Calendar used by data - 'gregorian', '365_day', or '360_day' 
 #' @param height.range Bottom and top heights in hPa - leave NULL for monolevel
 #' @param lat.range Min and max latitude in degrees - defaults to c(-90,90)
 #' @param lon.range Min and max longitude in degrees - defaults to c(0,360)
+#' @param type 'mean' or NULL (default) - get the data, 'normal' gets a climatology.
 #' @return A GSDF field with the selected multidimensional data
 CMIP5.get.slice.at.hour<-function(model=NULL,
                          experiment=NULL,
@@ -321,7 +449,8 @@ CMIP5.get.slice.at.hour<-function(model=NULL,
                          calendar='360_day',
                          height.range=NULL,
                          lat.range=c(-90,90),
-                         lon.range=c(-180,360)) {
+                         lon.range=c(-180,360),
+                         type=NULL) {
 
   # Get a slab of data for the period around the selected one, so we can interpolate
   #  if the selected date does not exactly match a timestep.
@@ -338,9 +467,11 @@ CMIP5.get.slice.at.hour<-function(model=NULL,
                        table=table,
                        frequency=frequency,
                        date.range=date.range$date,
+                       calendar=date.range$calendar,
                        height.range=height.range,
                        lat.range=lat.range,
-                       lon.range=lon.range)
+                       lon.range=lon.range,
+                       type=type)
   if(is.null(slab)) return(NULL)  # No data on disc
   
   # Is there data for the time point selected in the slab?

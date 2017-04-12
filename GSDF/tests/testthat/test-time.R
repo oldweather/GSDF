@@ -287,3 +287,28 @@ test_that("Gregorian time differences are calculated correctly", {
                           GSDF.time("0005-05-05:05:25",'365_day')))
 
 })
+                                                        
+context("Recalendaring")
+
+test_that("Calendar truncation works", {
+
+   expect_identical(GSDF.time("2000-02-29:00:00",'gregorian'),
+                    GSDF.time.recalendar(
+                        GSDF.time("2000-02-29:00:00",'gregorian'),
+                        'gregorian'))
+   expect_identical(GSDF.time("2000-02-28:00:00",'365_day'),
+                    GSDF.time.recalendar(
+                        GSDF.time("2000-02-29:00:00",'gregorian'),
+                        '365_day'))
+   expect_identical(GSDF.time("2000-02-30:00:00",'360_day'),
+                    GSDF.time.recalendar(
+                        GSDF.time("2000-02-29:00:00",'gregorian'),
+                        '360_day'))
+   expect_identical(GSDF.time(c("2000-01-21:00:00",
+                                "2000-12-30:23:59"),'360_day'),
+                    GSDF.time.recalendar(
+                        GSDF.time(c("2000-01-21:00:00",
+                                "     2000-12-31:23:59"),'gregorian'),
+                        '360_day'))
+
+})

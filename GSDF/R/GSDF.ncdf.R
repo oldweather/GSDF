@@ -33,8 +33,6 @@
 #'  try to guess it.
 #' @param time.name Text name used by file as label of time variable. If NULL, will
 #'  try to guess it.
-#' @param use.cache Unless FALSE, use a cached version of the data if available (requires
-#'   GSDF.cache.dir set and the exact data available in that directory).
 #' @return GSDF field with selected subset of file data.
 GSDF.ncdf.load2<-function(file,variable,lat.range=NULL,lon.range=NULL,
                          height.range=NULL,time.range=NULL,
@@ -42,31 +40,8 @@ GSDF.ncdf.load2<-function(file,variable,lat.range=NULL,lon.range=NULL,
                          default.calendar='gregorian',
                          lat.name=NULL,lon.name=NULL,
                          height.name=NULL,time.name=NULL,
-                         ens.name=NULL,use.cache=TRUE) {
-   # Use cached version if possible
-   cache.file.name<-NULL
-   if(use.cache && exists('GSDF.cache.dir') && !is.null(GSDF.cache.dir) &&
-                                               file.info(GSDF.cache.dir)$isdir) {
-      cache.file.name<-sprintf("%s.%s",file,variable)
-      if(!is.null(lat.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
-                                          as.character(lat.range[1]),as.character(lat.range[2]))
-      if(!is.null(lon.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
-                                          as.character(lon.range[1]),as.character(lon.range[2]))
-      if(!is.null(height.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
-                                          as.character(height.range[1]),as.character(height.range[2]))
-      if(!is.null(time.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
-                                          as.character(time.range[1]),as.character(time.range[2]))
-      if(!is.null(ens.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
-                                          as.character(ens.range[1]),as.character(ens.range[2]))
-      if(!is.null(custom.range)) cache.file.name<-sprintf("%s.%s.%s",cache.file.name,
-                                          as.character(custom.range[1]),as.character(custom.range[2]))
-      cache.file.name<-sprintf("%s/%s.Rd",GSDF.cache.dir,gsub('/','.',cache.file.name))
-      if(file.exists(cache.file.name) && file.info(cache.file.name)$size>0) {
-         load(cache.file.name)
-         return(result)
-       }
-    }
-   # No cache- fetch from file
+                         ens.name=NULL) {
+
    f<-nc_open(file)
    v<-GSDF.ncdf.get.var(f,variable)
    lat.i<-GSDF.ncdf.get.lat(v,lat.name)
@@ -158,7 +133,7 @@ GSDF.ncdf.load2<-function(file,variable,lat.range=NULL,lon.range=NULL,
          result$dimensions[[d]]<-list('type'='time',
                      'values'=time.values[seq(start[d],start[d]+count[d]-1)])
          if(!is.null(v$dim[[d]]$calendar)) {
-           result$meta$calendar<-v$dim[[d]]$calendar
+           result$meta$calendar<-GSDF.time.check.calendar(v$dim[[d]]$calendar)
          } else {
            result$meta$calendar<-default.calendar
          }
@@ -170,7 +145,6 @@ GSDF.ncdf.load2<-function(file,variable,lat.range=NULL,lon.range=NULL,
    slab<-ncvar_get(f,v,start,count)
    result$data<-array(data=slab,dim=count)
    f<-nc_close(f)
-   if(!is.null(cache.file.name)) save(result,file=cache.file.name)
    return(result)
 }
 

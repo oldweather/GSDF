@@ -14,7 +14,7 @@ Name of institute behind model.
 }
 \description{
 It's redundant to specify the institude, just the model is sufficient.
-But we need the istitute to find the data - get it from the model.
+But we need the institute to find the data - get it from the model.
 }
 \details{
 Requires a table relating institutes and models but this doesn't
