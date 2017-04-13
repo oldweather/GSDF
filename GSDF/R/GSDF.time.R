@@ -335,7 +335,7 @@ GSDF.time.from.base.and.offset<-function(offset,base,units,calendar) {
 
   calendar<-GSDF.time.check.calendar(calendar)
   # Assign base time components from the string
-  m<-stringr::str_match(base,"(\\d\\d\\d\\d)-(\\d\\d)-(\\d\\d)")
+  m<-stringr::str_match(base,"(\\d\\d\\d\\d)-(\\d+)-(\\d+)")
   year   <- as.integer(m[,2])
   month  <- as.integer(m[,3])
   day    <- as.integer(m[,4])
@@ -343,10 +343,10 @@ GSDF.time.from.base.and.offset<-function(offset,base,units,calendar) {
     stop(sprintf("%s is not a valid base time (expected YYYY-MM-DD + optional:HH:MM)",
                  base))
   }
-  m<-stringr::str_match(base,"(\\d\\d\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)")
+  m<-stringr::str_match(base,"(\\d\\d\\d\\d)\\D(\\d+)\\D(\\d+)\\D(\\d+)")
   hour   <- as.integer(m[,5])
   if(is.na(hour)) hour<-0
-  m<-stringr::str_match(base,"(\\d\\d\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)")
+  m<-stringr::str_match(base,"(\\d\\d\\d\\d)\\D(\\d+)\\D(\\d+)\\D(\\d+)\\D(\\d+)")
   minute <- as.integer(m[,6])
   if(is.na(minute)) minute<-0
   base<-GSDF.time(sprintf("%04d-%02d-%02d:%02d:%02d:00",
@@ -403,7 +403,7 @@ GSDF.time.difference<-function(first,second) {
       month.tostart<-c(0,31,59,90,120,151,181,212,243,273,304,334)
       result<-(as.integer(second.c[,2])-as.integer(first.c[,2]))*60*24*365   +
               (month.tostart[as.integer(second.c[,3])]-
-               month.tostart[as.integer(first.c[3])])*60*24                  +
+               month.tostart[as.integer(first.c[,3])])*60*24                  +
               (as.integer(second.c[,4])-as.integer(first.c[,4]))*60*24       +
               (as.integer(second.c[,5])-as.integer(first.c[,5]))*60          +
               (as.integer(second.c[,6])-as.integer(first.c[,6]))    
