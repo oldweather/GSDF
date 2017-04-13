@@ -79,46 +79,51 @@ GSDF.ncdf.load2<-function(file,variable,lat.range=NULL,lon.range=NULL,
    count<-rep(NA,v$ndim)
    for(d in seq(1,v$ndim)) {
       if(!is.null(lat.i) && lat.i==d) {
-         start[d]<-min(which(v$dim[[d]]$vals>=min(lat.range) &
-                             v$dim[[d]]$vals<=max(lat.range)))
-         count[d]<-max(which(v$dim[[d]]$vals>=min(lat.range) &
-                             v$dim[[d]]$vals<=max(lat.range)))-start[d]+1
+         w<-which(v$dim[[d]]$vals>=min(lat.range) &
+                  v$dim[[d]]$vals<=max(lat.range))
+         if(length(w)==0) return(NULL) # No matching data
+         start[d]<-min(w)
+         count[d]<-max(w)-start[d]+1
          result$dimensions[[d]]<-list('type'='lat',
                     'values'=v$dim[[d]]$vals[seq(start[d],start[d]+count[d]-1)])
          next
       }
       if(!is.null(lon.i) && lon.i==d) {
-         start[d]<-min(which(v$dim[[d]]$vals>=min(lon.range) &
-                             v$dim[[d]]$vals<=max(lon.range)))
-         count[d]<-max(which(v$dim[[d]]$vals>=min(lon.range) &
-                             v$dim[[d]]$vals<=max(lon.range)))-start[d]+1
+         w<-which(v$dim[[d]]$vals>=min(lon.range) &
+                  v$dim[[d]]$vals<=max(lon.range))
+         if(length(w)==0) return(NULL) # No matching data
+         start[d]<-min(w)
+         count[d]<-max(w)-start[d]+1
          result$dimensions[[d]]<-list('type'='lon',
                     'values'=v$dim[[d]]$vals[seq(start[d],start[d]+count[d]-1)])
          next
       }
       if(!is.null(height.i) && height.i==d) {
-         start[d]<-min(which(v$dim[[d]]$vals>=min(height.range) &
-                             v$dim[[d]]$vals<=max(height.range)))
-         count[d]<-max(which(v$dim[[d]]$vals>=min(height.range) &
-                             v$dim[[d]]$vals<=max(height.range)))-start[d]+1
+         w<-which(v$dim[[d]]$vals>=min(height.range) &
+                  v$dim[[d]]$vals<=max(height.range))
+         if(length(w)==0) return(NULL) # No matching data
+         start[d]<-min(w)
+         count[d]<-max(w)-start[d]+1
          result$dimensions[[d]]<-list('type'='height',
                     'values'=v$dim[[d]]$vals[seq(start[d],start[d]+count[d]-1)])
          next
       }
       if(!is.null(ens.i) && ens.i==d) {
-         start[d]<-min(which(v$dim[[d]]$vals>=min(ens.range) &
-                             v$dim[[d]]$vals<=max(ens.range)))
-         count[d]<-max(which(v$dim[[d]]$vals>=min(ens.range) &
-                             v$dim[[d]]$vals<=max(ens.range)))-start[d]+1
+         w<-which(v$dim[[d]]$vals>=min(ens.range) &
+                  v$dim[[d]]$vals<=max(ens.range))
+         if(length(w)==0) return(NULL) # No matching data
+         start[d]<-min(w)
+         count[d]<-max(w)-start[d]+1
          result$dimensions[[d]]<-list('type'='ensemble',
                     'values'=v$dim[[d]]$vals[seq(start[d],start[d]+count[d]-1)])
          next
       }
       if(!is.null(height.i) && height.i==d) {
-         start[d]<-min(which(v$dim[[d]]$vals>=min(height.range) &
-                             v$dim[[d]]$vals<=max(height.range)))
-         count[d]<-max(which(v$dim[[d]]$vals>=min(height.range) &
-                             v$dim[[d]]$vals<=max(height.range)))-start[d]+1
+         w<-which(v$dim[[d]]$vals>=min(height.range) &
+                  v$dim[[d]]$vals<=max(height.range))
+         if(length(w)==0) return(NULL) # No matching data
+         start[d]<-min(w)
+         count[d]<-max(w)-start[d]+1
          result$dimensions[[d]]<-list('type'='height',
                     'values'=v$dim[[d]]$vals[seq(start[d],start[d]+count[d]-1)])
          next
@@ -126,10 +131,11 @@ GSDF.ncdf.load2<-function(file,variable,lat.range=NULL,lon.range=NULL,
       if(!is.null(time.i) && time.i==d) {
          time.values<-GSDF.ncdf.convert.time2(v$dim[[d]],
                             default.calendar=default.calendar)
-         start[d]<-min(which(time.values>=min(time.range$date) &
-                             time.values<=max(time.range$date)))
-         count[d]<-max(which(time.values>=min(time.range$date) &
-                             time.values<=max(time.range$date)))-start[d]+1
+         w<-which(time.values>=min(time.range$date) &
+                  time.values<=max(time.range$date))
+         if(length(w)==0) return(NULL) # No matching data
+         start[d]<-min(w)
+         count[d]<-max(w)-start[d]+1
          result$dimensions[[d]]<-list('type'='time',
                      'values'=time.values[seq(start[d],start[d]+count[d]-1)])
          if(!is.null(v$dim[[d]]$calendar)) {
