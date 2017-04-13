@@ -37,7 +37,7 @@
 GSDF.ncdf.load2<-function(file,variable,lat.range=NULL,lon.range=NULL,
                          height.range=NULL,time.range=NULL,
                          ens.range=NULL,custom.range=NULL,
-                         default.calendar='gregorian',
+                         default.calendar='broken',
                          lat.name=NULL,lon.name=NULL,
                          height.name=NULL,time.name=NULL,
                          ens.name=NULL) {

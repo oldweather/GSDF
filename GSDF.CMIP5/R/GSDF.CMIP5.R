@@ -113,6 +113,19 @@ CMIP5.get.file.name<-function(model=NULL,
                                      frequency='3hr',
                                      start=NULL,
                                      end=NULL) {
+
+  # Make sure the dates are valid gregorian
+  # Hackety hack
+      m<-stringr::str_match(start,
+               "(\\d\\d\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)")
+      if(m[,3]=='02' && (m[,4]=='30' || m[,4]=='29')) {
+        start<-sprintf("%s-%s-28:%s:%s",m[,2],m[,3],m[,5],m[,6])
+      }
+      m<-stringr::str_match(end,
+               "(\\d\\d\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)")
+      if(m[,3]=='02' && (m[,4]=='30' || m[,4]=='29')) {
+        end<-sprintf("%s-%s-28:%s:%s",m[,2],m[,3],m[,5],m[,6])
+      }
   
   base.dirs<-CMIP5.get.data.dir(model=model,
                                 experiment=experiment,
@@ -260,7 +273,7 @@ CMIP5.get.slab<-function(model=NULL,
                          table='3hr',
                          frequency='3hr',
                          date.range,
-                         calendar='gregorian',
+                         calendar=NULL,
                          height.range=NULL,
                          lat.range=c(-90,90),
                          lon.range=c(-180,360),
@@ -344,7 +357,7 @@ CMIP5.get.slab.climatology<-function(
                          table='3hr',
                          frequency='3hr',
                          date.range,
-                         calendar='gregorian',
+                         calendar=NULL,
                          height.range=NULL,
                          lat.range=c(-90,90),
                          lon.range=c(-180,360)) {

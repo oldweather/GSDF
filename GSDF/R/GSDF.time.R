@@ -271,7 +271,7 @@ GSDF.time.increment<-function(date,offset,units) {
          stop("Increments in units of months must be integers")
        }
        month<-month+offset
-       year<-year+as.integer((month-1)/12)
+       year<-year+floor((month-1)/12)
        month<-month%%12
        w<-which(month==0)
        if(length(w)>0) month[w]<-12
@@ -289,7 +289,7 @@ GSDF.time.increment<-function(date,offset,units) {
      if(units=='minutes') {
         julian<-month.tostart[month]*24*60+(day-1)*24*60+
                    hour*60+minute+as.integer(offset)
-        year<-year+as.integer(julian/(365*24*60))
+        year<-year+floor(julian/(365*24*60))
         julian<-julian%%(365*24*60)
         for(m in seq(1,12)) {
           w<-which(julian>=month.tostart[m]*24*60 &
@@ -403,7 +403,7 @@ GSDF.time.difference<-function(first,second) {
       month.tostart<-c(0,31,59,90,120,151,181,212,243,273,304,334)
       result<-(as.integer(second.c[,2])-as.integer(first.c[,2]))*60*24*365   +
               (month.tostart[as.integer(second.c[,3])]-
-               month.tostart[as.integer(first.c[,3])])*60*24                  +
+               month.tostart[as.integer(first.c[,3])])*60*24                 +
               (as.integer(second.c[,4])-as.integer(first.c[,4]))*60*24       +
               (as.integer(second.c[,5])-as.integer(first.c[,5]))*60          +
               (as.integer(second.c[,6])-as.integer(first.c[,6]))    
@@ -432,7 +432,7 @@ GSDF.time.recalendar<-function(date,new.calendar) {
   new.calendar<-GSDF.time.check.calendar(new.calendar)
   if(date$calendar==new.calendar) return(date)
   if(new.calendar=='gregorian') {
-    stop("Can't recalendar to gregorian")
+    stop("Can't recalendar gregorian')
   }
   if(new.calendar=='365_day' && date$calendar=='360_day') {
     stop("Can't recalendar 360_day to 365_day")
