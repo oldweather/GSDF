@@ -432,7 +432,7 @@ GSDF.time.recalendar<-function(date,new.calendar) {
   new.calendar<-GSDF.time.check.calendar(new.calendar)
   if(date$calendar==new.calendar) return(date)
   if(new.calendar=='gregorian') {
-    stop("Can't recalendar gregorian')
+    stop("Can't recalendar gregorian")
   }
   if(new.calendar=='365_day' && date$calendar=='360_day') {
     stop("Can't recalendar 360_day to 365_day")
