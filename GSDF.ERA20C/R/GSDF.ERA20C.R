@@ -1,13 +1,42 @@
 # Functions for getting data from the ERA20C reanalyis
 
 # names and classes of variables
-ERA20C.monolevel<-c('prmsl','air.2m','uwnd.10m','vwnd.10m','icec',
-                    'hgt.500','prate','sst')
+ERA20C.monolevel.analysis<-c('prmsl','air.2m','uwnd.10m','vwnd.10m','icec',
+                             'hgt.500','sst')
+ERA20C.monolevel.forecast<-c('prate')
 ERA20C.pressure.level<-NULL
+
+# Get class of variable: monolevel or pressure-level.
+ERA20C.get.variable.group<-function(variable) {
+  if(length(which(ER20C.monolevel.analysis==variable))>0) return('monolevel.analysis')
+  if(length(which(ER20C.monolevel.forecast==variable))>0) return('monolevel.forecast')
+  stop(sprintf("Unrecognised variable: %s",variable))
+}
 
 # Height of each level in hPa - not yet correct
 ERA20C.heights<-c(1000,950,900,850,800,750,700,650,600,550,500,450,400,350,300,
                  250,200,150,100,70,50,30,20,10)
+
+#' Translate to ERA variable names in the .nc files
+#'
+#' I'm standardising on 20CR variable names - map to ERA choices
+#'
+#'
+#' @export
+#' @param var - 20CR variable name
+#' @return name used for ERA 20C variable names
+ERA20C.translate.for.variable.names<-function(var) {
+  v2<-switch(var,
+             prmsl    = 'msl',
+             air.2m   = 't2m',
+             uwnd.10m = 'u10',
+             vwnd.10m = 'v10',
+             icec     = 'ci',
+             sst      = 'sst',
+             prate    = 'tp')
+  if(is.null(v2)) stop(sprintf("Unsupported variable %s",var))
+  return(v2)
+}
 
 #' ERA20C show variables
 #'
@@ -19,8 +48,10 @@ ERA20C.heights<-c(1000,950,900,850,800,750,700,650,600,550,500,450,400,350,300,
 #' prints out a list of available variables.
 #' @export
 ERA20C.show.variables<-function() {
-  print('Monolevel')
-  print(ERA20C.monolevel)
+  print('Monolevel analysis')
+  print(ERA20C.monolevel.analysis)
+  print('Monolevel forecast')
+  print(ERA20C.monolevel.forecast)
   print('Pressure level')
   print(ERA20C.pressure.level)
 }
@@ -29,33 +60,24 @@ ERA20C.show.variables<-function() {
 #'
 #' Find local data directory - different for different systems
 #'
-#' It's much faster to read data from local disc than over openDAP,
-#'  also observations and standard deviations are currently only
-#'  available locally. But the various different systems on which I run this code all have
+#' The various different systems on which I run this code all have
 #'  different places to keep large data files. This function returns
 #'  the right base directory for the system (if there is one).
 #'
 #' @export
 #' @return Base directory name (or NULL is no local files)
 ERA20C.get.data.dir<-function() {
-    if(file.exists("/Volumes/DataDir/ERA20C/")) {
-            return("/Volumes/DataDir/ERA20C/")
-    }	
-    if(file.exists("/scratch/hadpb/ERA20C/")) {
-            return("/scratch/hadpb/ERA20C/")
-    }	
-    if(file.exists("/data/cr2/hadpb/ERA20C/")) {
-            return("/data/cr2/hadpb/ERA20C/")
-    }	
-    if(file.exists("/project/projectdirs/m958/netCDF.data/ERA20C/")) {
-            return("/project/projectdirs/m958/netCDF.data/ERA20C/")
-    }	
+    base.file<-sprintf("%s/ERA_20C",Sys.getenv('SCRATCH'))
+    if(file.exists(base.file)) {
+            return(base.file )
+    }
     return(NULL)
 }
 
 # Get class of variable: monolevel or pressure-level.
 ERA20C.get.variable.group<-function(variable) {
-  if(length(which(ERA20C.monolevel==variable))>0) return('monolevel')
+  if(length(which(ERA20C.monolevel.analysis==variable))>0) return('monolevel.analysis')
+  if(length(which(ERA20C.monolevel.forecast==variable))>0) return('monolevel.forecast')
   if(length(which(ERA20C.pressure.level==variable))>0) return('pressure')
   stop(sprintf("Unrecognised variable: %s",variable))
 }
@@ -73,33 +95,60 @@ ERA20C.get.variable.group<-function(variable) {
 #'  Note that standard deviations are not available over opendap.
 #' @return File name or URL for netCDF file containing the requested data 
 ERA20C.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
-                                    type='mean') {
+                                      fc.init=NULL,type='mean') {
     base.dir<-ERA20C.get.data.dir()
     if(!is.null(base.dir)) {
         name<-NULL
-        if(type=='mean') {
-           name<-sprintf("%s/hourly/%s/%s.%04d.nc",base.dir,
-                       variable,variable,year)
-        }
         if(type=='normal') {
-           name<-sprintf("%s/hourly/normals/%s.nc",base.dir,
-                       variable)
+           name<-sprintf("%s/normals/hourly/%02d/%s.nc",base.dir,
+                       month,variable)
         }
         if(type=='standard.deviation') {
-           name<-sprintf("%s/hourly/standard.deviations/%s.nc",base.dir,
-                       variable)
+           name<-sprintf("%s/standard.deviations/hourly/%02d/%s.nc",base.dir,
+                       month,variable)
+        }
+      if(ERA20C.get.variable.group(variable) == 'monolevel.forecast') {
+      if(is.null(fc.init)) {
+        if(hour<9 && day==1) {
+          month<-month-1
+          day<-15
+          if(month<1) {
+            month<-12
+            year<-year-1
+          }
+        }
+      }
+      if(!is.null(fc.init) && fc.init=='last') {
+        if(day==1 || (hour<9 && day==2)) {
+          month<-month-1
+          day<-15
+          if(month<1) {
+            month<-12
+            year<-year-1
+          }
+        }
+        variable<-sprintf("%s.p1d",variable)
+      }
+        if(type=='mean') {
+           name<-sprintf("%s/hourly/%04d/%02d/%s.nc",base.dir,
+                       year,month,variable)
         }
         if(is.null(name)) stop(sprintf("Unsupported data type %s",type))
         if(file.exists(name)) return(name)
         stop(sprintf("No local file %s",name))
-   }
+    }
+      }
 
     stop(sprintf("Unsupported data type %s",type))      
 }
 
 ERA20C.is.in.file<-function(variable,year,month,day,hour,type='mean') {
-		if(hour%%6==0) return(TRUE)
-		return(FALSE)
+        if(variable=='air.2m') {
+          if(hour%%6==0) return(TRUE)
+        } else {
+          if(hour%%3==0) return(TRUE)
+        }
+        return(FALSE)
 }
 
 # Go backward and forward in hours to find previous and subsequent
@@ -181,13 +230,17 @@ ERA20C.get.interpolation.times<-function(variable,year,month,day,hour,type='mean
 #' @param type - 'mean' (default), 'spread', 'normal', or 'standard.deviation'. 
 #'  Note that standard deviations are not available over opendap.
 #' @param height Height in hPa - leave NULL for monolevel
-#' @param opendap TRUE for network retrieval, FALSE for local files (faster, if you have them), NULL (default)
-#'  will use local files if available and network otherwise.
+#' @param fc.init If NULL (default) - use the most recent forecast start. If 'last', use the previous day's
+#'   forecast start (only possible for 9am data). If 'blend', smooth the transition between forecast fields
+#'   initialised on one day and those initialised on the following day by using the 27-hour forcast
+#'   on the first day to interpolate.
 #' @return A GSDF field with lat and long as extended dimensions
-ERA20C.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,type='mean') {
-  if(ERA20C.get.variable.group(variable)=='monolevel') {
+ERA20C.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,fc.init=NULL,type='mean') {
+  if(ERA20C.get.variable.group(variable)=='monolevel.analysis' ||
+     ERA20C.get.variable.group(variable)=='monolevel.forecast') {
     if(!is.null(height)) warning("Ignoring height specification for monolevel variable")
-    return(ERA20C.get.slice.at.level.at.hour(variable,year,month,day,hour,type=type))
+    return(ERA20C.get.slice.at.level.at.hour(variable,year,month,day,hour,
+                                             fc.init=fc.init,type=type))
   }
   # Find levels above and below selected height, and interpolate between them
   if(is.null(height)) stop(sprintf("No height specified for pressure variable %s",variable))
@@ -195,12 +248,12 @@ ERA20C.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,type
   level.below<-max(which(ERA20C.heights>=height))
   if(height==ERA20C.heights[level.below]) {
     return(ERA20C.get.slice.at.level.at.hour(variable,year,month,day,hour,height=ERA20C.heights[level.below],
-                                         type=type))
+                                         fc.init=fc.init,type=type))
   }
   below<-ERA20C.get.slice.at.level.at.hour(variable,year,month,day,hour,height=ERA20C.heights[level.below],
-                                         type=type)
+                                         fc.init=fc.init,type=type)
   above<-ERA20C.get.slice.at.level.at.hour(variable,year,month,day,hour,height=ERA20C.heights[level.below+1],
-                                         type=type)
+                                         fc.init=fc.init,type=type)
   above.weight<-(ERA20C.heights[level.below]-height)/(ERA20C.heights[level.below]-ERA20C.heights[level.below+1])
   below$data[]<-below$data*(1-above.weight)+above$data*above.weight
   idx.h<-GSDF.find.dimension(below,'height')
@@ -208,13 +261,26 @@ ERA20C.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,type
   return(below)
 }
 
-ERA20C.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NULL,type='mean') {
-	dstring<-sprintf("%04d-%02d-%02d:%02d",year,month,day,hour)
+ERA20C.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NULL,
+                                            fc.init=NULL,type='mean') {
 	# Is it from an analysis time (no need to interpolate)?
 	if(ERA20C.is.in.file(variable,year,month,day,hour,type=type)) {
             hour<-as.integer(hour)
+            if(!is.null(fc.init) && fc.init=='blend') {
+              if(hour==9) {
+                r1<-ERA20C.get.slice.at.level.at.hour(variable,year,month,day,hour,height=height,
+                                                      fc.init=NULL,type=type)
+                r2<-ERA20C.get.slice.at.level.at.hour(variable,year,month,day,hour,height=height,
+                                                      fc.init='last',type=type)
+                r1$data[]<-(r1$data+r2$data)/2
+                return(r1)
+              }
+              else {
+                fc.init<-NULL
+              }
+            }
             file.name<-ERA20C.hourly.get.file.name(variable,year,month,day,hour,height=height,
-                                                    type=type)
+                                                   fc.init=fc.init,type=type)
                t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                         format=c(dates='y/m/d',times='h:m:s'))
                if(type=='normal' || type=='standard.deviation') { # Normals have no Feb 29
@@ -224,7 +290,8 @@ ERA20C.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=
                   t<-chron(sprintf("%04d/%02d/%02d",1981,month,day),sprintf("%02d:00:00",hour),
                            format=c(dates='y/m/d',times='h:m:s'))
                }
-               v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(0,360),
+               v<-GSDF.ncdf.load(file.name,ERA20C.translate.for.variable.names(variable),
+                                 lat.range=c(-90,90),lon.range=c(0,360),
                                  height.range=rep(height,2),time.range=c(t,t))
                return(v)
 	}
@@ -395,7 +462,8 @@ ERA20C.get.slab.from.hourly<-function(variable,date.range,
 		  sprintf("%02d:00:00",end.d$hour),
 		  format=c(dates='y/m/d',times='h:m:s'))
    }
-   v<-GSDF.ncdf.load(file.name,variable,lat.range=lat.range,lon.range=lon.range,
+   v<-GSDF.ncdf.load(file.name,ERA20C.translate.for.variable.names(variable),
+                     lat.range=lat.range,lon.range=lon.range,
 		     height.range=height.range,time.range=c(start.d$chron,end.d$chron))
    return(v)
 }
