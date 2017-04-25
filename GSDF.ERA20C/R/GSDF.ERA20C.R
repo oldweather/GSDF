@@ -8,8 +8,8 @@ ERA20C.pressure.level<-NULL
 
 # Get class of variable: monolevel or pressure-level.
 ERA20C.get.variable.group<-function(variable) {
-  if(length(which(ER20C.monolevel.analysis==variable))>0) return('monolevel.analysis')
-  if(length(which(ER20C.monolevel.forecast==variable))>0) return('monolevel.forecast')
+  if(length(which(ERA20C.monolevel.analysis==variable))>0) return('monolevel.analysis')
+  if(length(which(ERA20C.monolevel.forecast==variable))>0) return('monolevel.forecast')
   stop(sprintf("Unrecognised variable: %s",variable))
 }
 
@@ -157,65 +157,30 @@ ERA20C.is.in.file<-function(variable,year,month,day,hour,type='mean') {
 #  hours at an analysis time.
 # Could do this directly, but it's vital to keep get.interpolation.times
 # and is.in.file consistent.
-ERA20C.get.interpolation.times<-function(variable,year,month,day,hour,type='mean') {
-	if(ERA20C.is.in.file(variable,year,month,day,hour,type=type)) {
+ERA20C.get.interpolation.times<-function(variable,v.year,v.month,v.day,v.hour,type='mean') {
+	if(ERA20C.is.in.file(variable,v.year,v.month,v.day,v.hour,type=type)) {
 		stop("Internal interpolation failure")
 	}
-	ct<-chron(dates=sprintf("%04d/%02d/%02d",year,month,day),
-	          times=sprintf("%02d:%02d:00",as.integer(hour),
-                                      as.integer(hour%%1*60)),
-	          format=c(dates='y/m/d',times='h:m:s'))
-	t.previous<-list()
-        back.hours=1
-	while(back.hours<24) {
-		p.hour<-as.integer(hour-back.hours)
-                p.year<-year
-                p.month<-month
-                p.day<-day
-                if(p.hour<0) {
-                  p.year<-as.numeric(as.character(years(ct-1)))
-                  p.month<-as.integer(months(ct-1))
-                  p.day<-as.integer(days(ct-1))
-                  p.hour<-p.hour+24
-                }
-		if(ERA20C.is.in.file(variable,p.year,p.month,p.day,p.hour,type=type)) {
-			t.previous$year<-p.year
-			t.previous$month<-p.month
-			t.previous$day<-p.day
-			t.previous$hour<-p.hour
-			break
-		}
-                back.hours<-back.hours+1
-	}
-	if(length(t.previous)<4) {
-		stop("Interpolation failure, too far back")
-	}
-	t.next<-list()
-	forward.hours<-1
-	while(forward.hours<24) {
-		n.hour<-as.integer(hour+forward.hours)
-                n.year<-year
-                n.month<-month
-                n.day<-day
-                if(n.hour>23) {
-                  n.year<-as.numeric(as.character(years(ct+1)))
-                  n.month<-as.integer(months(ct+1))
-                  n.day<-as.integer(days(ct+1))
-                  n.hour<-n.hour-24
-                }
-		if(ERA20C.is.in.file(variable,n.year,n.month,n.day,n.hour,type=type)) {
-			t.next$year<-n.year
-			t.next$month<-n.month
-			t.next$day<-n.day
-			t.next$hour<-n.hour
-			break
-		}
-                forward.hours<-forward.hours+1
-	}
-	if(length(t.next)<4) {
-		stop("Interpolation failure, too far forward")
-	}
-	return(list(t.previous,t.next))
+    if(variable =='air.2m') {
+        v.hour<-as.integer(v.hour)
+        pd<-ymd_hms(sprintf("%04d-%02d-%02d:%02d:00:00",v.year,v.month,v.day,v.hour))-
+                            lubridate::hours(v.hour%%6)
+        t.previous<-list(year=year(pd),month=month(pd),day=day(pd),hour=hour(pd))
+        nd<-pd+lubridate::hours(6)
+        t.next<-list(year=year(nd),month=month(nd),day=day(nd),hour=hour(nd))
+        return(list(t.previous,t.next))
+    }
+    if(ERA20C.get.variable.group(variable) =='monolevel.analysis' ||
+       ERA20C.get.variable.group(variable) =='monolevel.forecast') {
+        v.hour<-as.integer(v.hour)
+        pd<-ymd_hms(sprintf("%04d-%02d-%02d:%02d:00:00",v.year,v.month,v.day,v.hour))-
+                            lubridate::hours(v.hour%%3)
+        t.previous<-list(year=year(pd),month=month(pd),day=day(pd),hour=hour(pd))
+        nd<-pd+lubridate::hours(3)
+        t.next<-list(year=year(nd),month=month(nd),day=day(nd),hour=hour(nd))
+        return(list(t.previous,t.next))
+    }
+    stop(sprintf("Unsupported variable %s",variable))
 }
 
 # This is the function users will call.
