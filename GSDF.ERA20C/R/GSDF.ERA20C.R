@@ -97,17 +97,24 @@ ERA20C.get.variable.group<-function(variable) {
 ERA20C.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
                                       fc.init=NULL,type='mean') {
     base.dir<-ERA20C.get.data.dir()
-    if(!is.null(base.dir)) {
-        name<-NULL
-        if(type=='normal') {
-           name<-sprintf("%s/normals/hourly/%02d/%s.nc",base.dir,
-                       month,variable)
-        }
-        if(type=='standard.deviation') {
-           name<-sprintf("%s/standard.deviations/hourly/%02d/%s.nc",base.dir,
-                       month,variable)
-        }
-      if(ERA20C.get.variable.group(variable) == 'monolevel.forecast') {
+    if(is.null(base.dir)) stop("No base directory available")
+    
+    name<-NULL
+    
+    if(type=='normal') {
+       name<-sprintf("%s/normals/hourly/%s.nc",base.dir,
+                   variable)
+       return(name)
+    }
+    if(type=='standard.deviation') {
+       name<-sprintf("%s/standard.deviations/hourly/%s.nc",base.dir,
+                   variable)
+       return(name)
+    }
+
+    if(type!='mean') stop(sprintf("Unsupported data type %s",type)) 
+      
+    if(ERA20C.get.variable.group(variable) == 'monolevel.forecast') {
       if(is.null(fc.init)) {
         if(hour<9 && day==1) {
           month<-month-1
@@ -129,17 +136,12 @@ ERA20C.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
         }
         variable<-sprintf("%s.p1d",variable)
       }
-        if(type=='mean') {
-           name<-sprintf("%s/hourly/%04d/%02d/%s.nc",base.dir,
-                       year,month,variable)
-        }
-        if(is.null(name)) stop(sprintf("Unsupported data type %s",type))
-        if(file.exists(name)) return(name)
-        stop(sprintf("No local file %s",name))
     }
-      }
-
-    stop(sprintf("Unsupported data type %s",type))      
+      
+    name<-sprintf("%s/hourly/%04d/%02d/%s.nc",base.dir,
+                       year,month,variable)
+    if(file.exists(name)) return(name)
+    stop(sprintf("No local file %s",name))
 }
 
 ERA20C.is.in.file<-function(variable,year,month,day,hour,type='mean') {
