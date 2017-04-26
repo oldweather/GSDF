@@ -165,19 +165,31 @@ ERA20C.get.interpolation.times<-function(variable,v.year,v.month,v.day,v.hour,ty
         v.hour<-as.integer(v.hour)
         pd<-ymd_hms(sprintf("%04d-%02d-%02d:%02d:00:00",v.year,v.month,v.day,v.hour))-
                             lubridate::hours(v.hour%%6)
-        t.previous<-list(year=year(pd),month=month(pd),day=day(pd),hour=hour(pd))
+        t.previous<-list(year=lubridate::year(pd),
+                         month=lubridate::month(pd),
+                         day=lubridate::day(pd),
+                         hour=lubridate::hour(pd))
         nd<-pd+lubridate::hours(6)
-        t.next<-list(year=year(nd),month=month(nd),day=day(nd),hour=hour(nd))
+        t.next<-list(year=lubridate::year(nd),
+                     month=lubridate::month(nd),
+                     day=lubridate::day(nd),
+                     hour=lubridate::hour(nd))
         return(list(t.previous,t.next))
     }
     if(ERA20C.get.variable.group(variable) =='monolevel.analysis' ||
        ERA20C.get.variable.group(variable) =='monolevel.forecast') {
         v.hour<-as.integer(v.hour)
-        pd<-ymd_hms(sprintf("%04d-%02d-%02d:%02d:00:00",v.year,v.month,v.day,v.hour))-
+        pd<-lubridate::ymd_hms(sprintf("%04d-%02d-%02d:%02d:00:00",v.year,v.month,v.day,v.hour))-
                             lubridate::hours(v.hour%%3)
-        t.previous<-list(year=year(pd),month=month(pd),day=day(pd),hour=hour(pd))
+        t.previous<-list(year=lubridate::year(pd),
+                         month=lubridate::month(pd),
+                         day=lubridate::day(pd),
+                         hour=lubridate::hour(pd))
         nd<-pd+lubridate::hours(3)
-        t.next<-list(year=year(nd),month=month(nd),day=day(nd),hour=hour(nd))
+        t.next<-list(year=lubridate::year(nd),
+                     month=lubridate::month(nd),
+                     day=lubridate::day(nd),
+                     hour=lubridate::hour(nd))
         return(list(t.previous,t.next))
     }
     stop(sprintf("Unsupported variable %s",variable))
@@ -249,7 +261,8 @@ ERA20C.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=
               }
             }
             # Precipitation is accumulated over the forecast, and we want instantanious.
-            if(variable=='prate' && type=='mean' && hour!=9 && deaccumulate) {
+            if(variable=='prate' && type=='mean' && deaccumulate &&
+               (hour!=9  || (!is.null(fc.init) && fc.init=='last'))) {
                 r1<-ERA20C.get.slice.at.level.at.hour(variable,year,month,day,hour,height=height,
                                                        fc.init=fc.init,type=type,
                                                        deaccumulate=FALSE)

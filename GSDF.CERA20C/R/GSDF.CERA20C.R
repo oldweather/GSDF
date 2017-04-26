@@ -244,7 +244,8 @@ CERA20C.get.slice.at.level.at.hour<-function(variable,v.year,v.month,v.day,v.hou
               }
             }
             # Precipitation is accumulated over the forecast, and we want instantanious.
-            if(variable=='prate' && type=='mean' && v.hour!=21 && deaccumulate) {
+            if(variable=='prate' && type=='mean' && deaccumulate &&
+               (v.hour!=21  || (!is.null(fc.init) && fc.init=='last'))) {
                 r1<-CERA20C.get.slice.at.level.at.hour(variable,v.year,v.month,v.day,v.hour,height=height,
                                                        fc.init=fc.init,member=member,type=type,
                                                        deaccumulate=FALSE)
