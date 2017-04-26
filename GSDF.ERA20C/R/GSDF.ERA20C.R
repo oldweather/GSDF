@@ -229,16 +229,18 @@ ERA20C.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,fc.i
 }
 
 ERA20C.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NULL,
-                                            fc.init=NULL,type='mean') {
+                                            fc.init=NULL,type='mean',deaccumulate=TRUE) {
 	# Is it from an analysis time (no need to interpolate)?
 	if(ERA20C.is.in.file(variable,year,month,day,hour,type=type)) {
             hour<-as.integer(hour)
             if(!is.null(fc.init) && fc.init=='blend') {
               if(hour==9) {
                 r1<-ERA20C.get.slice.at.level.at.hour(variable,year,month,day,hour,height=height,
-                                                      fc.init=NULL,type=type)
+                                                      fc.init=NULL,type=type,
+                                                      deaccumulate=deaccumulate)
                 r2<-ERA20C.get.slice.at.level.at.hour(variable,year,month,day,hour,height=height,
-                                                      fc.init='last',type=type)
+                                                      fc.init='last',type=type,
+                                                      deaccumulate=deaccumulate)
                 r1$data[]<-(r1$data+r2$data)/2
                 return(r1)
               }
@@ -246,6 +248,24 @@ ERA20C.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=
                 fc.init<-NULL
               }
             }
+            # Precipitation is accumulated over the forecast, and we want instantanious.
+            if(variable=='prate' && type=='mean' && hour!=9 && deaccumulate) {
+                r1<-ERA20C.get.slice.at.level.at.hour(variable,year,month,day,hour,height=height,
+                                                       fc.init=fc.init,type=type,
+                                                       deaccumulate=FALSE)
+                # Subtract the values from 3 hours ago
+                lt<-lubridate::ymd_hms(sprintf("%04d-%02d-%02d:%02d:00:00",year,month,day,hour))-
+                                       lubridate::hours(3)
+                r2<-ERA20C.get.slice.at.level.at.hour(variable,
+                                                       as.integer(lubridate::year(lt)),
+                                                       as.integer(lubridate::month(lt)),
+                                                       as.integer(lubridate::day(lt)),
+                                                       as.integer(lubridate::hour(lt)),height=height,
+                                                       fc.init=NULL,type=type,
+                                                       deaccumulate=FALSE)
+                r1$data[]<-r1$data-r2$data
+                return(r1)
+             }
             file.name<-ERA20C.hourly.get.file.name(variable,year,month,day,hour,height=height,
                                                    fc.init=fc.init,type=type)
                t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),

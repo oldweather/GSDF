@@ -224,16 +224,18 @@ CERA20C.get.slice.at.hour<-function(variable,v.year,v.month,v.day,v.hour,height=
 }
 
 CERA20C.get.slice.at.level.at.hour<-function(variable,v.year,v.month,v.day,v.hour,height=NULL,
-                                            fc.init=NULL,member=1,type='mean') {
+                                            fc.init=NULL,member=1,type='mean',deaccumulate=TRUE) {
 	# Is it from an analysis time (no need to interpolate)?
 	if(CERA20C.is.in.file(variable,v.year,v.month,v.day,v.hour,type=type)) {
             v.hour<-as.integer(v.hour)
             if(!is.null(fc.init) && fc.init=='blend') {
               if(v.hour==21) {
                 r1<-CERA20C.get.slice.at.level.at.hour(variable,v.year,v.month,v.day,v.hour,height=height,
-                                                      fc.init=NULL,member=member,type=type)
+                                                      fc.init=NULL,member=member,type=type,
+                                                      deaccumulate=deaccumulate)
                 r2<-CERA20C.get.slice.at.level.at.hour(variable,v.year,v.month,v.day,v.hour,height=height,
-                                                      fc.init='last',member=member,type=type)
+                                                      fc.init='last',member=member,type=type,
+                                                      deaccumulate=deaccumulate)
                 r1$data[]<-(r1$data+r2$data)/2
                 return(r1)
               }
@@ -241,6 +243,24 @@ CERA20C.get.slice.at.level.at.hour<-function(variable,v.year,v.month,v.day,v.hou
                 fc.init<-NULL
               }
             }
+            # Precipitation is accumulated over the forecast, and we want instantanious.
+            if(variable=='prate' && type=='mean' && v.hour!=21 && deaccumulate) {
+                r1<-CERA20C.get.slice.at.level.at.hour(variable,v.year,v.month,v.day,v.hour,height=height,
+                                                       fc.init=fc.init,member=member,type=type,
+                                                       deaccumulate=FALSE)
+                # Subtract the values from 3 hours ago
+                lt<-lubridate::ymd_hms(sprintf("%04d-%02d-%02d:%02d:00:00",v.year,v.month,v.day,v.hour))-
+                                                    lubridate::hours(3)
+                r2<-CERA20C.get.slice.at.level.at.hour(variable,
+                                                       as.integer(lubridate::year(lt)),
+                                                       as.integer(lubridate::month(lt)),
+                                                       as.integer(lubridate::day(lt)),
+                                                       as.integer(lubridate::hour(lt)),height=height,
+                                                       fc.init=NULL,member=member,type=type,
+                                                       deaccumulate=FALSE)
+                r1$data[]<-r1$data-r2$data
+                return(r1)
+             }
             file.name<-CERA20C.hourly.get.file.name(variable,v.year,v.month,v.day,v.hour,height=height,
                                                    fc.init=fc.init,type=type)
                t<-chron(sprintf("%04d/%02d/%02d",v.year,v.month,v.day),sprintf("%02d:00:00",v.hour),
