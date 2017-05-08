@@ -1,0 +1,13 @@
+Package: GSDF.Front
+Type: Package
+Title: Identify and plot weather fronts
+Version: 0.1
+Date: 2017-05-08
+Author: Philip Brohan
+Maintainer: Philip Brohan <philip@brohan.org>
+Description: Identify weather fronts using the method of Simmonds, Keay, and Bye 2011.
+Depends:
+    R (>= 1.7.0),
+    GSDF
+License: Apache
+RoxygenNote: 6.0.1
