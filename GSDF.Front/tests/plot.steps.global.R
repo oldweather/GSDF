@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript 
 
 # Plot all the parts of the Front detection process
+# Global standard projection
 
 library(GSDF.WeatherMap)
 library(GSDF.Front)
@@ -21,22 +22,21 @@ if ( is.null(opt$hour) )   { stop("Hour not specified") }
 Imagedir<-"."
 if(!file.exists(Imagedir)) dir.create(Imagedir,recursive=TRUE)
 
-scale<-55
 Options<-WeatherMap.set.option(NULL)
 Options<-WeatherMap.set.option(Options,'land.colour',rgb(100,100,100,255,
                                                        maxColorValue=255))
 Options<-WeatherMap.set.option(Options,'sea.colour',rgb(150,150,150,255,
                                                        maxColorValue=255))
 Options<-WeatherMap.set.option(Options,'ice.colour',Options$land.colour)
-Options<-WeatherMap.set.option(Options,'lat.min',scale*-1)
-Options<-WeatherMap.set.option(Options,'lat.max',scale)
-Options<-WeatherMap.set.option(Options,'lon.min',scale*-1*16/9)
-Options<-WeatherMap.set.option(Options,'lon.max',scale*16/9)
+Options<-WeatherMap.set.option(Options,'lat.min',-90)
+Options<-WeatherMap.set.option(Options,'lat.max',90)
+Options<-WeatherMap.set.option(Options,'lon.min',-180)
+Options<-WeatherMap.set.option(Options,'lon.max',180)
 Options$vp.lon.min<-Options$lon.min
 Options$vp.lon.max<-Options$lon.max
-Options<-WeatherMap.set.option(Options,'pole.lon',110)
+Options<-WeatherMap.set.option(Options,'pole.lon',180)
 
-Options<-WeatherMap.set.option(Options,'pole.lat',179)
+Options<-WeatherMap.set.option(Options,'pole.lat',90)
 Options$mslp.range=50000                    # Anomaly for max contour
 Options$mslp.step=500                       # Smaller -> more contours
 Options$mslp.tpscale=500                    # Smaller -> contours less transparent
@@ -178,7 +178,8 @@ raw.fronts<-Front.cluster.to.linear(cls)
 smoothed.fronts<-Front.smooth(raw.fronts)
 
 
-image.name<-sprintf("%04d-%02d-%02d:%02d.%02d.png",opt$year,opt$month,opt$day,as.integer(opt$hour),
+image.name<-sprintf("global.%04d-%02d-%02d:%02d.%02d.png",
+                    opt$year,opt$month,opt$day,as.integer(opt$hour),
                         as.integer((opt$hour%%1)*100))
 
     png(image.name,

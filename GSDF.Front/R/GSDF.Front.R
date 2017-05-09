@@ -42,7 +42,9 @@ Front.find<-function(uwnd,vwnd,uwnd.old,vwnd.old) {
 
 #' Find regions with suitable 6-hr changes in the wind field
 #' 
-#' Want regions where wind moves from NW quadrant to SW quadrant
+#' Want NH regions where wind moves from SW quadrant to NW quadrant
+#'  and meridional speeds change by at least 2m/s
+#' and SH regions where wind moves from NW quadrant to SW quadrant
 #'  and meridional speeds change by at least 2m/s
 #'
 #' @export
@@ -54,9 +56,15 @@ Front.find<-function(uwnd,vwnd,uwnd.old,vwnd.old) {
 Front.find.wind.change.points<-function(uwnd,vwnd,uwnd.old,vwnd.old) {
   result<-uwnd
   result$data[]<-rep(NA,length(result$data))
+  dim.lat<-GSDF.find.dimension(uwnd,'lat')
+  dim.lon<-GSDF.find.dimension(uwnd,'lon')
+  lon.coords<-GSDF.roll.dimensions(uwnd,dim.lat,dim.lon)
+  w<-which(lon.coords>0) # Northern hemisphere points
+  vwnd$data[w]<-vwnd$data[w]*-1
+  vwnd.old$data[w]<-vwnd.old$data[w]*-1
   w<-which(uwnd$data>0 & vwnd$data>0 &
            uwnd.old$data>0 & vwnd.old$data<0 &
-           vwnd$data-vwnd.old$data>2)
+           abs(vwnd$data-vwnd.old$data)>2)
   if(length(w)>0) result$data[w]<-0
   return(result)
 }
@@ -81,12 +89,13 @@ Front.cluster<-function(points) {
   d1<-length(points$dimensions[[dims[1]]]$values)
   d2<-length(points$dimensions[[dims[2]]]$values)
   # increments to give neighbours
-  n.idx<-c(1,-1,d1,-d1,d1+1,d1-1,-d1-1,-d1+1)
+  n.idx<-c(0,1,-1,d1,-d1,d1+1,d1-1,-d1-1,-d1+1)
   front.count<-1
   while(length(unclassified)>0) {
     seed<-unclassified[1]
     while(TRUE) {
-        for(i in seq_along(n.idx)) seed<-c(seed,seed+n.idx[i])
+        # add neighbour increments to each current point
+        seed<-as.vector(outer(seed,n.idx,'+'))
         seed<-unique(seed)
         w<-which(seed>0 & seed<=length(points$data))
         seed<-seed[w]
@@ -134,7 +143,9 @@ Front.cluster.to.linear<-function(clusters) {
      if(length(unique(lats.w))<2) next
      front<-GSDF.Front()
      for(lat in sort(unique(lats.w))) {
-        lon<-max(longs.w[which(lats.w==lat)])
+         lon<-max(longs.w[which(lats.w==lat)])
+         # skip regions where easterly extent is limited by end-of-data
+         if(lon==length(clusters$dimensions[[dim.lon]]$values)) next
         front$lat<-c(front$lat,clusters$dimensions[[dim.lat]]$values[lat])
         front$lon<-c(front$lon,clusters$dimensions[[dim.lon]]$values[lon])
      }
