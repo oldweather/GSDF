@@ -58,6 +58,7 @@ Front.find.wind.change.points<-function(uwnd,vwnd,uwnd.old,vwnd.old) {
            uwnd.old$data>0 & vwnd.old$data<0 &
            vwnd$data-vwnd.old$data>2)
   if(length(w)>0) result$data[w]<-0
+  return(result)
 }
 
 #' Group selected frontal points into 8-connected regions
@@ -85,10 +86,10 @@ Front.cluster<-function(points) {
   while(length(unclassified)>0) {
     seed<-unclassified[1]
     while(TRUE) {
-        idx.y<-as.integer((seed-1)/d1)+1
-        idx.x<-seed-(idx.y-1)*d1
         for(i in seq_along(n.idx)) seed<-c(seed,seed+n.idx[i])
         seed<-unique(seed)
+        w<-which(seed>0 & seed<=length(points$data))
+        seed<-seed[w]
         w<-which(!is.na(points$data[seed]))
         seed<-seed[w]
         w<-which(points$data[seed]==0)
