@@ -19,6 +19,8 @@ Front.find.wind.change.points(uwnd, vwnd, uwnd.old, vwnd.old)
 A list of GSDF.Front structures
 }
 \description{
-Want regions where wind moves from NW quadrant to SW quadrant
+Want NH regions where wind moves from SW quadrant to NW quadrant
+ and meridional speeds change by at least 2m/s
+and SH regions where wind moves from NW quadrant to SW quadrant
  and meridional speeds change by at least 2m/s
 }

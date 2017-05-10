@@ -38,6 +38,26 @@ GSDF.Front<-function() {
 #' @param vwnd.old - V wind field from 6-hours ago
 #' @return A list of GSDF.Front structures
 Front.find<-function(uwnd,vwnd,uwnd.old,vwnd.old) {
+  # Regrid the data onto a regular grid with the standard pole
+  #  at the ERA-Interim resolution
+  grid.spec<-GSDF()
+  grid.spec$dimensions[[1]]<-list(
+        type='lon',
+        values=seq(0,359.25,0.75))
+  grid.spec$dimensions[[2]]<-list(
+        type='lat',
+        values=seq(90,-90,-0.75))
+  grid.spec$data<-array(dim=c(length(grid.spec$dimensions[[1]]$values),
+                              length(grid.spec$dimensions[[2]]$values)))
+  uwnd<-GSDF.regrid.2d(uwnd,grid.spec)
+  vwnd<-GSDF.regrid.2d(vwnd,grid.spec)
+  uwnd.old<-GSDF.regrid.2d(uwnd.old,grid.spec)
+  vwnd.old<-GSDF.regrid.2d(vwnd.old,grid.spec)
+  cp<-Front.find.wind.change.points(uwnd,vwnd,uwnd.old,vwnd.old)
+  cl<-Front.cluster(cp)
+  lf<-Front.cluster.to.linear(cl)
+  fs<-Front.smooth(lf)
+  return(fs)
 }
 
 #' Find regions with suitable 6-hr changes in the wind field
@@ -59,12 +79,17 @@ Front.find.wind.change.points<-function(uwnd,vwnd,uwnd.old,vwnd.old) {
   dim.lat<-GSDF.find.dimension(uwnd,'lat')
   dim.lon<-GSDF.find.dimension(uwnd,'lon')
   lon.coords<-GSDF.roll.dimensions(uwnd,dim.lat,dim.lon)
-  w<-which(lon.coords>0) # Northern hemisphere points
-  vwnd$data[w]<-vwnd$data[w]*-1
-  vwnd.old$data[w]<-vwnd.old$data[w]*-1
-  w<-which(uwnd$data>0 & vwnd$data>0 &
+  # Southern hemisphere points
+  w<-which(lon.coords<0 &
+           uwnd$data>0 & vwnd$data>0 &
            uwnd.old$data>0 & vwnd.old$data<0 &
-           abs(vwnd$data-vwnd.old$data)>2)
+           vwnd$data-vwnd.old$data>2)
+  if(length(w)>0) result$data[w]<-0
+  # Northern hemisphere points
+  w<-which(lon.coords>0 &
+           uwnd$data>0 & vwnd$data<0 &
+           uwnd.old$data>0 & vwnd.old$data>0 &
+           vwnd.old$data-vwnd$data>2)
   if(length(w)>0) result$data[w]<-0
   return(result)
 }
@@ -145,7 +170,7 @@ Front.cluster.to.linear<-function(clusters) {
      for(lat in sort(unique(lats.w))) {
          lon<-max(longs.w[which(lats.w==lat)])
          # skip regions where easterly extent is limited by end-of-data
-         if(lon==length(clusters$dimensions[[dim.lon]]$values)) next
+         #if(lon==length(clusters$dimensions[[dim.lon]]$values)) next
         front$lat<-c(front$lat,clusters$dimensions[[dim.lat]]$values[lat])
         front$lon<-c(front$lon,clusters$dimensions[[dim.lon]]$values[lon])
      }
@@ -197,4 +222,27 @@ Front.smooth.longitudes<-function(lons) {
   resid<-filter(resid,c(0.25,0.5,0.25),sides=2)
   # Return the sum - trimed back to the original length
   return((fp+resid)[3:(ll+2)])
+}
+
+#' Plot a single front
+#' 
+#' Rotates into the pole specified in the options
+#'  and adjusts for longitude wraparounds
+#'
+#' Probably this should be in GSDF.WeatherMap.
+#'
+#' @export
+#' @param front - single front structure
+#' @return Same front structures, smoothed.
+Front.plot<-function(front,gp,Options) {
+  frll.rotated<-GSDF.ll.to.rg(front$lat,front$lon,Options$pole.lat,Options$pole.lon)
+  w<-which(frll.rotated$lon>Options$lon.max)
+  if(length(w)>0) frll.rotated$lon<-frll.rotated$lon-360
+  w<-which(frll.rotated$lon<Options$lon.min)
+  if(length(w)>0) frll.rotated$lon<-frll.rotated$lon+360
+  w<-which(abs(diff(frll.rotated$lon))>10)
+  if(length(w)>0) is.na(frll.rotated$lon[w])<-TRUE
+  grid.lines(x=unit(frll.rotated$lon,'native'),
+               y=unit(frll.rotated$lat,'native'),
+               gp=gp)
 }

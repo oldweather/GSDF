@@ -142,7 +142,7 @@ Front.plot<-function(front,gp,Options) {
   if(length(w)>0) frll.rotated$lon<-frll.rotated$lon-360
   w<-which(frll.rotated$lon<Options$lon.min)
   if(length(w)>0) frll.rotated$lon<-frll.rotated$lon+360
-  w<-which(abs(diff(frll.rotated$lon))>180)
+  w<-which(abs(diff(frll.rotated$lon))>10)
   if(length(w)>0) is.na(frll.rotated$lon[w])<-TRUE
   grid.lines(x=unit(frll.rotated$lon,'native'),
                y=unit(frll.rotated$lat,'native'),
@@ -156,7 +156,7 @@ psm<-ERAI.get.slice.at.hour('prmsl',opt$year,opt$month,opt$day,opt$hour)
 u<-ERAI.get.slice.at.hour('uwnd.10m',opt$year,opt$month,opt$day,opt$hour)
 v<-ERAI.get.slice.at.hour('vwnd.10m',opt$year,opt$month,opt$day,opt$hour)
 
-ct<-lubridate::ymd_hms(sprintf("%04d-%02d-$02d:%02d:%02d:00",
+ct<-lubridate::ymd_hms(sprintf("%04d-%02d-%02d:%02d:%02d:00",
                                opt$year,opt$month,opt$day,
                                as.integer(opt$hour),
                                as.integer((opt$hour%%1)*60)))-lubridate::hours(6)
@@ -175,7 +175,7 @@ v.old<-ERAI.get.slice.at.hour('vwnd.10m',lubridate::year(ct),
 wcp<-Front.find.wind.change.points(u,v,u.old,v.old)
 cls<-Front.cluster(wcp)
 raw.fronts<-Front.cluster.to.linear(cls)
-smoothed.fronts<-Front.smooth(raw.fronts)
+smoothed.fronts<-Front.find(u,v,u.old,v.old)
 
 
 image.name<-sprintf("global.%04d-%02d-%02d:%02d.%02d.png",
@@ -212,7 +212,7 @@ image.name<-sprintf("global.%04d-%02d-%02d:%02d.%02d.png",
         if(max(diff(smoothed.fronts[[i]]$lat),na.rm=TRUE)>10) next
         if(max(diff(smoothed.fronts[[i]]$lon),na.rm=TRUE)>10) next
         Front.plot(smoothed.fronts[[i]],sfgp,Options)
-     }
+    }
   popViewport()
     
 

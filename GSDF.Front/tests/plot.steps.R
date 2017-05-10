@@ -156,7 +156,7 @@ psm<-ERAI.get.slice.at.hour('prmsl',opt$year,opt$month,opt$day,opt$hour)
 u<-ERAI.get.slice.at.hour('uwnd.10m',opt$year,opt$month,opt$day,opt$hour)
 v<-ERAI.get.slice.at.hour('vwnd.10m',opt$year,opt$month,opt$day,opt$hour)
 
-ct<-lubridate::ymd_hms(sprintf("%04d-%02d-$02d:%02d:%02d:00",
+ct<-lubridate::ymd_hms(sprintf("%04d-%02d-%02d:%02d:%02d:00",
                                opt$year,opt$month,opt$day,
                                as.integer(opt$hour),
                                as.integer((opt$hour%%1)*60)))-lubridate::hours(6)
