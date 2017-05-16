@@ -4,8 +4,8 @@
 \alias{CERA20C.get.slice.at.hour}
 \title{Get slice at hour.}
 \usage{
-CERA20C.get.slice.at.hour(variable, year, month, day, hour, height = NULL,
-  fc.init = NULL, member = 1, type = "mean")
+CERA20C.get.slice.at.hour(variable, v.year, v.month, v.day, v.hour,
+  height = NULL, fc.init = NULL, member = 1, type = "mean")
 }
 \arguments{
 \item{variable}{'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any CERA20C variable.
