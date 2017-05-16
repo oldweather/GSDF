@@ -50,13 +50,15 @@ ERAI.fetch.data.for.month<-function(var,year,month) {
 #' @param month
 ERAI.fetch.analysis.data.for.month<-function(var,year,month) {
 
-    if(!is.null(ERAI.vars.a[[var]])) {
+    if(is.null(ERAI.vars.a[[var]])) {
         stop(sprintf("Unsupported analysis variable %s",var))
     }
-    target.dir<-sprintf("%s/hourly/%04d/%02d",ERAI.get.data.dir(),opt$year,opt$month)
+    target.dir<-sprintf("%s/hourly/%04d/%02d",ERAI.get.data.dir(),year,month)
     if(!file.exists(target.dir)) dir.create(target.dir,recursive=TRUE)
     target.file<-(sprintf("%s/%s.nc",target.dir,var))
-    if(file.exists(target.file) && file.info(target.file)$size>0) return() # already done
+    if(file.exists(target.file) && file.info(target.file)$size>0) {
+      return('Already done')
+    }
 
     # Retrieval is done by Python script - put in a temporary file
     fname<-tempfile()
@@ -75,9 +77,9 @@ ERAI.fetch.analysis.data.for.month<-function(var,year,month) {
     cat('   \'grid\'      : "0.75/0.75",\n')
     cat('   \'time\'      : "00/06/12/18",\n')
     cat(sprintf("   'date'      : \"%04d-%02d-%02d/to/%04d-%02d-%02d\",\n",
-                opt$year,opt$month,1,
-                opt$year,opt$month,
-                days_in_month(ymd(sprintf("%04d-%02d-01",opt$year,opt$month)))))
+                year,month,1,
+                year,month,
+                days_in_month(ymd(sprintf("%04d-%02d-01",year,month)))))
     cat('   \'format\'    : "netcdf",\n')
     cat(sprintf("   'target'    : \"%s\",\n",target.file))
     cat('})')
@@ -101,17 +103,19 @@ ERAI.fetch.analysis.data.for.month<-function(var,year,month) {
 #' @param month
 ERAI.fetch.forecast.data.for.month<-function(var,year,month) {
 
-    if(!is.null(ERAI.vars.a[[var]])) {
+    if(is.null(ERAI.vars.a[[var]])) {
         stop(sprintf("Unsupported analysis variable %s",var))
     }
-    target.dir<-sprintf("%s/hourly/%04d/%02d",ERAI.get.data.dir(),opt$year,opt$month)
+    target.dir<-sprintf("%s/hourly/%04d/%02d",ERAI.get.data.dir(),year,month)
     if(!file.exists(target.dir)) dir.create(target.dir,recursive=TRUE)
 
     # Need two sets of forecast data - from the runs at 0 and 12
     for(start.hour in c(0,12)) {
 
         target.file<-(sprintf("%s/%s.%02d.nc",target.dir,var,start.hour))
-        if(file.exists(target.file) && file.info(target.file)$size>0) return() # already done
+        if(file.exists(target.file) && file.info(target.file)$size>0) {
+          return('Already done')
+        }
 
         # Retrieval is done by Python script - put in a temporary file
         fname<-tempfile()
@@ -130,9 +134,9 @@ ERAI.fetch.forecast.data.for.month<-function(var,year,month) {
         cat('   \'grid\'      : "0.75/0.75",\n')
         cat(sprintf("   \'time\'      : \"%02d\",\n",start.hour))
         cat(sprintf("   'date'      : \"%04d-%02d-%02d/to/%04d-%02d-%02d\",\n",
-                    opt$year,opt$month,1,
-                    opt$year,opt$month,
-                    days_in_month(ymd(sprintf("%04d-%02d-01",opt$year,opt$month)))))
+                    year,month,1,
+                    year,month,
+                    days_in_month(ymd(sprintf("%04d-%02d-01",year,month)))))
         cat('   \'format\'    : "netcdf",\n')
         cat(sprintf("   'target'    : \"%s\",\n",target.file))
         cat('})')
