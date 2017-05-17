@@ -2,14 +2,15 @@
 
 # names and classes of variables
 ERA20C.monolevel.analysis<-c('prmsl','air.2m','uwnd.10m','vwnd.10m','icec',
-                             'hgt.500','sst')
+                             'sst')
 ERA20C.monolevel.forecast<-c('prate')
-ERA20C.pressure.level<-NULL
+ERA20C.pressure.level<-c('')
 
 # Get class of variable: monolevel or pressure-level.
 ERA20C.get.variable.group<-function(variable) {
-  if(length(which(ERA20C.monolevel.analysis==variable))>0) return('monolevel.analysis')
-  if(length(which(ERA20C.monolevel.forecast==variable))>0) return('monolevel.forecast')
+  if(variable %in% ERA20C.monolevel.analysis) return('monolevel.analysis')
+  if(variable %in% ERA20C.monolevel.forecast) return('monolevel.forecast')
+  if(variable %in% ERA20C.pressure.level) return('monolevel.forecast')
   stop(sprintf("Unrecognised variable: %s",variable))
 }
 
@@ -38,24 +39,6 @@ ERA20C.translate.for.variable.names<-function(var) {
   return(v2)
 }
 
-#' ERA20C show variables
-#'
-#' List the variables available from 20CR
-#'
-#' 2 Different grids: 'Monolevel' is
-#' Lat x Lon x Time, 'Pressure level'
-#' is  Lat x Lon x Height x Time. No parameters or return value
-#' prints out a list of available variables.
-#' @export
-ERA20C.show.variables<-function() {
-  print('Monolevel analysis')
-  print(ERA20C.monolevel.analysis)
-  print('Monolevel forecast')
-  print(ERA20C.monolevel.forecast)
-  print('Pressure level')
-  print(ERA20C.pressure.level)
-}
-
 #' ERA20C get data directory
 #'
 #' Find local data directory - different for different systems
@@ -72,14 +55,6 @@ ERA20C.get.data.dir<-function() {
             return(base.file )
     }
     return(NULL)
-}
-
-# Get class of variable: monolevel or pressure-level.
-ERA20C.get.variable.group<-function(variable) {
-  if(length(which(ERA20C.monolevel.analysis==variable))>0) return('monolevel.analysis')
-  if(length(which(ERA20C.monolevel.forecast==variable))>0) return('monolevel.forecast')
-  if(length(which(ERA20C.pressure.level==variable))>0) return('pressure')
-  stop(sprintf("Unrecognised variable: %s",variable))
 }
 
 #' ERA20C get file name (hourly)
@@ -102,8 +77,8 @@ ERA20C.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
     name<-NULL
     
     if(type=='normal') {
-       name<-sprintf("%s/normals/hourly/%s.nc",base.dir,
-                   variable)
+       name<-sprintf("%s/normals/hourly/%02d/%s.nc",base.dir,
+                   month,variable)
        return(name)
     }
     if(type=='standard.deviation') {

@@ -5,7 +5,7 @@
 \title{ERA20C get file name (hourly)}
 \usage{
 ERA20C.hourly.get.file.name(variable, year, month, day, hour, height = NULL,
-  type = "mean")
+  fc.init = NULL, type = "mean")
 }
 \arguments{
 \item{variable}{'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any ERA20C variable}

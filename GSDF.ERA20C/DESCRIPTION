@@ -8,6 +8,7 @@ Maintainer: Philip Brohan <philip@brohan.org>
 Description: field<-ERA20C.get.slice.at.hour('air.2m','mean',1969,3,12)
 Depends:
     R (>= 1.7.0),
-    GSDF
+    GSDF,
+    lubridate
 License: Apache.
 RoxygenNote: 6.0.1

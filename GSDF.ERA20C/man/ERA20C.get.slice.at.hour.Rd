@@ -5,7 +5,7 @@
 \title{Get slice at hour.}
 \usage{
 ERA20C.get.slice.at.hour(variable, year, month, day, hour, height = NULL,
-  type = "mean")
+  fc.init = NULL, type = "mean")
 }
 \arguments{
 \item{variable}{'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any ERA20C variable.
@@ -13,11 +13,13 @@ can also be 'sst' - will return 'air.sfc' over sea grids.}
 
 \item{height}{Height in hPa - leave NULL for monolevel}
 
+\item{fc.init}{If NULL (default) - use the most recent forecast start. If 'last', use the previous day's
+forecast start (only possible for 9am data). If 'blend', smooth the transition between forecast fields
+initialised on one day and those initialised on the following day by using the 27-hour forcast
+on the first day to interpolate.}
+
 \item{type}{- 'mean' (default), 'spread', 'normal', or 'standard.deviation'. 
 Note that standard deviations are not available over opendap.}
-
-\item{opendap}{TRUE for network retrieval, FALSE for local files (faster, if you have them), NULL (default)
-will use local files if available and network otherwise.}
 }
 \value{
 A GSDF field with lat and long as extended dimensions
