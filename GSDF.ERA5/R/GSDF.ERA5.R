@@ -1,32 +1,11 @@
 # Functions for getting data from the ERA5 reanalyis
 
 # names and classes of variables
+#' @export
 ERA5.monolevel.analysis<-c('prmsl','air.2m','uwnd.10m','vwnd.10m','icec',
                            'sst')
-ERA5.monolevel.forecast<-c('prate')
-
-#' Translate to ERA5 variable names as used in files
-#'
-#' I'm standardising on 20CR variable names - map to ERA5 choices
-#'
-#' ERA5 uses different names for the files and the variable in the file
-#'  this function maps to ERA5 file names.
-#'
 #' @export
-#' @param var - 20CR variable name
-#' @return name used for ERA5 file names
-ERA5.translate.for.files<-function(var) {
-  v2<-switch(var,
-             prmsl    = 'msl',
-             air.2m   = '2t',
-             uwnd.10m = '10u',
-             vwnd.10m = '10v',
-             icec     = 'ci',
-             sst      = 'sst',
-             prate    = 'tp')
-  if(is.null(v2)) stop(sprintf("Unsupported variable %s",var))
-  return(v2)
-}
+ERA5.monolevel.forecast<-c('prate')
 
 #' Translate to ERA5 variable names in the .nc files
 #'
@@ -73,8 +52,8 @@ ERA5.get.data.dir<-function() {
 
 # Get class of variable: monolevel or pressure-level.
 ERA5.get.variable.group<-function(variable) {
-  if(length(which(ERA5.monolevel.analysis==variable))>0) return('monolevel.analysis')
-  if(length(which(ERA5.monolevel.forecast==variable))>0) return('monolevel.forecast')
+  if(variable %in% ERA5.monolevel.analysis) return('monolevel.analysis')
+  if(variable %in% ERA5.monolevel.forecast) return('monolevel.forecast')
   stop(sprintf("Unrecognised variable: %s",variable))
 }
 
@@ -95,14 +74,13 @@ ERA5.hourly.get.file.name<-function(variable,year,month,day,hour,
                                     stream='oper',fc.init=NULL,type=type) {
     base.dir<-ERA5.get.data.dir()
     if(type=='normal') {
-      if(month==2 && day==29) day<-28
-      file.name<-sprintf("%s/climtologies.1981-2010/%s.%02d.%02d.%02d.Rdata",base.dir,variable,month,day,hour)
+      file.name<-ERA5.climatology.get.file.name(variable,month)
       if(file.exists(file.name)) return(file.name)
       stop(sprintf("No local data file %s",file.name))
-    }      
-    dir.name<-sprintf("%s/%s/hourly/%04d/%02d/%02d",base.dir,stream,
-                        year,month,day)
-    file.name<-sprintf("%s/%s.nc",dir.name,ERA5.translate.for.files(variable))
+    }  
+    dir.name<-sprintf("%s/%s/hourly/%04d/%02d/",base.dir,stream,
+                        year,month)
+    file.name<-sprintf("%s/%s.nc",dir.name,variable)
     if(ERA5.get.variable.group(variable) == 'monolevel.forecast') {
       if(is.null(fc.init)) {
         fc.init<-18
@@ -122,7 +100,7 @@ ERA5.hourly.get.file.name<-function(variable,year,month,day,hour,
          dir.name<-sprintf("%s/%s/hourly/%04d/%02d/%02d",base.dir,stream,
                         year(dte),month(dte),day(dte))
        }
-       file.name<-sprintf("%s/%s.%02d.nc",dir.name,ERA5.translate.for.files(variable),fc.init)
+       file.name<-sprintf("%s/%s.%02d.nc",dir.name,variable,fc.init)
     }
     if(file.exists(file.name)) return(file.name)
     stop(sprintf("No local data file %s",file.name))
@@ -233,16 +211,17 @@ ERA5.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
         hour<-as.integer(hour)
         file.name<-ERA5.hourly.get.file.name(variable,year,month,day,hour,stream='oper',fc.init=fc.init,type=type)
         if(type=='normal') {
-           v<-readRDS(file.name)
-        } else {
-           t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
-                        format=c(dates='y/m/d',times='h:m:s'))-1/48
-           t2<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
-                        format=c(dates='y/m/d',times='h:m:s'))+1/48
-           v<-GSDF.ncdf.load(file.name,ERA5.translate.for.variable.names(variable),
-                             lat.range=c(-90,90),lon.range=c(0,360),
-                             height.range=rep(height,2),time.range=c(t,t2))
+             year<-1981
+             if(month==2 && day==29) day<-28
         }
+       t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
+                    format=c(dates='y/m/d',times='h:m:s'))-1/48
+       t2<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
+                    format=c(dates='y/m/d',times='h:m:s'))+1/48
+       v<-GSDF.ncdf.load(file.name,ERA5.translate.for.variable.names(variable),
+                         lat.range=c(-90,90),lon.range=c(0,360),
+                         height.range=rep(height,2),time.range=c(t,t2))
+        
         return(v)
     }
     # Interpolate from the previous and subsequent analysis times
@@ -275,8 +254,6 @@ ERA5.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
     v$data[]<-v1$data*weight+v2$data*(1-weight)
     return(v)
 }
-
-
 
 #' Get slice at hour for each ensemble member
 #'

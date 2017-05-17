@@ -46,8 +46,8 @@ ERAI.get.data.dir<-function() {
 
 # Get class of variable: monolevel or pressure-level.
 ERAI.get.variable.group<-function(variable) {
-  if(length(which(ERAI.monolevel.analysis==variable))>0) return('monolevel.analysis')
-  if(length(which(ERAI.monolevel.forecast==variable))>0) return('monolevel.forecast')
+  if(variable %in% ERAI.monolevel.analysis) return('monolevel.analysis')
+  if(variable %in% ERAI.monolevel.forecast) return('monolevel.forecast')
   stop(sprintf("Unrecognised variable: %s",variable))
 }
 

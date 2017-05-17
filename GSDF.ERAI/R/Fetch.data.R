@@ -27,10 +27,10 @@ ERAI.vars.f<-list(prate    = '228')
 #' @param year
 #' @param month
 ERAI.fetch.data.for.month<-function(var,year,month) {
-    if(!is.null(ERAI.vars.a[[var]])) {
+    if(var %in% ERAI.monolevel.analysis) {
         return(ERAI.fetch.analysis.data.for.month(var,year,month))
     }
-    if(!is.null(ERAI.vars.f[[var]])) {
+    if(var %in% ERAI.monolevel.forecast) {
         return(ERAI.fetch.forecast.data.for.month(var,year,month))
     }
     stop(sprintf("Unsupported variable %s",var)) 
@@ -50,7 +50,7 @@ ERAI.fetch.data.for.month<-function(var,year,month) {
 #' @param month
 ERAI.fetch.analysis.data.for.month<-function(var,year,month) {
 
-    if(is.null(ERAI.vars.a[[var]])) {
+    if(!var %in% ERAI.monolevel.analysis) {
         stop(sprintf("Unsupported analysis variable %s",var))
     }
     target.dir<-sprintf("%s/hourly/%04d/%02d",ERAI.get.data.dir(),year,month)
@@ -103,7 +103,7 @@ ERAI.fetch.analysis.data.for.month<-function(var,year,month) {
 #' @param month
 ERAI.fetch.forecast.data.for.month<-function(var,year,month) {
 
-    if(is.null(ERAI.vars.a[[var]])) {
+    if(!var %in% ERAI.monolevel.forecast) {
         stop(sprintf("Unsupported analysis variable %s",var))
     }
     target.dir<-sprintf("%s/hourly/%04d/%02d",ERAI.get.data.dir(),year,month)
