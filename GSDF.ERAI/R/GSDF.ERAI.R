@@ -66,8 +66,7 @@ ERAI.get.variable.group<-function(variable) {
 ERAI.hourly.get.file.name<-function(variable,year,month,day,hour,fc.init=NULL,type='mean') {
     base.dir<-ERAI.get.data.dir()
     if(type=='normal') {
-      if(month==2 && day==29) day<-28
-      file.name<-sprintf("%s/climtologies.1981-2010/%s.%02d.%02d.%02d.Rdata",base.dir,variable,month,day,hour)
+      file.name<-ERAI.climatology.get.file.name(variable,month)
       if(file.exists(file.name)) return(file.name)
       stop(sprintf("No local data file %s",file.name))
     }  
@@ -226,16 +225,16 @@ ERAI.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
 	   v$data[]<-v$data-v2$data	
 	} else {
            if(type=='normal') {
-             v<-readRDS(file.name)
-           } else{  
-               t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
-                            format=c(dates='y/m/d',times='h:m:s'))-1/48
-               t2<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
-                            format=c(dates='y/m/d',times='h:m:s'))+1/48
-               v<-GSDF.ncdf.load(file.name,ERAI.translate.for.variable.names(variable),
-                                 lat.range=c(-90,90),lon.range=c(0,360),
-                                 height.range=rep(height,2),time.range=c(t,t2))
-             }
+             year<-1981
+             if(month==2 && day==29) day<-28
+           }
+           t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
+                        format=c(dates='y/m/d',times='h:m:s'))-1/48
+           t2<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
+                        format=c(dates='y/m/d',times='h:m:s'))+1/48
+           v<-GSDF.ncdf.load(file.name,ERAI.translate.for.variable.names(variable),
+                             lat.range=c(-90,90),lon.range=c(0,360),
+                             height.range=rep(height,2),time.range=c(t,t2))
 	}
 	if(variable=='prate' && type=='mean') v$data[]<-v$data/3 # 3-hour accumulations to 1 hour rate
         return(v)

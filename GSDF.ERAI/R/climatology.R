@@ -8,9 +8,9 @@
 #' @export
 #' @param variable 'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any supported variable
 #' @return File containing the requested data 
-ERAI.climatology.get.file.name<-function(variable,year,month) {
+ERAI.climatology.get.file.name<-function(variable,month) {
     base.dir<-ERAI.get.data.dir()
-    dir.name<-sprintf("%s/normals/hourly/%04d/%02d",base.dir,year,month)
+    dir.name<-sprintf("%s/normals/hourly/%02d",base.dir,month)
     file.name<-sprintf("%s/%s.nc",dir.name,variable)
     return(file.name)
 }
@@ -18,7 +18,7 @@ ERAI.climatology.get.file.name<-function(variable,year,month) {
 #' Make (and store) a climatological average 
 #'
 #' Data are stored as .nc files in a parallel directory to the original
-#'  data - same as original data exept only for 1 year.
+#'  data - same as original data except only for 1 year.
 #' Loads a whole month of data at once
 #'
 #' Chose to use 1981 as the storage year in the netcdf file.
@@ -28,24 +28,24 @@ ERAI.climatology.get.file.name<-function(variable,year,month) {
 #' @param month  - 1-12, month to make climatology for.
 #'   If NULL (default) run for all months
 #' @return Nothing - a climatological field will be created as a side effect.
-ERAI.make.climatology<-function(variable,month=NULL) {
+ERAI.make.climatology<-function(variable,month=NULL,first.year=1981,last.year=2010) {
 
   for(mnth in seq(1,12)) {
     if(!is.null(month) && month != mnth) next
     
   # Load the data 1 year at a time.
   result<-NULL
-  for(year in seq(1981,2010)) {
+  for(year in seq(first.year,last.year)) {
 
       mnth.file<-ERAI.hourly.get.file.name(variable,year,mnth,15,0)
-      if(!file.exists(file.name)) {
+      if(!file.exists(mnth.file)) {
         stop("Missing data for %s %04d-%02d",variable,year,mnth)
       }
     
        t<-chron(sprintf("%04d/%02d/%02d",year,mnth,1),
                 sprintf("%02d:00:00",0),
                 format=c(dates='y/m/d',times='h:m:s'))
-       nmd<-lubridate::days_in_month(t)
+       nmd<-lubridate::days_in_month(as.POSIXct(t))
       if(nmd==29) nmd<-28 # death to leap years
        t2<-chron(sprintf("%04d/%02d/%02d",year,mnth,nmd),
                  sprintf("%02d:59:59",23),
@@ -69,23 +69,17 @@ ERAI.make.climatology<-function(variable,month=NULL) {
 
       # set the year to 1981
       t.i<-GSDF.find.dimension(result,'time')
-      m<-stringr::str_match(result$dimensions[[t.i]]$values,
+      m<-stringr::str_match(as.POSIXlt(result$dimensions[[t.i]]$values),
                    "(\\d\\d\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)")
-
       result$dimensions[[t.i]]$values<-sprintf("1981-%s-%s:%s:%s",
                                                m[,3],m[,4],m[,5],m[,6])
+      result$meta$calendar='gregorian'
 
       # Write the result to a disc location paralleling the data
-      fn<-ERAI.climatology.get.file.name(model=model,
-                           experiment=experiment,
-                           variable=variable,
-                           ensemble=ensemble,
-                           realm=realm,
-                           table=table,
-                           frequency=frequency)
+      fn<-ERAI.climatology.get.file.name(variable,mnth)
+      if(!file.exists(dirname(fn))) dir.create(dirname(fn),recursive=TRUE)
 
-
-      GSDF.ncdf.write(result,fn,name=variable)
+      GSDF.ncdf.write(result,fn,name=ERAI.translate.for.variable.names(variable))
    }
 }  
 
