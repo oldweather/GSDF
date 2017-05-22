@@ -98,10 +98,6 @@ ERAI.hourly.get.file.name<-function(variable,year,month,day,hour,fc.init=NULL,ty
 }
 
 ERAI.is.in.file<-function(variable,year,month,day,hour,stream='oper',type='mean') {
-     if(type=='normal') {
-       if(hour%%1==0) return(TRUE)
-       return(FALSE)
-     }
      if(ERAI.get.variable.group(variable) =='monolevel.forecast' && hour%%3==0) return(TRUE)
      if(ERAI.get.variable.group(variable) =='monolevel.analysis' && hour%%6==0) return(TRUE)
      return(FALSE)

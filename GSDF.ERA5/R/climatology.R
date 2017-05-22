@@ -83,7 +83,7 @@ ERA5.make.climatology<-function(variable,month=NULL,stream='oper',
 
       # set the year to 1981
       t.i<-GSDF.find.dimension(result,'time')
-      m<-stringr::str_match(as.POSIXlt(result$dimensions[[t.i]]$values),
+      m<-stringr::str_match(as.POSIXlt(result$dimensions[[t.i]]$values,tz='GMT'),
                    "(\\d\\d\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)")
       result$dimensions[[t.i]]$values<-sprintf("1981-%s-%s:%s:%s",
                                                m[,3],m[,4],m[,5],m[,6])

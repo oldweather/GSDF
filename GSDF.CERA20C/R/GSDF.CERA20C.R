@@ -102,13 +102,13 @@ CERA20C.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
     name<-NULL
     
     if(type=='normal') {
-       name<-sprintf("%s/normals/hourly/%s.nc",base.dir,
-                   variable)
+       name<-sprintf("%s/normals/hourly/%02d/%s.nc",base.dir,
+                   month,variable)
        return(name)
     }
     if(type=='standard.deviation') {
-       name<-sprintf("%s/standard.deviations/hourly/%s.nc",base.dir,
-                   variable)
+       name<-sprintf("%s/standard.deviations/hourly/%02d/%s.nc",base.dir,
+                   month,variable)
        return(name)
     }
 

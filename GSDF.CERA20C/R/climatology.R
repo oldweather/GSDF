@@ -14,24 +14,26 @@
 #' @param month  - 1-12, month to make climatology for.
 #'   If NULL (default) run for all months
 #' @return Nothing - a climatological field will be created as a side effect.
-CERA20C.make.climatology<-function(variable,month=NULL) {
+CERA20C.make.climatology<-function(variable,month=NULL,first.year=1981,last.year=2010) {
 
   for(mnth in seq(1,12)) {
     if(!is.null(month) && month != mnth) next
     
+  print(mnth)
   # Load the data 1 year at a time.
   result<-NULL
-  for(year in seq(1981,2010)) {
+  for(year in seq(first.year,last.year)) {
 
+     print(year)
       mnth.file<-CERA20C.hourly.get.file.name(variable,year,mnth,15,0)
-      if(!file.exists(file.name)) {
+      if(!file.exists(mnth.file)) {
         stop("Missing data for %s %04d-%02d",variable,year,mnth)
       }
     
        t<-chron(sprintf("%04d/%02d/%02d",year,mnth,1),
                 sprintf("%02d:00:00",0),
                 format=c(dates='y/m/d',times='h:m:s'))
-       nmd<-lubridate::days_in_month(t)
+       nmd<-lubridate::days_in_month(as.POSIXct(t))
       if(nmd==29) nmd<-28 # death to leap years
        t2<-chron(sprintf("%04d/%02d/%02d",year,mnth,nmd),
                  sprintf("%02d:59:59",23),
@@ -44,8 +46,6 @@ CERA20C.make.climatology<-function(variable,month=NULL) {
      if(is.null(slab)) {
        stop("Data for climatology is not on disc.")
      }
-      # Average over ensemble members
-     slab<-GSDF.reduce.1d(slab,'ensemble',mean)
      if(is.null(result)) {
        result<-slab
      } else {
@@ -54,20 +54,24 @@ CERA20C.make.climatology<-function(variable,month=NULL) {
      gc(verbose=FALSE )
 
     }
-      result$data[]<-result$data/(last.year-first.year+1)
+    # Average over ensemble members
+    result<-GSDF.reduce.1d(result,'ensemble',mean)
+    result$data[]<-result$data/(last.year-first.year+1)
 
       # set the year to 1981
       t.i<-GSDF.find.dimension(result,'time')
-      m<-stringr::str_match(result$dimensions[[t.i]]$values,
+      m<-stringr::str_match(as.POSIXlt(result$dimensions[[t.i]]$values,tz='GMT'),
                    "(\\d\\d\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)\\D(\\d\\d)")
 
       result$dimensions[[t.i]]$values<-sprintf("1981-%s-%s:%s:%s",
                                                m[,3],m[,4],m[,5],m[,6])
+      result$meta$calendar='gregorian'
 
       # Write the result to a disc location paralleling the data
       fn<-CERA20C.hourly.get.file.name(variable,year,mnth,15,0,type='normal')
+      if(!file.exists(dirname(fn))) dir.create(dirname(fn),recursive=TRUE)
 
-      GSDF.ncdf.write(result,fn,name=variable)
+      GSDF.ncdf.write(result,fn,name=CERA20C.translate.for.variable.names(variable))
    }
 }  
 

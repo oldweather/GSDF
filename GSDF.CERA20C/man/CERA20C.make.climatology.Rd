@@ -4,7 +4,8 @@
 \alias{CERA20C.make.climatology}
 \title{Make (and store) a climatological average}
 \usage{
-CERA20C.make.climatology(variable, month = NULL)
+CERA20C.make.climatology(variable, month = NULL, first.year = 1981,
+  last.year = 2010)
 }
 \arguments{
 \item{variable}{- 'air.2m', 'prmsl', 'prate', - 20CR names}
