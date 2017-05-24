@@ -232,7 +232,7 @@ ERAI.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
                              lat.range=c(-90,90),lon.range=c(0,360),
                              height.range=rep(height,2),time.range=c(t,t2))
 	}
-	if(variable=='prate' && type=='mean') v$data[]<-v$data/3 # 3-hour accumulations to 1 hour rate
+	if(variable=='prate' && type=='mean') v$data[]<-v$data/6 # 6-hour accumulations to 1 hour rate
         return(v)
     }
     # Interpolate from the previous and subsequent analysis times

@@ -201,8 +201,10 @@ CERA20C.get.slice.at.hour<-function(variable,v.year,v.month,v.day,v.hour,height=
   if(CERA20C.get.variable.group(variable)=='monolevel.analysis' ||
      CERA20C.get.variable.group(variable)=='monolevel.forecast') {
     if(!is.null(height)) warning("Ignoring height specification for monolevel variable")
-    return(CERA20C.get.slice.at.level.at.hour(variable,v.year,v.month,v.day,v.hour,
-                                             fc.init=fc.init,member=member,type=type))
+    result<-CERA20C.get.slice.at.level.at.hour(variable,v.year,v.month,v.day,v.hour,
+                                             fc.init=fc.init,member=member,type=type)
+    if(variable=='prate' && type=='mean') result$data[]<-result$data/3 # 3-hour accumulations to 1 hour rate
+    return(result)
   }
   # Find levels above and below selected height, and interpolate between them
   if(is.null(height)) stop(sprintf("No height specified for pressure variable %s",variable))
