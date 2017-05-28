@@ -348,7 +348,7 @@ TWCR.get.obs.1file<-function(year,month,day,hour,version=2) {
                             'Mean.analysis.pressure.difference',
                             'Analysis.pressure.spread',
                             'Name','ID'),
-                  header=F,stringsAsFactors=F,
+                  header=F,stringsAsFactors=F,fileEncoding="ISO-8859-1",
                   colClasses=c('character','integer','character',
                                rep('numeric',2),
                                rep('integer',2),
