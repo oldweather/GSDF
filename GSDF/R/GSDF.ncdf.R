@@ -331,8 +331,6 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
 #' Write a single field to a netCDF file.
 #' Overwites anything already in the file.
 #'
-#' Always uses 'hours since 1800-01-01:00' in the 
-#'  gregorian calendar for time fields.
 #'
 #' @export
 #' @param f A GSDF field
@@ -342,13 +340,16 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
 #' @param shuffle see \code{\link{ncvar_def}}
 #' @param compression see \code{\link{ncvar_def}}
 #' @param chunksizes see \code{\link{ncvar_def}}
+#' @param unlimited name of record dimension
 #' @return 1 if successful, NULL for failure - invisibly.
 GSDF.ncdf.write<-function(f,file.name,name='variable',
                           missval=NULL,prec='float',shuffle=FALSE,
-                          compression=NA,chunksizes=NA) {
+                          compression=NA,chunksizes=NA,unlimited='time') {
 
    nc.dims<-list()
    for(i in seq_along(f$dimensions)) {
+      unlim<-FALSE
+      if(!is.null(unlimited) && f$dimensions[[i]]$type==unlimited) unlim=TRUE
       if(f$dimensions[[i]]$type=='time') {
          # convert into minutes from first value to store
          origin<-f$dimensions[[i]]$values[1]
@@ -356,24 +357,24 @@ GSDF.ncdf.write<-function(f,file.name,name='variable',
                      GSDF.time(f$dimensions[[i]]$values,f$meta$calendar))
          nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
             sprintf("minutes since %s",origin),
-            offsets)
+            offsets,unlim=unlim)
       }
       if(f$dimensions[[i]]$type=='lat') {
          nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
             'degrees north',
             f$dimensions[[i]]$values,
-            longname='latitude')
+            longname='latitude',unlim=unlim)
       }
       if(f$dimensions[[i]]$type=='lon') {
          nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
             'degrees east',
             f$dimensions[[i]]$values,
-            longname='longitude')
+            longname='longitude',unlim=unlim)
       }
       if(f$dimensions[[i]]$type=='ensemble') {
          nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
             'member',
-            f$dimensions[[i]]$values)
+            f$dimensions[[i]]$values,unlim=unlim)
       }
       if(f$dimensions[[i]]$type!='ensemble' &&
          f$dimensions[[i]]$type!='lon' &&
@@ -381,7 +382,7 @@ GSDF.ncdf.write<-function(f,file.name,name='variable',
          f$dimensions[[i]]$type!='time') {
          nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
             'other',
-            f$dimensions[[i]]$values)
+            f$dimensions[[i]]$values,unlim=unlim)
       }
    }
    v<-tryCatch({
