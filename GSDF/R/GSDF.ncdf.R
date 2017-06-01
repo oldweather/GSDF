@@ -344,7 +344,8 @@ GSDF.ncdf.load<-function(file,variable,lat.range=NULL,lon.range=NULL,
 #' @return 1 if successful, NULL for failure - invisibly.
 GSDF.ncdf.write<-function(f,file.name,name='variable',
                           missval=NULL,prec='float',shuffle=FALSE,
-                          compression=NA,chunksizes=NA,unlimited='time') {
+                          compression=NA,chunksizes=NA,
+                          unlimited='time') {
 
    nc.dims<-list()
    for(i in seq_along(f$dimensions)) {
@@ -352,11 +353,13 @@ GSDF.ncdf.write<-function(f,file.name,name='variable',
       if(!is.null(unlimited) && f$dimensions[[i]]$type==unlimited) unlim=TRUE
       if(f$dimensions[[i]]$type=='time') {
          # convert into minutes from first value to store
-         origin<-f$dimensions[[i]]$values[1]
-         offsets<-GSDF.time.difference(GSDF.time(origin,f$meta$calendar),
+         time.origin<-f$dimensions[[i]]$values[1]
+         offsets<-GSDF.time.difference(GSDF.time(time.origin,f$meta$calendar),
                      GSDF.time(f$dimensions[[i]]$values,f$meta$calendar))
+         time.origin<-sprintf("%s %s",substr(time.origin,1,10),
+                                      substr(time.origin,12,19))
          nc.dims[[i]]<-ncdim_def(f$dimensions[[i]]$type,
-            sprintf("minutes since %s",origin),
+            sprintf("minutes since %s",time.origin),
             offsets,unlim=unlim)
       }
       if(f$dimensions[[i]]$type=='lat') {
