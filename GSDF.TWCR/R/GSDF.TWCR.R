@@ -187,6 +187,13 @@ TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
 #' @return File name or URL for netCDF file containing the requested data 
 TWCR.hourly.members.get.file.name<-function(variable,year,month,day,hour,
                                               opendap=NULL,version=2) {
+   if(substr(version,1,1)=='4') { # V3 - data in monthly files
+        base.dir<-TWCR.get.data.dir(version)
+        name<-sprintf("%s/hourly/%04d/%02d/%s.nc",base.dir,
+                           year,month,variable)
+        if(file.exists(name)) return(name)
+        stop(sprintf("No local file %s",name))
+   } 
    if((version=='2c' || version=='3.5.1') &&
     file.exists('/project/projectdirs/20C_Reanalysis')) { # Nersc operational 2c
       base.name<-'/project/projectdirs/20C_Reanalysis/www/20C_Reanalysis_version2c_ensemble/'
@@ -776,7 +783,7 @@ TWCR.sds<-function(s,n){
 TWCR.get.members.slice.at.hour<-function(variable,year,month,day,hour,opendap=NULL,version='2c') {
   if(variable != 'prmsl' && variable != 'air.2m' &&
      variable != 'uwnd.10m' && variable != 'vwnd.10m' &&
-     variable != 'prate') stop('Unsupported ensemble variable')
+     variable != 'prate' && variable != 'icec') stop('Unsupported ensemble variable')
   if(!TWCR.is.in.file(variable,year,month,day,hour)) {
 	interpolation.times<-TWCR.get.interpolation.times(variable,year,month,day,hour)
 	v1<-TWCR.get.members.slice.at.hour(variable,interpolation.times[[1]]$year,interpolation.times[[1]]$month,
