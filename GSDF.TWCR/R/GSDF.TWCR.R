@@ -325,6 +325,9 @@ TWCR.monthly.get.file.name<-function(variable,year,month,opendap=NULL,version=2,
 #' @export
 #' @return A data frame - one row for each observation.
 TWCR.get.obs.1file<-function(year,month,day,hour,version=2) {
+    if(as.integer(substr(version,1,1))==4) {
+      return(TWCR.get.obs.1file.v3(year,month,day,hour,version=version))
+    }
     base.dir<-TWCR.get.data.dir(version)
     if(is.null(base.dir)) stop("No local TWCR files on this system")
     of.name<-sprintf(
@@ -367,6 +370,39 @@ TWCR.get.obs.1file<-function(year,month,day,hour,version=2) {
 
     return(o)
 }
+#' Get the observations from 1 psobfile file (v3 obs format)
+#'
+#' All the observations used in one analysis run
+#'  (0,6,12,18 hours each day).
+#' 
+#' @export
+#' @return A data frame - one row for each observation.
+TWCR.get.obs.1file.v3<-function(year,month,day,hour,version='4.1.8') {
+    base.dir<-TWCR.get.data.dir(version)
+    if(is.null(base.dir)) stop("No local TWCR files on this system")
+    of.name<-sprintf(
+                "%s/observations/%04d/%02d/psobfile_%04d%02d%02d%02d",base.dir,
+                year,month,year,month,day,hour)
+    if(!file.exists(of.name)) stop("No obs file for given version and date")
+    o<-read.fwf(file=of.name,na.strings=c('NA','*','***','*****','*******','**********',
+                                          '-99','9999','-999','9999.99','10000.0',
+                                          '-9.99','999999999999999999999999999999',
+                                          '999999999999','9'),
+                widths=c(19,-1,3,-1,1,-1,7,-1,6,
+                        -1,5,-1,6,-1,8,-1,8,-1,6,-1,30),
+                col.names=c('UID','NCEP.Type','Variable','Longitude','Latitude',
+                            'Un1','Un2','Un3','Un4','Un5','Name'),
+                header=F,stringsAsFactors=F,fileEncoding="ASCII",
+                colClasses=c('character','integer','character',
+                               rep('numeric',2),
+                               rep('integer',1),
+                               rep('numeric',4),
+                               rep('character',1)),
+                comment.char="",
+                fill=TRUE)
+
+    return(o)
+}
 
 #' TWCR get observations
 #'
@@ -397,6 +433,14 @@ TWCR.get.obs<-function(year,month,day,hour,version=2,range=0.5) {
                  as.integer(as.character(chron::years(hour2))),
                  as.integer(as.character(chron::years(hour2))),
                  months(hour2),chron::days(hour2),as.integer(chron::hours(hour2)))
+       if(substr(version,1,1)=='4') {
+        of.name<-sprintf(
+                "%s/observations/%04d/%02d/psobfile_%04d%02d%02d%02d",base.dir,
+                 as.integer(as.character(chron::years(hour2))),
+                 months(hour2),
+                 as.integer(as.character(chron::years(hour2))),
+                 months(hour2),chron::days(hour2),as.integer(chron::hours(hour2)))
+        }
         if(!file.exists(of.name)) next
         o<-TWCR.get.obs.1file(as.integer(as.character(chron::years(hour2))),
                                base::months(hour2),chron::days(hour2),as.integer(chron::hours(hour2)),version)

@@ -11,3 +11,4 @@ Depends:
     R (>= 1.7.0),
     GSDF
 License: Apache.
+RoxygenNote: 6.0.1
