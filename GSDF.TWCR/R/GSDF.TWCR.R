@@ -871,8 +871,10 @@ TWCR.get.members.slice.at.hour<-function(variable,year,month,day,hour,opendap=NU
   if(version==2 || version=='3.2.1' || version=='2c' || version=='3.5.1') {
      t<-t+2 # Kludge. Are dates 2 days ahead?
   }
+  ens.range=c(0,56)
+  if(substr(version,1,1)=='4') ens.range=c(0,80)
   v<-GSDF.ncdf.load(file.name,variable,lat.range=c(-90,90),lon.range=c(0,360),
-                           ens.range=c(0,56),time.range=c(t,t))
+                           ens.range=ens.range,time.range=c(t,t))
   return(v)  
 }
 
@@ -1076,8 +1078,12 @@ TWCR.get.members.slab.from.hourly<-function(variable,date.range,
                                              height.range=NULL,
                                              lat.range=c(-90,90),
                                              lon.range=c(0,360),
-                                             members.range=c(0,56),
+                                             members.range=NULL,
                                              opendap=NULL,version=2) {
+     if(is.null(members.range)) {
+       members.range=c(0,56)
+       if(substr(version,1,1)=='4') members.range=c(0,80)
+     }
     # Get the start and end dates
      start.d<-list()
      start.d$year<-as.integer(substr(date.range[1],1,4))
