@@ -30,6 +30,29 @@ ERA5.translate.for.variable.names<-function(var) {
   return(v2)
 }
 
+#' Translate to ERA5 file names of the .nc files
+#'
+#' I'm standardising on 20CR variable names - map to ERA5 choices
+#'
+#' ERA5 uses different names for the files and the variable in the file
+#'  this function maps to ERA5 file names.
+#'
+#' @export
+#' @param var - 20CR variable name
+#' @return name used for ERA5 variable names
+ERA5.translate.for.file.names<-function(var) {
+  v2<-switch(var,
+             prmsl    = 'msl',
+             air.2m   = '2t',
+             uwnd.10m = '10u',
+             vwnd.10m = '10v',
+             icec     = 'ci',
+             sst      = 'sst',
+             prate    = 'tp')
+  if(is.null(v2)) stop(sprintf("Unsupported variable %s",var))
+  return(v2)
+}
+
 #' ERA5 get data directory
 #'
 #' Find local data directory - different for different systems

@@ -24,6 +24,28 @@ ERA5.fetch.data.for.month<-function(var,year,month,stream='oper') {
     stop(sprintf("Unsupported variable %s",var)) 
 }
 
+#' Translate to ERA5 variable names in the data access api
+#'
+#' I'm standardising on 20CR variable names - map to ERA5 choices
+#'
+#' ERA5 uses different names for the files and the variable in the file
+#'  this function maps to ERA5 file names.
+#'
+#' @export
+#' @param var - 20CR variable name
+#' @return name used for ERA5 variable names
+ERA5.translate.for.variable.names<-function(var) {
+  v2<-switch(var,
+             prmsl    = 'msl',
+             air.2m   = 't2m',
+             uwnd.10m = 'u10',
+             vwnd.10m = 'v10',
+             icec     = 'ci',
+             sst      = 'sst',
+             prate    = 'tp')
+  if(is.null(v2)) stop(sprintf("Unsupported variable %s",var))
+  return(v2)
+}
 #' Get data for one analysis variable
 #'
 #' I'm packaging data by the month, a compromise
@@ -56,11 +78,12 @@ ERA5.fetch.analysis.data.for.month<-function(var,year,month,stream='oper') {
     cat('from ecmwfapi import ECMWFDataServer\n')
     cat('server = ECMWFDataServer()\n')
     cat('server.retrieve({\n')
-    cat('   \'dataset\'   : "era5_test",\n')
+    cat('   \'dataset\'   : "era5",\n')
     cat(sprintf("   \'stream\'    : \"%s\",\n",stream))
     cat('   \'type\'      : "an",\n')
     cat('   \'levtype\'   : "sfc",\n')
-    cat(sprintf("   \'param\'     : \"%s\",\n",ERA5.vars.a[[var]]))
+    cat(sprintf("   \'param\'     : \"%s\",\n",
+                ERA5.translate.for.file.names(var)))
     cat('   \'grid\'      : "0.25/0.25",\n')
     cat('   \'time\'      : "0/to/23/by/1",\n')
     cat(sprintf("   'date'      : \"%04d-%02d-%02d/to/%04d-%02d-%02d\",\n",
@@ -112,13 +135,13 @@ ERA5.fetch.forecast.data.for.month<-function(var,year,month,stream='oper') {
         cat('from ecmwfapi import ECMWFDataServer\n')
         cat('server = ECMWFDataServer()\n')
         cat('server.retrieve({\n')
-        cat('   \'dataset\'   : "era5_test",\n')
+        cat('   \'dataset\'   : "era5",\n')
         cat(sprintf("   \'stream\'    : \"%s\",\n",stream))
         cat('   \'type\'      : "fc",\n')
         cat('   \'step\'      : "0/to/18/by/1",\n')
         cat('   \'levtype\'   : "sfc",\n')
-        cat(sprintf("   \'param\'     : \"%s\",\n",ERA5.vars.f[[var]]))
-        cat('   \'grid\'      : "0.75/0.75",\n')
+        cat(sprintf("   \'param\'     : \"%s\",\n",ERA5.translate.for.file.names(var)))
+        cat('   \'grid\'      : "0.25/0.25",\n')
         cat(sprintf("   \'time\'      : \"%02d\",\n",start.hour))
         cat(sprintf("   'date'      : \"%04d-%02d-%02d/to/%04d-%02d-%02d\",\n",
                     year,month,1,
