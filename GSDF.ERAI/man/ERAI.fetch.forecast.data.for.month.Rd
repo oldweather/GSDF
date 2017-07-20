@@ -8,6 +8,10 @@ ERAI.fetch.forecast.data.for.month(var, year, month)
 }
 \arguments{
 \item{var}{- 20CR variable name}
+
+\item{year}{- Year for data}
+
+\item{month}{- month for data (1-12)}
 }
 \description{
 I'm packaging data by the month, a compromise

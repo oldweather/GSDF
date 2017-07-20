@@ -486,8 +486,8 @@ TWCR.get.fixed.field<-function(variable) {
    return(v)  
 }
 
-TWCR.is.in.file<-function(variable,year,month,day,hour,type='mean') {
-                #if(variable=='prate' && hour%%3==0) return(TRUE)
+TWCR.is.in.file<-function(variable,year,month,day,hour,version,type='mean') {
+                if(substr(version,1,1)=='4' && hour%%3==0) return(TRUE)
 		if(hour%%6==0) return(TRUE)
 		return(FALSE)
 }
@@ -496,8 +496,8 @@ TWCR.is.in.file<-function(variable,year,month,day,hour,type='mean') {
 #  hours at an analysis time.
 # Could do this directly, but it's vital to keep get.interpolation.times
 # and is.in.file consistent.
-TWCR.get.interpolation.times<-function(variable,year,month,day,hour,type='mean') {
-	if(TWCR.is.in.file(variable,year,month,day,hour,type=type)) {
+TWCR.get.interpolation.times<-function(variable,year,month,day,hour,version,type='mean') {
+	if(TWCR.is.in.file(variable,year,month,day,hour,version,type=type)) {
 		stop("Internal interpolation failure")
 	}
 	ct<-chron(dates=sprintf("%04d/%02d/%02d",year,month,day),
@@ -517,7 +517,7 @@ TWCR.get.interpolation.times<-function(variable,year,month,day,hour,type='mean')
                   p.day<-as.integer(chron::days(ct-1))
                   p.hour<-p.hour+24
                 }
-		if(TWCR.is.in.file(variable,p.year,p.month,p.day,p.hour,type=type)) {
+		if(TWCR.is.in.file(variable,p.year,p.month,p.day,p.hour,version,type=type)) {
 			t.previous$year<-p.year
 			t.previous$month<-p.month
 			t.previous$day<-p.day
@@ -542,7 +542,7 @@ TWCR.get.interpolation.times<-function(variable,year,month,day,hour,type='mean')
                   n.day<-as.integer(chron::days(ct+1))
                   n.hour<-n.hour-24
                 }
-		if(TWCR.is.in.file(variable,n.year,n.month,n.day,n.hour,type=type)) {
+		if(TWCR.is.in.file(variable,n.year,n.month,n.day,n.hour,version,type=type)) {
 			t.next$year<-n.year
 			t.next$month<-n.month
 			t.next$day<-n.day
@@ -615,7 +615,7 @@ TWCR.get.slice.at.hour<-function(variable,year,month,day,hour,height=NULL,openda
 TWCR.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NULL,opendap=NULL,version=2,type='mean') {
 	#dstring<-sprintf("%04d-%02d-%02d:%02d",year,month,day,hour)
 	# Is it from an analysis time (no need to interpolate)?
-	if(TWCR.is.in.file(variable,year,month,day,hour,type=type)) {
+	if(TWCR.is.in.file(variable,year,month,day,hour,version,type=type)) {
         hour<-as.integer(hour)
         file.name<-TWCR.hourly.get.file.name(variable,year,month,day,hour,height=height,
                                                 opendap=opendap,version=version,type=type)
@@ -646,7 +646,7 @@ TWCR.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
 	   return(v)
 	}
 	# Interpolate from the previous and subsequent analysis times
-	interpolation.times<-TWCR.get.interpolation.times(variable,year,month,day,hour,type=type)
+	interpolation.times<-TWCR.get.interpolation.times(variable,year,month,day,hour,version,type=type)
 	v1<-TWCR.get.slice.at.level.at.hour(variable,interpolation.times[[1]]$year,interpolation.times[[1]]$month,
 		                               interpolation.times[[1]]$day,interpolation.times[[1]]$hour,
                                                height=height,opendap=opendap,version=version,type=type)
@@ -828,8 +828,8 @@ TWCR.get.members.slice.at.hour<-function(variable,year,month,day,hour,opendap=NU
   if(variable != 'prmsl' && variable != 'air.2m' &&
      variable != 'uwnd.10m' && variable != 'vwnd.10m' &&
      variable != 'prate' && variable != 'icec') stop('Unsupported ensemble variable')
-  if(!TWCR.is.in.file(variable,year,month,day,hour)) {
-	interpolation.times<-TWCR.get.interpolation.times(variable,year,month,day,hour)
+  if(!TWCR.is.in.file(variable,year,month,day,hour,version)) {
+	interpolation.times<-TWCR.get.interpolation.times(variable,year,month,day,hour,version)
 	v1<-TWCR.get.members.slice.at.hour(variable,interpolation.times[[1]]$year,interpolation.times[[1]]$month,
 		                               interpolation.times[[1]]$day,interpolation.times[[1]]$hour,
                                                opendap=opendap,version=version)

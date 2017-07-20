@@ -7,10 +7,15 @@
 #'
 #' @export
 #' @param variable 'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any supported variable
+#' @param first.year 1st year of climatology (NULL, default, for 1981)
+#' @param last.year Last year of climatology (NULL, default, for 2010)
 #' @return File containing the requested data 
-ERAI.climatology.get.file.name<-function(variable,month) {
+ERAI.climatology.get.file.name<-function(variable,month,first.year=NULL,last.year=NULL) {
     base.dir<-ERAI.get.data.dir()
     dir.name<-sprintf("%s/normals/hourly/%02d",base.dir,month)
+    if(!is.null(first.year) || !is.null(last.year)) {
+      dir.name<-sprintf("%s/normals.%04d-%04d/hourly/%02d",base.dir,first.year,last.year,month)
+    }
     file.name<-sprintf("%s/%s.nc",dir.name,variable)
     return(file.name)
 }
@@ -27,6 +32,8 @@ ERAI.climatology.get.file.name<-function(variable,month) {
 #' @param variable  - 'air.2m', 'prmsl', 'prate', - 20CR names
 #' @param month  - 1-12, month to make climatology for.
 #'   If NULL (default) run for all months
+#' @param first.year 1st year of climatology (NULL, default, for 1981)
+#' @param last.year Last year of climatology (NULL, default, for 2010)
 #' @return Nothing - a climatological field will be created as a side effect.
 ERAI.make.climatology<-function(variable,month=NULL,first.year=1981,last.year=2010) {
 
@@ -76,7 +83,7 @@ ERAI.make.climatology<-function(variable,month=NULL,first.year=1981,last.year=20
       result$meta$calendar='gregorian'
 
       # Write the result to a disc location paralleling the data
-      fn<-ERAI.climatology.get.file.name(variable,mnth)
+      fn<-ERAI.climatology.get.file.name(variable,mnth,first.year,last.year)
       if(!file.exists(dirname(fn))) dir.create(dirname(fn),recursive=TRUE)
 
       GSDF.ncdf.write(result,fn,name=ERAI.translate.for.variable.names(variable))

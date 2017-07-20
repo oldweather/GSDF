@@ -41,7 +41,7 @@ CERA20C.make.climatology<-function(variable,month=NULL,first.year=1981,last.year
        slab<-GSDF.ncdf.load(mnth.file,
                             CERA20C.translate.for.variable.names(variable),
                             lat.range=c(-90,90),lon.range=c(0,360),
-                            ens.range=rep(0,9),ens.name='number',
+                            ens.range=c(0,9),ens.name='number',
                             time.range=c(t,t2))
      if(is.null(slab)) {
        stop("Data for climatology is not on disc.")

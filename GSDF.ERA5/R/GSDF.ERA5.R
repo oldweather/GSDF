@@ -94,7 +94,7 @@ ERA5.get.variable.group<-function(variable) {
 #'  default, uses whicever gives the shortest lead time (ignored for analysis variables).
 #' @return File containing the requested data 
 ERA5.hourly.get.file.name<-function(variable,year,month,day,hour,
-                                    stream='oper',fc.init=NULL,type=type) {
+                                    stream='oper',fc.init=NULL,type='mean') {
     base.dir<-ERA5.get.data.dir()
     if(type=='normal') {
       file.name<-ERA5.climatology.get.file.name(variable,month)

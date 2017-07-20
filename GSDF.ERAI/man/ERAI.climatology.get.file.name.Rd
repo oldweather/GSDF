@@ -4,10 +4,15 @@
 \alias{ERAI.climatology.get.file.name}
 \title{ERAI get file name for hourly climatological data}
 \usage{
-ERAI.climatology.get.file.name(variable, year, month)
+ERAI.climatology.get.file.name(variable, month, first.year = NULL,
+  last.year = NULL)
 }
 \arguments{
 \item{variable}{'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any supported variable}
+
+\item{first.year}{1st year of climatology (NULL, default, for 1981)}
+
+\item{last.year}{Last year of climatology (NULL, default, for 2010)}
 }
 \value{
 File containing the requested data

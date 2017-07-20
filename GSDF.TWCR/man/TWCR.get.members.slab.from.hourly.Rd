@@ -5,7 +5,7 @@
 \title{Extract a hyperslab of data - from individual ensemble members}
 \usage{
 TWCR.get.members.slab.from.hourly(variable, date.range, height.range = NULL,
-  lat.range = c(-90, 90), lon.range = c(0, 360), members.range = c(0, 56),
+  lat.range = c(-90, 90), lon.range = c(0, 360), members.range = NULL,
   opendap = NULL, version = 2)
 }
 \arguments{

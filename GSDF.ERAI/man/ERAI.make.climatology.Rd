@@ -4,20 +4,25 @@
 \alias{ERAI.make.climatology}
 \title{Make (and store) a climatological average}
 \usage{
-ERAI.make.climatology(variable, month = NULL)
+ERAI.make.climatology(variable, month = NULL, first.year = 1981,
+  last.year = 2010)
 }
 \arguments{
 \item{variable}{- 'air.2m', 'prmsl', 'prate', - 20CR names}
 
 \item{month}{- 1-12, month to make climatology for.
 If NULL (default) run for all months}
+
+\item{first.year}{1st year of climatology (NULL, default, for 1981)}
+
+\item{last.year}{Last year of climatology (NULL, default, for 2010)}
 }
 \value{
 Nothing - a climatological field will be created as a side effect.
 }
 \description{
 Data are stored as .nc files in a parallel directory to the original
- data - same as original data exept only for 1 year.
+ data - same as original data except only for 1 year.
 Loads a whole month of data at once
 }
 \details{

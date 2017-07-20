@@ -11,7 +11,7 @@
 #' @param stream - 'ensda' for the lower resolution ensemble, otherwise 'oper' (default)
 ERA5.climatology.get.file.name<-function(variable,month,stream='oper') {
     base.dir<-ERA5.get.data.dir()
-    dir.name<-sprintf("%s/normals/%s,hourly/%02d",stream,base.dir,month)
+    dir.name<-sprintf("%s/normals/%s/hourly/%02d",base.dir,stream,month)
     file.name<-sprintf("%s/%s.nc",dir.name,variable)
     return(file.name)
 }

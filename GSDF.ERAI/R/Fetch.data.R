@@ -24,8 +24,8 @@ ERAI.vars.f<-list(prate    = '228')
 #'
 #' @export
 #' @param var - 20CR variable name
-#' @param year
-#' @param month
+#' @param year - Year for data
+#' @param month - month for data (1-12)
 ERAI.fetch.data.for.month<-function(var,year,month) {
     if(var %in% ERAI.monolevel.analysis) {
         return(ERAI.fetch.analysis.data.for.month(var,year,month))
@@ -46,8 +46,8 @@ ERAI.fetch.data.for.month<-function(var,year,month) {
 #'
 #' @export
 #' @param var - 20CR variable name
-#' @param year
-#' @param month
+#' @param year - Year for data
+#' @param month - month for data (1-12)
 ERAI.fetch.analysis.data.for.month<-function(var,year,month) {
 
     if(!var %in% ERAI.monolevel.analysis) {
@@ -99,12 +99,12 @@ ERAI.fetch.analysis.data.for.month<-function(var,year,month) {
 #'
 #' @export
 #' @param var - 20CR variable name
-#' @param year
-#' @param month
+#' @param year - Year for data
+#' @param month - month for data (1-12)
 ERAI.fetch.forecast.data.for.month<-function(var,year,month) {
 
     if(!var %in% ERAI.monolevel.forecast) {
-        stop(sprintf("Unsupported analysis variable %s",var))
+        stop(sprintf("Unsupported forecast variable %s",var))
     }
     target.dir<-sprintf("%s/hourly/%04d/%02d",ERAI.get.data.dir(),year,month)
     if(!file.exists(target.dir)) dir.create(target.dir,recursive=TRUE)
