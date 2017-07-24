@@ -91,6 +91,9 @@ TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
         if(!is.null(base.dir)) {
             name<-NULL
             if(type=='normal') {
+                    if(substr(version,1,1)=='4') {
+                      return(TWCR.climatology.get.file.name(variable,month,version))
+                    }
                     name<-sprintf("%s/hourly/normals/%s.nc",base.dir,variable)
             }
             if(type=='standard.deviation') {
