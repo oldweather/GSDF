@@ -335,7 +335,7 @@ GSDF.time.from.base.and.offset<-function(offset,base,units,calendar) {
 
   calendar<-GSDF.time.check.calendar(calendar)
   # Assign base time components from the string
-  m<-stringr::str_match(base,"(\\d\\d\\d\\d)-(\\d+)-(\\d+)")
+  m<-stringr::str_match(base,"(\\d+)-(\\d+)-(\\d+)")
   year   <- as.integer(m[,2])
   month  <- as.integer(m[,3])
   day    <- as.integer(m[,4])
@@ -343,10 +343,10 @@ GSDF.time.from.base.and.offset<-function(offset,base,units,calendar) {
     stop(sprintf("%s is not a valid base time (expected YYYY-MM-DD + optional:HH:MM)",
                  base))
   }
-  m<-stringr::str_match(base,"(\\d\\d\\d\\d)\\D(\\d+)\\D(\\d+)\\D(\\d+)")
+  m<-stringr::str_match(base,"(\\d+)\\D(\\d+)\\D(\\d+)\\D(\\d+)")
   hour   <- as.integer(m[,5])
   if(is.na(hour)) hour<-0
-  m<-stringr::str_match(base,"(\\d\\d\\d\\d)\\D(\\d+)\\D(\\d+)\\D(\\d+)\\D(\\d+)")
+  m<-stringr::str_match(base,"(\\d+)\\D(\\d+)\\D(\\d+)\\D(\\d+)\\D(\\d+)")
   minute <- as.integer(m[,6])
   if(is.na(minute)) minute<-0
   base<-GSDF.time(sprintf("%04d-%02d-%02d:%02d:%02d:00",
