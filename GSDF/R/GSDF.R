@@ -813,7 +813,7 @@ GSDF.pad.longitude<-function(g,pad=1) {
     bot<-seq(1,pad)
     a<-rbind(a[top,],a,a[bot,])
     nd<-dim(g$data)
-    nd[d]<-nd[d]+2*pad
+    nd[d[1]]<-nd[d[1]]+2*pad
     result$data<-array(data<-as.vector(a),dim=nd)
     result$dimensions[[d[1]]]$values<-c(g$dimensions[[d[1]]]$values[top]-360,
                                         g$dimensions[[d[1]]]$values,
@@ -826,7 +826,7 @@ GSDF.pad.longitude<-function(g,pad=1) {
     bot<-seq(1,pad)
     a<-cbind(a[,top],a,a[,bot])
     nd<-dim(g$data)
-    nd[d]<-nd[d]+2*pad
+    nd[d[2]]<-nd[d[2]]+2*pad
     result$data<-array(data<-as.vector(a),dim=nd)
     result$dimensions[[d[2]]]$values<-c(g$dimensions[[d[2]]]$values[top]-360,
                                         g$dimensions[[d[2]]]$values,
