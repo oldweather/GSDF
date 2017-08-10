@@ -9,9 +9,14 @@
 #' @param variable 'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any supported variable
 #' @return File containing the requested data 
 #' @param stream - 'ensda' for the lower resolution ensemble, otherwise 'oper' (default)
-ERA5.climatology.get.file.name<-function(variable,month,stream='oper') {
+ERA5.climatology.get.file.name<-function(variable,month,stream='oper',
+                                         first.year=NULL,last.year=NULL) {
     base.dir<-ERA5.get.data.dir()
     dir.name<-sprintf("%s/normals/%s/hourly/%02d",base.dir,stream,month)
+    if(!is.null(first.year) || !is.null(last.year)) {
+      dir.name<-sprintf("%s/normals.%04d-%04d/%s/hourly/%02d",base.dir,
+                        first.year,last.year,stream,month)
+    }
     file.name<-sprintf("%s/%s.nc",dir.name,variable)
     return(file.name)
 }
