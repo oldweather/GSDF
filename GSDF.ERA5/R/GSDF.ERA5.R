@@ -120,8 +120,8 @@ ERA5.hourly.get.file.name<-function(variable,year,month,day,hour,
       }
       if(hour<fc.init) {
          dte<-ymd(sprintf("%04d-%02d-%02d",year,month,day))-days(1)
-         dir.name<-sprintf("%s/%s/hourly/%04d/%02d/%02d",base.dir,stream,
-                        year(dte),month(dte),day(dte))
+         dir.name<-sprintf("%s/%s/hourly/%04d/%02d",base.dir,stream,
+                        year(dte),month(dte))
        }
        file.name<-sprintf("%s/%s.%02d.nc",dir.name,variable,fc.init)
     }
