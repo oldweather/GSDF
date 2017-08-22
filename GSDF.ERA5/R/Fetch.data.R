@@ -13,13 +13,13 @@
 #' @param var - 20CR variable name
 #' @param year
 #' @param month
-#' @param stream - 'ensda' for the lower resolution ensemble, otherwise 'oper' (default)
+#' @param stream - 'enda' for the lower resolution ensemble, otherwise 'oper' (default)
 ERA5.fetch.data.for.month<-function(var,year,month,stream='oper') {
     if(var %in% ERA5.monolevel.analysis) {
-        return(ERA5.fetch.analysis.data.for.month(var,year,month))
+        return(ERA5.fetch.analysis.data.for.month(var,year,month,stream))
     }
     if(var %in% ERA5.monolevel.forecast) {
-        return(ERA5.fetch.forecast.data.for.month(var,year,month))
+        return(ERA5.fetch.forecast.data.for.month(var,year,month,stream))
     }
     stop(sprintf("Unsupported variable %s",var)) 
 }
@@ -58,7 +58,7 @@ ERA5.translate.for.variable.names<-function(var) {
 #' @param var - 20CR variable name
 #' @param year
 #' @param month
-#' @param stream - 'ensda' for the lower resolution ensemble, otherwise 'oper' (default)
+#' @param stream - 'enda' for the lower resolution ensemble, otherwise 'oper' (default)
 ERA5.fetch.analysis.data.for.month<-function(var,year,month,stream='oper') {
 
     if(!var %in% ERA5.monolevel.analysis) {
@@ -111,7 +111,7 @@ ERA5.fetch.analysis.data.for.month<-function(var,year,month,stream='oper') {
 #' @param var - 20CR variable name
 #' @param year
 #' @param month
-#' @param stream - 'ensda' for the lower resolution ensemble, otherwise 'oper' (default)
+#' @param stream - 'enda' for the lower resolution ensemble, otherwise 'oper' (default)
 ERA5.fetch.forecast.data.for.month<-function(var,year,month,stream='oper') {
 
     if(!var %in% ERA5.monolevel.forecast) {
