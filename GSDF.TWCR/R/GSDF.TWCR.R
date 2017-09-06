@@ -407,8 +407,8 @@ TWCR.get.slice.at.level.at.hour<-function(variable,year,month,day,hour,height=NU
 	# Is it from an analysis time (no need to interpolate)?
 	if(TWCR.is.in.file(variable,year,month,day,hour,version,type=type)) {
         hour<-as.integer(hour)
-        file.name<-TWCR.hourly.get.file.name(variable,year,month,day,hour,height=height,
-                                                opendap=opendap,version=version,type=type)
+        file.name<-TWCR.hourly.get.file.name(variable,year,month,day,hour,
+                                             version=version,type=type)
            t<-chron(sprintf("%04d/%02d/%02d",year,month,day),sprintf("%02d:00:00",hour),
                     format=c(dates='y/m/d',times='h:m:s'))
            if(type=='standard.deviation') { 
