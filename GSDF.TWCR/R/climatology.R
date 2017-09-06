@@ -15,9 +15,9 @@
 #' @return File containing the requested data 
 TWCR.climatology.get.file.name<-function(variable,month,version,first.year=NULL,last.year=NULL) {
     base.dir<-TWCR.get.data.dir(version)
-    dir.name<-sprintf("%s/normals/hourly/%02d",base.dir,month)
+    dir.name<-sprintf("%s/normal/%02d",base.dir,month)
     if(!is.null(first.year) || !is.null(last.year)) {
-      dir.name<-sprintf("%s/normals.%04d-%04d/hourly/%02d",base.dir,first.year,last.year,month)
+      dir.name<-sprintf("%s/normal.%04d-%04d/%02d",base.dir,first.year,last.year,month)
     }
     file.name<-sprintf("%s/%s.nc",dir.name,variable)
     return(file.name)

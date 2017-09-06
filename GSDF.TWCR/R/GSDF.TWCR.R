@@ -49,7 +49,7 @@ TWCR.show.variables<-function() {
 #'
 #' @export
 #' @return Base directory name (or NULL is no local files)
-TWCR.get.data.dir<-function(version=2) {
+TWCR.get.data.dir<-function(version='3.5.1') {
 
     if(file.exists(sprintf("%s/20CR/version_%s/",Sys.getenv('SCRATCH'),version))) {
             return(sprintf("%s/20CR/version_%s/",Sys.getenv('SCRATCH'),version))
@@ -57,7 +57,7 @@ TWCR.get.data.dir<-function(version=2) {
     if(file.exists(sprintf("/project/projectdirs/m958/netCDF.data/20CR_v%s/",version))) {
             return(sprintf("/project/projectdirs/m958/netCDF.data/20CR_v%s/",version))
     }	
-    return(NULL)
+    stop(sprintf("No data dir for version %s",version))
 }
 
 # Get class of variable: monolevel, pressure-level, gaussian
@@ -78,243 +78,30 @@ TWCR.get.variable.group<-function(variable) {
 #'
 #' @export
 #' @param variable 'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any 20CR variable
-#' @param type - 'mean', 'spread', 'normal', or 'standard.deviation'. Also
-#'    'fg.mean' and 'fg.spread' for first guess fields.
-#'  Note that standard deviations are not available over opendap.
-#' @param opendap TRUE for network retrieval, FALSE for local files (faster, if you have them),
-#'  NULL (default) will use local files if available, and network if not.
+#' @param type - 'ensemble', 'mean', 'spread', 'normal', or 'standard.deviation'.
+#'     Also 'first.guess.mean' and 'first.guess.spread' for first guess fields.
 #' @return File name or URL for netCDF file containing the requested data 
-TWCR.hourly.get.file.name<-function(variable,year,month,day,hour,height=NULL,
-                                      opendap=NULL,version=2,type='mean') {
-   if(is.null(opendap) || opendap==FALSE) {
+TWCR.hourly.get.file.name<-function(variable,year,month,day=NULL,hour=NULL,
+                                      version='3.5.1',type='ensemble') {
+    name=''
+    if(type %in% c('mean','spread','ensemble','normal',
+                   'standard.deviation','first.guess.mean',
+                   'first.guess.spread')) {
         base.dir<-TWCR.get.data.dir(version)
-        if(!is.null(base.dir)) {
-            name<-NULL
-            if(type=='normal') {
-                    if(substr(version,1,1)=='4') {
-                      return(TWCR.climatology.get.file.name(variable,month,version))
-                    }
-                    name<-sprintf("%s/hourly/normals/%s.nc",base.dir,variable)
-            }
-            if(type=='standard.deviation') {
-                    name<-sprintf("%s/hourly/standard.deviations/%s.nc",base.dir,variable)
-            }
-            if(type=='mean') {
-               name<-sprintf("%s/hourly/%s/%s.%04d.nc",base.dir,
-                           variable,variable,year)
-            }
-            if(type=='fg.mean') {
-               name<-sprintf("%s/first.guess.hourly/%s/%s.%04d.nc",base.dir,
-                           variable,variable,year)
-            }
-            if(type=='spread') {
-               name<-sprintf("%s/hourly/%s/%s.%04d.spread.nc",base.dir,
-                           variable,variable,year)
-            }
-            if(type=='fg.spread') {
-               name<-sprintf("%s//first.guess.hourly/%s/%s.%04d.spread.nc",base.dir,
-                           variable,variable,year)
-            }
-            if(is.null(name)) stop(sprintf("Unsupported data type %s",type))
-            if(file.exists(name)) return(name)
-            if(!is.null(opendap) && opendap==FALSE) stop(sprintf("No local file %s",name))
-          }
-      }
-    if(version!=2 && version!='3.2.1') {
-      stop(sprintf("No data accessible for %s %d %d %d %d",variable,year,month,day,hour))
+        name<-sprintf("%s/%s/",base.dir,type)
+        if(type != 'normal' && type != 'standard.deviation') {
+          name<-sprintf("%s/%04d/",name,year)
+        }
+        if(substr(version,1,1)=='4') {
+          name<-sprintf("%s/%02d/",name,month)
+        }
+        name<-sprintf("%s/%s.nc",name,variable)
+    } else {
+        stop(sprintf("Unsupported data type %s",type))
     }
-    base.dir<-'http://www.esrl.noaa.gov/psd/thredds/dodsC/Datasets/20thC_ReanV2/'
-    if(type=='mean') {
-        if(TWCR.get.variable.group(variable)=='monolevel') {
-          base.dir<-sprintf("%s/monolevel/",base.dir)
-        }
-        if(TWCR.get.variable.group(variable)=='gaussian') {
-          base.dir<-sprintf("%s/gaussian/monolevel/",base.dir)
-        }
-        if(TWCR.get.variable.group(variable)=='pressure') {
-          base.dir<-sprintf("%s/pressure/",base.dir)
-        }
-       return(sprintf("%s/%s.%04d.nc",base.dir,
-                   variable,year))
-    }
-    if(type=='spread') {
-        if(TWCR.get.variable.group(variable)=='monolevel') {
-          base.dir<-sprintf("%s/monolevel_sprd/",base.dir)
-        }
-        if(TWCR.get.variable.group(variable)=='gaussian') {
-          base.dir<-sprintf("%s/gaussian_sprd/monolevel/",base.dir)
-        }
-        if(TWCR.get.variable.group(variable)=='pressure') {
-          base.dir<-sprintf("%s/pressure_sprd/",base.dir)
-        }
-        return(sprintf("%s/%s.%04d.nc",base.dir,
-                   variable,year))
-    }
-    if(type=='normal') {
-        if(TWCR.get.variable.group(variable)=='monolevel') {
-          return(sprintf("%s/Derived/4Xdailies/monolevel/%s.4Xday.1981-2010.ltm.nc",base.dir,variable))
-        } 
-        if(TWCR.get.variable.group(variable)=='gaussian') {
-          return(sprintf("%s/Derived/8Xdailies/gaussian/monolevel/%s.8Xday.1981-2010.ltm.nc",base.dir,variable))
-        }
-        if(TWCR.get.variable.group(variable)=='pressure') {
-          return(sprintf("%s/Derived/4Xdailies/pressure/%s.4Xday.1981-2010.ltm.nc",base.dir,variable))
-        } 
-    }
-    if(type=='standard.deviation') {
-      if(version==2) version<-'3.2.1'
-      if(month==2 && day==29) day<-28
-      if(is.null(height)) {
-         return(sprintf("http://s3.amazonaws.com/philip.brohan.org.20CR/version_%s/hourly/standard.deviations/%s/sd.%02d.%02d.%02d.rdata",
-                    version,variable,month,day,hour))
-      } else {
-         return(sprintf("http://s3.amazonaws.com/philip.brohan.org.20CR/version_%s/hourly/standard.deviations/%s/sd.%04d.%02d.%02d.%02d.rdata",
-                    version,variable,height,month,day,hour))
-      }
-
-    }
-    stop(sprintf("Unsupported opendap data type %s",type))      
+    return(name)
 }
 
-#' TWCR get file name (ensemble members, hourly)
-#'
-#' Get the file name (or URL) for selected variable and date (ensemble members hourly data)
-#'
-#' Called internally by \code{TWCR.get.members.slice.at.hour} but also useful
-#'  called directly - you can then access the data with another tool.
-#'
-#' @export
-#' @param variable 'prmsl', 'air.2m', prate, uwnd.10m and vwnd.10m. Others not currently available
-#' @param opendap TRUE for network retrieval, FALSE for local files (faster, if you have them),
-#'  NULL (default) will use local files if available, and network if not.
-#' @return File name or URL for netCDF file containing the requested data 
-TWCR.hourly.members.get.file.name<-function(variable,year,month,day,hour,
-                                              opendap=NULL,version=2) {
-   if(substr(version,1,1)=='4') { # V3 - data in monthly files
-        base.dir<-TWCR.get.data.dir(version)
-        name<-sprintf("%s/hourly/%04d/%02d/%s.nc",base.dir,
-                           year,month,variable)
-        if(file.exists(name)) return(name)
-        stop(sprintf("No local file %s",name))
-   } 
-   if((version=='2c' || version=='3.5.1') &&
-    file.exists('/project/projectdirs/20C_Reanalysis')) { # Nersc operational 2c
-      base.name<-'/project/projectdirs/20C_Reanalysis/www/20C_Reanalysis_version2c_ensemble/'
-      file.name<-list(
-         'air.2m' = 'analysis/t9950/t9950',
-         'prmsl' = 'analysis/prmsl/prmsl',
-         'prate' = 'first_guess/prate/prate',
-         'uwnd.10m' = 'first_guess/u10m/u10m',
-         'vwnd.10m' = 'first_guess/v10m/v10m',
-         'air.sfc' = 'first_guess/tsfc/tsfc')
-      if(is.null(file.name[[variable]])) {
-         stop(sprintf("Unavailable ensemble variable %s",variable))
-      }
-      return(sprintf("%s/%s_%04d.nc",base.name,file.name[[variable]],year))
-   }
-   if(is.null(opendap) || opendap==FALSE) {
-        base.dir<-TWCR.get.data.dir(version)
-               name<-sprintf("%s/ensembles/hourly/%s/%s.%04d.nc",base.dir,
-                           variable,variable,year)
-        if(file.exists(name)) return(name)
-        if(!is.null(opendap) && opendap==FALSE) stop(sprintf("No local file %s",name))
-      }
-    if(version!=2 && version!='3.2.1') stop('Opendap only available for version 2')
-    base.dir<-'http://portal.nersc.gov/pydap/20C_Reanalysis_ensemble'
-        if(TWCR.get.variable.group(variable)=='monolevel') {
-          base.dir<-sprintf("%s/analysis",base.dir)
-        }
-        if(TWCR.get.variable.group(variable)=='gaussian') {
-          base.dir<-sprintf("%s/first_guess",base.dir)
-        }
-        if(TWCR.get.variable.group(variable)=='pressure') {
-          stop("Ensembles of pressure level variables not available by openDAP")
-        }
-       if(variable=='air.2m') variable<-'t2m'
-       if(variable=='uwnd.10m') variable<-'u10m'
-       if(variable=='vwnd.10m') variable<-'v10m'
-       return(sprintf("%s/%s/%s_%04d.nc",base.dir,variable,variable,year))
- }
-
-#' TWCR get file name (monthly)
-#'
-#' Get the file name (or URL) for selected variable and date (monthly data)
-#'
-#' Called internally by \code{TWCR.get.slice.at.month} but also useful
-#'  called directly - you can then access the data with another tool.
-#'
-#' @export
-#' @param variable 'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any 20CR variable
-#' @param type - 'mean', 'spread', 'normal', or 'standard.deviation'. 
-#'  Note that standard deviations are not available over opendap.
-#' @param opendap TRUE for network retrieval, FALSE for local files (faster, if you have them),
-#'  NULL (default) will use local files if available, and network if not.
-#' @return File name or URL for netCDF file containing the requested data 
-TWCR.monthly.get.file.name<-function(variable,year,month,opendap=NULL,version=2,type='mean') {
-   if(is.null(opendap) || opendap==FALSE) {
-        base.dir<-TWCR.get.data.dir(version)
-        if(!is.null(base.dir)) {
-            name<-NULL
-            if(type=='normal') {
-                    name<-sprintf("%s/monthly/normals/%s.pp",base.dir,variable)
-            }
-            if(type=='standard.deviation') {
-                    name<-sprintf("%s/monthly/standard.deviations/%s.pp",base.dir,variable)
-            }
-            if(type=='mean') {
-               name<-sprintf("%s/monthly/%s.mon.mean.nc",base.dir,
-                           variable)
-            }
-            if(type=='spread') {
-               name<-sprintf("%s/monthly/%s.mon.spread.nc",base.dir,
-                           variable)
-             }
-            if(is.null(name)) stop(sprintf("Unsupported data type %s",type))
-            if(file.exists(name)) return(name)
-            if(!is.null(opendap) && opendap==FALSE) stop(sprintf("No local file %s",name))
-          }
-      }
-    if(version!=2 && version!='3.2.1') stop('Opendap only available for version 2')
-    base.dir<-'http://www.esrl.noaa.gov/psd/thredds/dodsC/Datasets/20thC_ReanV2/'
-    if(type=='mean') {
-        if(TWCR.get.variable.group(variable)=='monolevel') {
-          base.dir<-sprintf("%s/Monthlies/monolevel/",base.dir)
-        }
-        if(TWCR.get.variable.group(variable)=='gaussian') {
-          base.dir<-sprintf("%s/Monthlies/gaussian/monolevel/",base.dir)
-        }
-        if(TWCR.get.variable.group(variable)=='pressure') {
-          base.dir<-sprintf("%s/Monthlies/pressure/",base.dir)
-        }
-       return(sprintf("%s/%s.mon.mean.nc",base.dir,
-                   variable))
-    }
-    if(type=='spread') {
-        if(TWCR.get.variable.group(variable)=='monolevel') {
-          base.dir<-sprintf("%s/Monthlies/monolevel_sprd/",base.dir)
-        }
-        if(TWCR.get.variable.group(variable)=='gaussian') {
-          base.dir<-sprintf("%s/Monthlies/gaussian_sprd/monolevel/",base.dir)
-        }
-        if(TWCR.get.variable.group(variable)=='pressure') {
-          base.dir<-sprintf("%s/Monthlies/pressure_sprd/",base.dir)
-        }
-        return(sprintf("%s/%s.mon.mean.nc",base.dir,
-                   variable))
-    }
-    if(type=='normal') {
-        if(TWCR.get.variable.group(variable)=='monolevel') {
-          return(sprintf("%s/Derived/Monthlies/monolevel/%s.1981-2010.ltm.nc",base.dir,variable))
-        } 
-        if(TWCR.get.variable.group(variable)=='gaussian') {
-          return(sprintf("%s/Derived/Monthlies/gaussian/monolevel/%s.1981-2010.ltm.nc",base.dir,variable))
-        }
-        if(TWCR.get.variable.group(variable)=='pressure') {
-          return(sprintf("%s/Derived/Monthlies/pressure/%s.1981-2010.ltm.nc",base.dir,variable))
-        } 
-    }
-    stop(sprintf("Unsupported opendap data type %s",type))      
-}
 
 #' Get the observations from 1 prepbufr file
 #'

@@ -4,18 +4,14 @@
 \alias{TWCR.hourly.get.file.name}
 \title{TWCR get file name (hourly)}
 \usage{
-TWCR.hourly.get.file.name(variable, year, month, day, hour, height = NULL,
-  opendap = NULL, version = 2, type = "mean")
+TWCR.hourly.get.file.name(variable, year, month, day = NULL, hour = NULL,
+  version = "3.5.1", type = "ensemble")
 }
 \arguments{
 \item{variable}{'prmsl', 'prate', 'air.2m', 'uwnd.10m' or 'vwnd.10m' - or any 20CR variable}
 
-\item{opendap}{TRUE for network retrieval, FALSE for local files (faster, if you have them),
-NULL (default) will use local files if available, and network if not.}
-
-\item{type}{- 'mean', 'spread', 'normal', or 'standard.deviation'. Also
-  'fg.mean' and 'fg.spread' for first guess fields.
-Note that standard deviations are not available over opendap.}
+\item{type}{- 'ensemble', 'mean', 'spread', 'normal', or 'standard.deviation'.
+Also 'first.guess.mean' and 'first.guess.spread' for first guess fields.}
 }
 \value{
 File name or URL for netCDF file containing the requested data

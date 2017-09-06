@@ -4,7 +4,7 @@
 \alias{TWCR.get.data.dir}
 \title{TWCR get data directory}
 \usage{
-TWCR.get.data.dir(version = 2)
+TWCR.get.data.dir(version = "3.5.1")
 }
 \value{
 Base directory name (or NULL is no local files)

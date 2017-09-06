@@ -84,7 +84,8 @@ ERA5.fetch.analysis.data.for.month<-function(var,year,month,stream='oper') {
     cat('   \'levtype\'   : "sfc",\n')
     cat(sprintf("   \'param\'     : \"%s\",\n",
                 ERA5.translate.for.file.names(var)))
-    cat('   \'grid\'      : "0.25/0.25",\n')
+    if(stream=='oper') cat('   \'grid\'      : "0.25/0.25",\n')
+    if(stream=='enda') cat('   \'grid\'      : "0.5/0.5",\n')
     cat('   \'time\'      : "0/to/23/by/1",\n')
     cat(sprintf("   'date'      : \"%04d-%02d-%02d/to/%04d-%02d-%02d\",\n",
                 year,month,1,
@@ -141,7 +142,8 @@ ERA5.fetch.forecast.data.for.month<-function(var,year,month,stream='oper') {
         cat('   \'step\'      : "0/to/18/by/1",\n')
         cat('   \'levtype\'   : "sfc",\n')
         cat(sprintf("   \'param\'     : \"%s\",\n",ERA5.translate.for.file.names(var)))
-        cat('   \'grid\'      : "0.25/0.25",\n')
+        if(stream=='oper') cat('   \'grid\'      : "0.25/0.25",\n')
+        if(stream=='enda') cat('   \'grid\'      : "0.5/0.5",\n')
         cat(sprintf("   \'time\'      : \"%02d\",\n",start.hour))
         cat(sprintf("   'date'      : \"%04d-%02d-%02d/to/%04d-%02d-%02d\",\n",
                     year,month,1,
