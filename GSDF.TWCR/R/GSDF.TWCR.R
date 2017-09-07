@@ -649,7 +649,7 @@ TWCR.get.members.slice.at.hour<-function(variable,year,month,day,hour,opendap=NU
     return(v)
   }
   # At calculation time - do the actual retrieval
-  file.name<-TWCR.hourly.members.get.file.name(variable,year,month,day,hour,opendap=opendap,version=version)
+  file.name<-TWCR.hourly.get.file.name(variable,year,month,version=version,type='ensemble')
   # Different variable names for official 2c data
   if(version=='2c' || version=='3.5.1' || version=='3.2.1') {
      if(variable=='air.2m') variable<-'t9950'
